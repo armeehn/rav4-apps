@@ -1,0 +1,5 @@
+apks/
+decompiled/
+decompiled-full/
+*.apk
+*.dex

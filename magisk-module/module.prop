@@ -1,0 +1,6 @@
+id=rav4apps
+name=RAV4 App Rewrites
+version=v0.1
+versionCode=1
+author=sasha
+description=Systemless overlay replacing buggy GT6 built-in apps with clean-room rewrites.
