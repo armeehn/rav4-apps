@@ -2,6 +2,7 @@
 # Gradle-free Android build: aapt2 -> javac -> d8 -> zipalign -> apksigner.
 # Builds a signed debug APK from a template-style project (this dir or $1).
 set -euo pipefail
+export PATH="$HOME/.local/bin:$PATH"   # java/keytool live here on server x
 PROJ="${1:-$(pwd)}"; PROJ="$(cd "$PROJ" && pwd)"
 SDK="${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}"
 BT="$SDK/build-tools/34.0.0"; PLATFORM="$SDK/platforms/android-33/android.jar"
@@ -22,8 +23,11 @@ javac -source 17 -target 17 -d "$OUT/classes" -classpath "$PLATFORM" \
   $(find "$PROJ/src" "$OUT/gen" -name '*.java') 2>/dev/null
 # 3. dex
 "$D8" --lib "$PLATFORM" --output "$OUT" $(find "$OUT/classes" -name '*.class') >/dev/null 2>&1
-# 4. assemble: add classes.dex into the resource apk
-cd "$OUT" && cp base.apk unsigned.apk && zip -qj unsigned.apk classes.dex
+# 4. assemble: add classes.dex into the resource apk (python fallback: no zip on server x)
+cd "$OUT" && cp base.apk unsigned.apk
+if command -v zip >/dev/null; then zip -qj unsigned.apk classes.dex
+else python3 -c 'import zipfile; z=zipfile.ZipFile("unsigned.apk","a",zipfile.ZIP_DEFLATED); z.write("classes.dex","classes.dex"); z.close()'
+fi
 # 5. align + sign
 "$ZIP" -f 4 unsigned.apk aligned.apk >/dev/null
 "$SIGN" sign --ks "$KS" --ks-pass pass:android --out "$PROJ/app-debug.apk" aligned.apk
