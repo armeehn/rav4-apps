@@ -1,29 +1,41 @@
 # rav4-apps — clean-room rewrites of the GT6 head unit's built-in apps
 
-Toyota RAV4 head unit: **GT6-CAR**, Qualcomm QCM6125, Android 13, UFS A/B.
+Toyota RAV4 head unit: **GT6-CAR**, Qualcomm QCM6125, Android 13 (API 33), UFS A/B.
 Root via EDL -> TWRP -> Magisk (see ~/.claude memory `rav4-headunit-root-procedure`).
 
-Goal: replace the buggy, typo-ridden OEM apps with our own, installed as a
+Goal: replace ALL the buggy, typo-ridden OEM apps with our own, installed as a
 **Magisk systemless overlay** so the real /system partition is never modified
 (instant revert, survives A/B, no dm-verity fight).
 
-## Layout
-- `scope/scope-apps.sh` — pull + decompile + classify every OEM app (run with car online)
-- `apks/`         — pulled OEM APKs (git-ignored, they're big/proprietary)
-- `decompiled/`   — apktool resource output per package (strings, manifest)
-- `apps/`         — our clean-room replacement apps (one Android project each)
-- `magisk-module/`— template module that overlays our APKs onto the system app slots
-- `docs/`         — scope-report.md and approach notes
+## Build environment (all present, no root, no Gradle)
+- SDK `~/Android/Sdk`: platform **android-33** (= the car's API level), build-tools 34.0.0
+- jadx 1.5.6 + apktool 3.0.3 in `~/.local/opt` (on PATH), adb, Java 26 (JDK)
+- Gradle-free build: `aapt2 -> javac (-target 17) -> d8 -> zipalign -> apksigner`
+  (proven: template + a scaffolded app both compile to signed APKs)
 
-## Workflow
-1. Car on, adb up (USB or `adb connect <tailnet-ip>:5555`).
-2. `./scope/scope-apps.sh [ip]`  -> produces `docs/scope-report.md`.
-3. Read the report: **EASY** apps are pure UI (rewrite freely); **HW** apps talk
-   to the vehicle via `android.car`/VHAL and need the vendor interface mapped first.
-4. Pick a target, `jadx -d decompiled-full/<pkg> apks/<pkg>.apk` for full sources.
-5. Build a replacement in `apps/<name>/`, drop the APK into the Magisk module,
-   push + reboot, verify.
+## Layout
+- `scope/scope-apps.sh`        — pull + decompile + classify every OEM app (car online)
+- `scope/generate-skeletons.sh`— scaffold a rewrite project per OEM app from the report
+- `template/`     — minimal buildable Java app + `build.sh` (the shared builder)
+- `apks/`         — pulled OEM APKs (git-ignored)
+- `decompiled/`   — apktool resource output per package (strings, manifest)
+- `apps/<pkg>/`   — our clean-room replacement per OEM package (same package name)
+- `magisk-module/`— overlay module + `pack-app.sh` (drops APKs at OEM paths)
+- `docs/`         — scope-report.md, approach.md
+
+## Full pipeline (rewrite them all)
+1. Car on, adb up (USB or `adb connect <ip>:5555`).
+2. `./scope/scope-apps.sh [ip]`         -> `docs/scope-report.md` (EASY vs HW).
+3. `./scope/generate-skeletons.sh`      -> `apps/<pkg>/` for every OEM app, each
+   seeded with the OEM's own extracted strings so fixing typos is a direct diff.
+4. Rewrite an app in `apps/<pkg>/` (start with EASY-classified; HW apps need the
+   `android.car`/VHAL interface reverse-engineered first — see docs/approach.md).
+5. `apps/<pkg>/build.sh`                 -> signed `app-debug.apk`.
+6. `magisk-module/pack-app.sh <pkg> apps/<pkg>/app-debug.apk` then zip + flash the
+   module in Magisk, reboot, verify.
 
 ## Status
-Toolchain staged (jadx 1.5.6, apktool 3.0.3, adb, Java 26). Waiting on the car to
-be online for the first scope pass — everything else is ready.
+Toolchain + build pipeline fully validated offline (template and a test package
+both build to signed APKs). **Blocked only on the car being online** for the first
+scope pass — as of 2026-08-27 the unit was powered off / off adb. Everything else
+is ready to run the moment it connects.
