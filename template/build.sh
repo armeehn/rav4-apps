@@ -12,16 +12,21 @@ KS="$HOME/rav4-apps/debug.keystore"
   -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=rav4apps" >/dev/null 2>&1
 
 OUT="$PROJ/build"; rm -rf "$OUT"; mkdir -p "$OUT/compiled" "$OUT/gen" "$OUT/classes"
-# 1. compile + link resources, generate R.java
-find "$PROJ/res" -type f | while read -r f; do "$AAPT2" compile "$f" -o "$OUT/compiled" 2>/dev/null || true; done
+# 1. compile + link resources, generate R.java.
+#    No error-swallowing: a failed compile/link must abort the build (set -e),
+#    not slip through and produce a broken/mis-targeted APK.
+find "$PROJ/res" -type f | while read -r f; do "$AAPT2" compile "$f" -o "$OUT/compiled"; done
+# --min/--target-sdk-version pin the APK to the car's API level (28..33);
+# without them aapt2 stamps targetSdk 1, which changes runtime behaviour.
 "$AAPT2" link -o "$OUT/base.apk" -I "$PLATFORM" \
+  --min-sdk-version 28 --target-sdk-version 33 \
   --manifest "$PROJ/AndroidManifest.xml" --java "$OUT/gen" \
   $(find "$OUT/compiled" -name '*.flat' -printf '%p ') >/dev/null
 # 2. compile java (app sources + generated R.java)
 javac -source 17 -target 17 -d "$OUT/classes" -classpath "$PLATFORM" \
-  $(find "$PROJ/src" "$OUT/gen" -name '*.java') 2>/dev/null
+  $(find "$PROJ/src" "$OUT/gen" -name '*.java')
 # 3. dex
-"$D8" --lib "$PLATFORM" --output "$OUT" $(find "$OUT/classes" -name '*.class') >/dev/null 2>&1
+"$D8" --lib "$PLATFORM" --output "$OUT" $(find "$OUT/classes" -name '*.class') >/dev/null
 # 4. assemble: add classes.dex into the resource apk
 cd "$OUT" && cp base.apk unsigned.apk && zip -qj unsigned.apk classes.dex
 # 5. align + sign
