@@ -15,6 +15,9 @@ APKS="$ROOT/apks"; DEC="$ROOT/decompiled"; DOCS="$ROOT/docs"
 mkdir -p "$APKS" "$DEC" "$DOCS"
 APKTOOL="$HOME/.local/opt/apktool.jar"
 
+# Untouchable-app denylist (is_protected).
+. "$(dirname "$0")/protected-apps.sh"
+
 ADB=adb
 TARGET="${1:-}"
 if [ -n "$TARGET" ]; then
@@ -51,7 +54,7 @@ REPORT="$DOCS/scope-report.md"
 {
   echo "# GT6 head unit - built-in app scope report"; echo
   echo "Device: \`$SER\`  ·  $(dsh getprop ro.build.fingerprint 2>/dev/null)"; echo
-  echo "| Package | APK | class | android.car | vendor svc | notes |"
+  echo "| Package | APK | class | gateway | vendor svc | notes |"
   echo "|---|---|---|---|---|---|"
 } > "$REPORT"
 
@@ -66,20 +69,46 @@ while IFS= read -r line; do
   fi
   sz=$(du -h "$local_apk" 2>/dev/null | cut -f1)
   outdir="$DEC/$pkg"
-  [ -d "$outdir" ] || java -jar "$APKTOOL" d -s -f -o "$outdir" "$local_apk" >/dev/null 2>&1 || true
-  car="no"; vend="no"
-  if [ -d "$outdir" ]; then
-    grep -rqE 'android\.car|CarPropertyManager|VehiclePropert|android\.hardware\.automotive' "$outdir" 2>/dev/null && car="YES"
-    grep -rqE 'com\.(toyota|denso|panasonic|harman|qti|qualcomm)\.|vendor\.' "$outdir" 2>/dev/null && vend="YES"
+  # Decode resources+manifest. Track success: a decode failure must NOT be
+  # allowed to fall through as EASY (an undecodable/corrupt APK is unknown, and
+  # possibly hardware-wired — e.g. the truncated canbus2). Classified UNKNOWN.
+  decode_ok="yes"
+  if [ ! -f "$outdir/AndroidManifest.xml" ]; then
+    java -jar "$APKTOOL" d -s -f -o "$outdir" "$local_apk" >/dev/null 2>&1 || decode_ok="no"
+    [ -f "$outdir/AndroidManifest.xml" ] || decode_ok="no"
   fi
+  # Classify. This unit has NO AOSP car framework (android.car); vehicle
+  # integration runs through the szchoiceway gateway. apktool ran with -s so
+  # there is no smali to grep — detect from the DECODED manifest (sharedUserId,
+  # the Choiceway broadcast permission) and from `strings` on the raw APK
+  # (dex string constants: gateway package, SysVarProvider, the MCU tty).
+  gw="no"; vend="no"; manifest="$outdir/AndroidManifest.xml"
+  if [ -f "$manifest" ]; then
+    grep -qE 'sharedUserId="android\.uid\.system"|com\.szchoiceway\.permission\.broadcast' "$manifest" 2>/dev/null && gw="YES"
+  fi
+  if [ "$gw" = "no" ] && [ -f "$local_apk" ]; then
+    strings "$local_apk" 2>/dev/null \
+      | grep -qE 'com\.szchoiceway|eventcenter|SysVarProvider|ttyHS1|android\.car|CarPropertyManager' \
+      && gw="YES"
+  fi
+  strings "$local_apk" 2>/dev/null \
+    | grep -qE 'com\.(szchoiceway|choiceway|toyota|denso|panasonic|harman|qti|qualcomm)\.|vendor\.' \
+    && vend="YES"
+
   cls="EASY"; note="self-contained UI"
-  [ "$car" = "YES" ] && { cls="HW"; note="talks to vehicle (VHAL) - RE first"; }
-  echo "| \`$pkg\` | ${sz:-?} | $cls | $car | $vend | $note |" >> "$REPORT"
+  [ "$gw" = "YES" ] && { cls="HW"; note="talks to the car gateway - RE first"; }
+  # A failed decode is never EASY: mark UNKNOWN so it is inspected by hand.
+  [ "$decode_ok" = "no" ] && { cls="UNKNOWN"; note="decode failed (corrupt/truncated?) - inspect"; }
+  # Denylist wins: never scaffold a rewrite for a safety-critical / reflected app.
+  if is_protected "$pkg"; then
+    cls="DO-NOT-REPLACE"; note="safety-critical / reflected-into - overlay refused"
+  fi
+  echo "| \`$pkg\` | ${sz:-?} | $cls | $gw | $vend | $note |" >> "$REPORT"
   pulln=$((pulln+1))
 done < "$DOCS/candidates.txt"
 
 {
-  echo; echo "_$pulln apps pulled + decompiled. EASY = clean-room rewrite; HW = reverse-engineer the vehicle interface first._"
+  echo; echo "_$pulln apps pulled + decompiled. EASY = clean-room rewrite; HW = reverse-engineer the gateway interface first; DO-NOT-REPLACE = safety-critical/reflected, overlay refused; UNKNOWN = decode failed, inspect by hand._"
   echo; echo "Next: \`jadx -d decompiled-full/<pkg> apks/<pkg>.apk\` for full sources; inspect \`decompiled/<pkg>/res/values*/strings.xml\` for copy fixes."
 } >> "$REPORT"
 echo; echo ">> done. report: $REPORT"; cat "$REPORT"
