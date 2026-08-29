@@ -11,6 +11,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TPL="$ROOT/template"; APPS="$ROOT/apps"; DEC="$ROOT/decompiled"
 mkdir -p "$APPS"
 
+# Untouchable-app denylist (is_protected).
+. "$(dirname "$0")/protected-apps.sh"
+
 pkgs=()
 if [ "$#" -gt 0 ]; then pkgs=("$@")
 elif [ -f "$ROOT/docs/candidates.txt" ]; then
@@ -21,6 +24,12 @@ fi
 
 for pkg in "${pkgs[@]}"; do
   [ -z "$pkg" ] && continue
+  # Refuse denylisted packages: replacing them can brick the unit or kill a
+  # safety function (reverse camera, SWC, CAN). See scope/protected-apps.sh.
+  if is_protected "$pkg"; then
+    echo "!! REFUSING $pkg — DO-NOT-REPLACE (safety-critical / reflected-into)" >&2
+    continue
+  fi
   dst="$APPS/$pkg"
   if [ -d "$dst" ]; then echo "skip (exists): $pkg"; continue; fi
   echo ">> scaffolding $pkg"
