@@ -2,6 +2,7 @@ package com.reveng.files;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.MatrixCursor;
 import android.net.Uri;
@@ -10,6 +11,8 @@ import android.provider.OpenableColumns;
 import android.webkit.MimeTypeMap;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 
 /**
  * Minimal clean-room content provider that exposes on-disk files to other apps
@@ -32,18 +35,47 @@ public class FileProvider extends ContentProvider {
                 .build();
     }
 
-    private static File fileFrom(Uri uri) {
+    private File fileFrom(Uri uri) {
         // path segments: ["raw", "<absolute path>"]
         java.util.List<String> seg = uri.getPathSegments();
         if (seg.size() < 2) return null;
-        return new File(seg.get(1));
+        File f = new File(seg.get(1));
+        return servable(f) ? f : null;
+    }
+
+    /**
+     * The URI carries a raw absolute path, so this is the only thing standing between a grant
+     * and any file the process can read. Two rules:
+     *
+     * <ul>
+     *   <li>Resolve first — a path containing {@code ..} or a symlink must be judged by where
+     *       it actually lands, not by how it is spelled.</li>
+     *   <li>Never our own private storage. The browser UI cannot show it, so nothing legitimate
+     *       ever asks for it, and it holds this app's preferences and databases.</li>
+     * </ul>
+     */
+    private boolean servable(File f) {
+        Context ctx = getContext();
+        if (ctx == null) return false;
+        try {
+            String path = f.getCanonicalPath();
+            String priv = ctx.getDataDir().getCanonicalPath() + File.separator;
+            return !path.startsWith(priv);
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     @Override
     public boolean onCreate() { return true; }
 
     @Override
-    public ParcelFileDescriptor openFile(Uri uri, String mode) {
+    public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
+        // Read-only by contract. Silently handing back a read-only descriptor for "w" made a
+        // writer fail on its first write instead of on the open.
+        if (mode != null && !mode.equals("r")) {
+            throw new FileNotFoundException("read-only provider, requested mode: " + mode);
+        }
         File f = fileFrom(uri);
         if (f == null) return null;
         try {

@@ -208,6 +208,12 @@ public class MainActivity extends Activity
     }
 
     private void startRecording() {
+        // Anything that can fail without touching the microphone happens before focus is
+        // taken: an exclusive focus grabbed and then dropped on the floor keeps the radio
+        // silent for as long as this screen stays open.
+        File dir = recordDir();
+        if (dir == null) { toast("Storage unavailable"); return; }
+
         // Exclusive focus: a ducked radio is still audible, and still ends up in the
         // capture. A refusal means something else already holds the microphone.
         if (citizen == null) {
@@ -216,8 +222,6 @@ public class MainActivity extends Activity
         if (!citizen.takeFocus(MediaCitizen.Focus.RECORDING)) {
             return;
         }
-        File dir = recordDir();
-        if (dir == null) { toast("Storage unavailable"); return; }
         String stamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
         recordingFile = new File(dir, "REC_" + stamp + ".m4a");
 
@@ -234,6 +238,8 @@ public class MainActivity extends Activity
             recorder.start();
         } catch (Exception e) {
             releaseRecorder();
+            // Nothing is capturing, so hand the cabin back rather than hold it silent.
+            citizen.releaseFocus();
             toast("Could not start recording");
             return;
         }
@@ -714,6 +720,10 @@ public class MainActivity extends Activity
         ui.removeCallbacks(playTick);
         releaseRecorder();
         stopPlayback();
+        if (citizen != null) {
+            citizen.release();
+            citizen = null;
+        }
     }
 
     /**

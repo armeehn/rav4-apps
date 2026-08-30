@@ -153,11 +153,19 @@ public class MainActivity extends Activity {
         super.onDestroy();
         ui.removeCallbacks(tick);
         stopSampling();
+        if (citizen != null) {
+            citizen.release();
+            citizen = null;
+        }
     }
 
     // ---------------- sampling ----------------
 
     private void startSampling() {
+        // Guard first: returning *after* taking exclusive focus would leave the cabin silent
+        // with nothing listening, for as long as this screen stays open.
+        if (sampling || !hasPerm()) return;
+
         // Exclusive focus: a ducked radio is still audible, and still ends up in the
         // capture. A refusal means something else already holds the microphone.
         if (citizen == null) {
@@ -166,7 +174,6 @@ public class MainActivity extends Activity {
         if (!citizen.takeFocus(MediaCitizen.Focus.RECORDING)) {
             return;
         }
-        if (sampling || !hasPerm()) return;
         try {
             sink = new File(getCacheDir(), "sm_sink.tmp");
             recorder = (Build.VERSION.SDK_INT >= 31)
@@ -179,6 +186,8 @@ public class MainActivity extends Activity {
             recorder.start();
         } catch (IOException | RuntimeException e) {
             releaseRecorder();
+            // Nothing is listening, so hand the cabin back rather than hold it silent.
+            citizen.releaseFocus();
             // Not fatal: surface a paused state rather than crashing.
             setListening(false);
             return;

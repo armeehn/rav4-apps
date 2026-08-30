@@ -16,6 +16,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.reveng.design.Palette;
+import com.reveng.design.WebAudio;
 
 /**
  * In-app article reader built on the framework {@link WebView} (no AndroidX).
@@ -33,6 +34,12 @@ public class ReaderActivity extends Activity {
     private ImageButton reloadBtn;
     private String url;
     private boolean loading = false;
+
+    /**
+     * v0.6.4 — an article page is arbitrary web content: an embedded player in it is media,
+     * and without this it played over the radio and kept playing after the reader closed.
+     */
+    private WebAudio audio;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,6 +64,7 @@ public class ReaderActivity extends Activity {
         findViewById(R.id.openBtn).setOnClickListener(v -> openExternal());
 
         configureWebView();
+        audio = WebAudio.attach(web, "news");
 
         if (url != null && !url.isEmpty()) {
             web.loadUrl(url);
@@ -110,6 +118,24 @@ public class ReaderActivity extends Activity {
         } catch (ActivityNotFoundException e) {
             Toast.makeText(this, "No browser available", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        audio.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        audio.onResume();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        audio.release();
     }
 
     @Override

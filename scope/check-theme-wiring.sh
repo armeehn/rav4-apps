@@ -57,8 +57,12 @@ done
 # and none of it is visible on a desk.
 for d in apps/com.reveng.*; do
     pkg="$(basename "$d")"
-    grep -rqE "MediaPlayer|MediaRecorder|AudioRecord|VideoView" "$d/src" 2>/dev/null || continue
-    grep -rq "MediaCitizen" "$d/src" 2>/dev/null || {
+    # WebView is in this list because a page's soundtrack is media too, and the browser is
+    # exactly the app that shipped without focus by not looking like a media app.
+    grep -rqE "MediaPlayer|MediaRecorder|AudioRecord|VideoView|WebView" "$d/src" 2>/dev/null || continue
+    # WebAudio counts: it is the WebView-shaped front of MediaCitizen, in _design for the
+    # two apps that put arbitrary pages on screen.
+    grep -rqE "MediaCitizen|WebAudio" "$d/src" 2>/dev/null || {
         echo "FAIL $pkg: uses audio but never takes audio focus (MediaCitizen)"
         fail=1
     }
