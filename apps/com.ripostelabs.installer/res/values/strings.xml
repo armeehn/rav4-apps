@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Installer</string>
+
+    <string name="tab_install">Install</string>
+    <string name="tab_apps">Apps</string>
+
+    <string name="section_available">Available packages</string>
+    <string name="section_installed">Installed apps</string>
+
+    <string name="refresh">Refresh</string>
+    <string name="allow_sources">Allow this source</string>
+
+    <string name="empty_no_apks">No APK files found</string>
+    <string name="empty_apks_hint">Copy an .apk to Download or internal storage to install it here</string>
+    <string name="empty_no_apps">No user apps installed</string>
+    <string name="empty_apps_hint">Apps you install will appear here</string>
+    <string name="need_storage_perm">Storage access is needed to find APK files</string>
+    <string name="grant">Grant access</string>
+
+    <string name="install">Install</string>
+    <string name="open">Open</string>
+    <string name="app_info">App info</string>
+    <string name="uninstall">Uninstall</string>
+    <string name="back">Back</string>
+
+    <string name="apks_count">%1$d package(s)</string>
+    <string name="apps_count">%1$d app(s)</string>
+    <string name="version_fmt">v%1$s</string>
+    <string name="unknown_pkg">Unknown package</string>
+    <string name="not_allowed_install">Enable installs from this app, then tap Install again</string>
+    <string name="no_launch">This app can’t be opened directly</string>
+</resources>

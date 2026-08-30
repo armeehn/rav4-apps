@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Recorder</string>
+    <string name="tap_to_record">Tap to record</string>
+    <string name="recording">Recording…</string>
+    <string name="recordings">Recordings</string>
+    <string name="recordings_count">%1$d recordings</string>
+    <string name="no_recordings">No recordings yet</string>
+    <string name="empty_hint">Tap the microphone to capture your first recording</string>
+    <string name="need_permission">Microphone access is needed to record audio</string>
+    <string name="grant">Grant access</string>
+    <string name="record">Record</string>
+    <string name="stop">Stop</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="delete">Delete</string>
+    <string name="name_recording">Name recording</string>
+    <string name="hint_name">Recording name</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="deleted">Recording deleted</string>
+</resources>

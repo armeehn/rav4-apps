@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Clean-room standalone Level (bubble level / inclinometer) for the Toyota
+     RAV4 GT6 head unit. Standalone normal app: new package, no sharedUserId,
+     no permissions. Tilt is read entirely from on-device motion sensors
+     (SensorManager); nothing is networked and no runtime permission is required. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.ripostelabs.level"
+    android:versionCode="1"
+    android:versionName="1.0-riposte">
+
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
+
+
+    <!-- The launcher's theme provider (see com.ripostelabs.design.Palette). Without this an app
+         targeting API 30+ cannot see the provider at all: the query returns null and the app
+         silently keeps its built-in palette. Declaring the authority is the whole grant. -->
+    <queries>
+        <provider android:authorities="com.ripostelabs.carlauncher.theme" />
+    </queries>
+    <!-- Declared so the app surfaces to systems that filter on features, but not
+         required: a device without an accelerometer still runs and shows a message. -->
+    <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false" />
+
+    <application
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name="com.ripostelabs.level.LevelActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

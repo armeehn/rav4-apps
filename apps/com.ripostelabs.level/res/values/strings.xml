@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Level</string>
+    <string name="subtitle">Bubble &amp; tilt</string>
+    <string name="pitch">Pitch</string>
+    <string name="roll">Roll</string>
+    <string name="source">Source</string>
+    <string name="status">Status</string>
+    <string name="level_label">LEVEL</string>
+    <string name="calibrate">Zero</string>
+    <string name="calibrate_hint">Rest on a flat surface, then tap Zero to set the reference.</string>
+    <string name="calibrated">Calibrated</string>
+    <string name="reset">Reset</string>
+    <string name="no_sensor">No motion sensor on this device</string>
+    <string name="no_sensor_hint">This head unit has no accelerometer, so tilt cannot be measured.</string>
+</resources>
