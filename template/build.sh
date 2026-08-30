@@ -18,10 +18,20 @@ done
 SDK="${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}"
 BT="$SDK/build-tools/34.0.0"; PLATFORM="$SDK/platforms/android-33/android.jar"
 AAPT2="$BT/aapt2"; D8="$BT/d8"; ZIP="$BT/zipalign"; SIGN="$BT/apksigner"
-KS="$HOME/rav4-apps/debug.keystore"
+# Keystore lives beside the repo, not under $HOME: on a CI runner $HOME is not the
+# developer's home, the hardcoded directory does not exist, keytool fails, and `set -e`
+# ends the script with no message at all because the error went to /dev/null.
+KS="${RAV4_KEYSTORE:-$(cd "$PROJ/../.." 2>/dev/null && pwd || echo "$HOME")/debug.keystore}"
 [ -f "$PLATFORM" ] || { echo "missing $PLATFORM"; exit 1; }
-[ -f "$KS" ] || keytool -genkeypair -keystore "$KS" -alias rav4 -storepass android \
-  -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=rav4apps" >/dev/null 2>&1
+# Debug signing only — this key is deliberately throwaway and git-ignored, so CI mints
+# its own on first build. Errors are NOT swallowed: a failure here used to surface as a
+# silent exit 1 from the whole script.
+if [ ! -f "$KS" ]; then
+    mkdir -p "$(dirname "$KS")"
+    keytool -genkeypair -keystore "$KS" -alias rav4 -storepass android \
+      -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=rav4apps" \
+      || { echo "could not create debug keystore at $KS" >&2; exit 1; }
+fi
 
 OUT="$PROJ/build"; rm -rf "$OUT"; mkdir -p "$OUT/compiled" "$OUT/gen" "$OUT/classes"
 # 1. compile + link resources, generate R.java
