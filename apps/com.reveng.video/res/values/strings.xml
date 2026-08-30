@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Video</string>
+    <string name="header_title">Video</string>
+    <string name="empty_no_videos">No videos found</string>
+    <string name="empty_hint">Videos on this device will appear here</string>
+    <string name="need_permission">Storage permission is needed to show videos</string>
+    <string name="grant">Grant access</string>
+</resources>

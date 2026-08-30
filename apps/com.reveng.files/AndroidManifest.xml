@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Clean-room standalone file manager for the GT6 head unit.
+     Standalone normal app: no sharedUserId, no platform signing.
+     Pure android.* framework: java.io.File browsing + MediaStore + a
+     private ContentProvider for opening/sharing arbitrary files. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.reveng.files"
+    android:versionCode="1"
+    android:versionName="1.0-reveng">
+
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
+
+
+    <!-- The launcher's theme provider (see com.reveng.design.Palette). Without this an app
+         targeting API 30+ cannot see the provider at all: the query returns null and the app
+         silently keeps its built-in palette. Declaring the authority is the whole grant. -->
+    <queries>
+        <provider android:authorities="com.reveng.carlauncher.theme" />
+    </queries>
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+
+    <application
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:requestLegacyExternalStorage="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name="com.reveng.files.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <provider
+            android:name="com.reveng.files.FileProvider"
+            android:authorities="com.reveng.files.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+    </application>
+</manifest>

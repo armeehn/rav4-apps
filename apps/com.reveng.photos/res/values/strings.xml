@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- was "XDemonstrate" in the OEM build -->
+    <string name="app_name">Photos</string>
+    <string name="empty_no_images">No photos found</string>
+    <string name="need_permission">Storage permission is needed to show photos</string>
+    <string name="grant">Grant</string>
+    <string name="photo_count">%1$d photos</string>
+</resources>

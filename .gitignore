@@ -6,3 +6,5 @@ decompiled-full/
 build/
 app-debug.apk
 debug.keystore
+rav4apps-module.zip
+*.idsig

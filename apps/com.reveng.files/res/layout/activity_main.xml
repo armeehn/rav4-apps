@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg">
+
+    <!-- Header card -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="14dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/bg_card"
+        android:paddingLeft="20dp"
+        android:paddingRight="16dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="14dp">
+
+        <!-- Title row: H1 Files + storage chip -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                style="@style/H1"
+                android:text="@string/app_name" />
+
+            <LinearLayout
+                android:id="@+id/storage_chip"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="right"
+                android:background="@drawable/bg_field"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:paddingTop="6dp"
+                android:paddingBottom="6dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/Overline"
+                    android:text="@string/storage_label" />
+
+                <TextView
+                    android:id="@+id/storage_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    style="@style/Caption"
+                    android:text="" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Path/breadcrumb row: Up, Home, path, New folder -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="12dp">
+
+            <ImageButton
+                android:id="@+id/btn_up"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/btn_icon"
+                android:src="@drawable/ic_back"
+                android:tint="@color/text"
+                android:scaleType="fitCenter"
+                android:padding="11dp"
+                android:contentDescription="@string/up" />
+
+            <ImageButton
+                android:id="@+id/btn_home"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginLeft="2dp"
+                android:layout_marginRight="6dp"
+                android:background="@drawable/btn_icon"
+                android:src="@drawable/ic_home"
+                android:tint="@color/text"
+                android:scaleType="fitCenter"
+                android:padding="11dp"
+                android:contentDescription="@string/home" />
+
+            <HorizontalScrollView
+                android:id="@+id/path_scroll"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:scrollbars="none"
+                android:fillViewport="true"
+                android:background="@drawable/bg_field"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp">
+
+                <TextView
+                    android:id="@+id/path_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:gravity="center_vertical"
+                    android:singleLine="true"
+                    style="@style/Body"
+                    android:text="/" />
+            </HorizontalScrollView>
+
+            <ImageButton
+                android:id="@+id/btn_new_folder"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginLeft="6dp"
+                android:background="@drawable/btn_icon"
+                android:src="@drawable/ic_add"
+                android:tint="@color/accent"
+                android:scaleType="fitCenter"
+                android:padding="10dp"
+                android:contentDescription="@string/new_folder" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- List area -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ListView
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:scrollbarStyle="outsideOverlay"
+            android:clipToPadding="false"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="12dp" />
+
+        <!-- Empty / permission state -->
+        <LinearLayout
+            android:id="@+id/empty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:paddingLeft="32dp"
+            android:paddingRight="32dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/empty_icon"
+                android:layout_width="88dp"
+                android:layout_height="88dp"
+                android:src="@drawable/ic_folder"
+                android:tint="@color/text3"
+                android:alpha="0.7" />
+
+            <TextView
+                android:id="@+id/empty_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                style="@style/H2"
+                android:text="@string/empty_folder" />
+
+            <TextView
+                android:id="@+id/empty_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                style="@style/Caption"
+                android:text="@string/empty_hint" />
+
+            <Button
+                android:id="@+id/grant"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:visibility="gone"
+                android:text="@string/grant" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

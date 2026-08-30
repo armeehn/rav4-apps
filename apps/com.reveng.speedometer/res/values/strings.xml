@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Speedometer</string>
+    <string name="waiting">Waiting for GPS fix…</string>
+    <string name="trip_title">Trip</string>
+    <string name="distance">Distance</string>
+    <string name="max_speed">Max speed</string>
+    <string name="avg_speed">Avg (moving)</string>
+    <string name="heading">Heading</string>
+    <string name="elapsed">Elapsed</string>
+    <string name="reset">Reset trip</string>
+    <string name="units">Units</string>
+    <string name="open_settings">Location settings</string>
+    <string name="gps_off">GPS is off — tap settings</string>
+    <string name="perm_needed">Location permission required</string>
+    <string name="perm_hint">Grant ACCESS_FINE_LOCATION to read your speed.</string>
+</resources>

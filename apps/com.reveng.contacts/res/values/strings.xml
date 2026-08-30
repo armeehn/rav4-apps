@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Contacts</string>
+    <string name="search_hint">Search contacts</string>
+    <string name="new_contact">New contact</string>
+    <string name="back">Back</string>
+
+    <string name="contacts_count_one">1 contact</string>
+    <string name="contacts_count">%1$d contacts</string>
+
+    <string name="empty_title">No contacts yet</string>
+    <string name="empty_hint">Tap the + button to add your first contact</string>
+    <string name="no_results">No matching contacts</string>
+    <string name="no_results_hint">Try a different name</string>
+
+    <string name="need_permission_title">Contacts locked</string>
+    <string name="need_permission_hint">Allow access to show the people in your phonebook</string>
+    <string name="grant">Grant access</string>
+
+    <string name="detail_empty_title">No contact selected</string>
+    <string name="detail_empty_hint">Pick someone on the left to see their details</string>
+
+    <string name="action_call">Call</string>
+    <string name="action_message">Message</string>
+    <string name="action_email">Email</string>
+
+    <string name="section_phone">Phone</string>
+    <string name="section_email">Email</string>
+    <string name="no_numbers">No phone numbers</string>
+</resources>

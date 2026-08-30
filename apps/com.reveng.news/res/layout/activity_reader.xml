@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg">
+
+    <!-- top toolbar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@color/bg2"
+        android:padding="12dp">
+
+        <ImageButton
+            android:id="@+id/backBtn"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/btn_icon"
+            android:src="@drawable/ic_back"
+            android:scaleType="centerInside"
+            android:tint="@color/text"
+            android:contentDescription="@string/back" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="14dp">
+
+            <TextView
+                android:id="@+id/readerTitle"
+                style="@style/H2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/app_name" />
+
+            <TextView
+                android:id="@+id/readerUrl"
+                style="@style/Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text3"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/openBtn"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/btn_icon"
+            android:src="@drawable/ic_globe"
+            android:scaleType="centerInside"
+            android:tint="@color/text"
+            android:contentDescription="@string/open_browser" />
+
+        <ImageButton
+            android:id="@+id/reloadBtn"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/btn_icon"
+            android:src="@drawable/ic_refresh"
+            android:scaleType="centerInside"
+            android:tint="@color/text"
+            android:contentDescription="@string/refresh" />
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/readerProgress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:max="100"
+        android:progressTint="@color/accent"
+        android:visibility="gone" />
+
+    <WebView
+        android:id="@+id/reader"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+</LinearLayout>
