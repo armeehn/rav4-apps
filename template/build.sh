@@ -25,9 +25,14 @@ find "$PROJ/res" -type f | while read -r f; do "$AAPT2" compile "$f" -o "$OUT/co
 "$AAPT2" link -o "$OUT/base.apk" -I "$PLATFORM" \
   --manifest "$PROJ/AndroidManifest.xml" --java "$OUT/gen" \
   $(find "$OUT/compiled" -name '*.flat' -printf '%p ') >/dev/null
-# 2. compile java (app sources + generated R.java)
+# 2. compile java (app sources + the shared design sources + generated R.java).
+# apps/_design/src holds code every app needs and no app should own a copy of (the launcher
+# palette client). It is compiled in rather than pre-built into a jar: there is no dependency
+# resolution here by design, and one more source root costs nothing.
+SHARED_SRC="$PROJ/../_design/src"
+[ -d "$SHARED_SRC" ] || SHARED_SRC=""
 "$JAVAC" $JAVAC_ARGS -d "$OUT/classes" -classpath "$PLATFORM" \
-  $(find "$PROJ/src" "$OUT/gen" -name '*.java')
+  $(find "$PROJ/src" $SHARED_SRC "$OUT/gen" -name '*.java')
 # 3. dex
 "$D8" --lib "$PLATFORM" --output "$OUT" $(find "$OUT/classes" -name '*.class') >/dev/null 2>&1
 # 4. assemble: add classes.dex into the resource apk (python fallback: no zip on server x)

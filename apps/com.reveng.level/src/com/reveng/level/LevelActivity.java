@@ -10,6 +10,7 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone bubble Level / inclinometer. Reads the device gravity
@@ -178,11 +179,11 @@ public class LevelActivity extends Activity implements SensorEventListener {
 
         if (isLevel) {
             statusView.setText(R.string.level_label);
-            statusView.setTextColor(getColor(R.color.accent));
+            statusView.setTextColor(Palette.color(this, R.color.accent));
             statusChip.setBackgroundResource(R.drawable.bg_status_level);
         } else {
             statusView.setText("Tilted");
-            statusView.setTextColor(getColor(R.color.text2));
+            statusView.setTextColor(Palette.color(this, R.color.text2));
             statusChip.setBackgroundResource(R.drawable.bg_status);
         }
     }

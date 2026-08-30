@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.View;
+import com.reveng.design.Palette;
 
 /**
  * A two-axis bubble level drawn entirely with {@link Canvas}. A circular target
@@ -42,12 +43,12 @@ public class BubbleLevelView extends View {
     public BubbleLevelView(Context c, AttributeSet a, int d) { super(c, a, d); init(c); }
 
     private void init(Context c) {
-        cAccent   = c.getResources().getColor(R.color.accent);
-        cSurface  = c.getResources().getColor(R.color.surface);
-        cSurface2 = c.getResources().getColor(R.color.surface2);
-        cText2    = c.getResources().getColor(R.color.text2);
-        cText3    = c.getResources().getColor(R.color.text3);
-        cStroke   = c.getResources().getColor(R.color.stroke);
+        cAccent   = Palette.color(c, R.color.accent);
+        cSurface  = Palette.color(c, R.color.surface);
+        cSurface2 = Palette.color(c, R.color.surface2);
+        cText2    = Palette.color(c, R.color.text2);
+        cText3    = Palette.color(c, R.color.text3);
+        cStroke   = Palette.color(c, R.color.stroke);
 
         face.setStyle(Paint.Style.FILL);
         face.setColor(cSurface);

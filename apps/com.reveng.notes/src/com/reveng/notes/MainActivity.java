@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone notes app. Master-detail layout: a card list of notes
@@ -85,13 +86,13 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        cAccent = getColor(R.color.accent);
-        cSurface = getColor(R.color.surface);
-        cSurface2 = getColor(R.color.surface2);
-        cStroke = getColor(R.color.stroke);
-        cText = getColor(R.color.text);
-        cText2 = getColor(R.color.text2);
-        cText3 = getColor(R.color.text3);
+        cAccent = Palette.color(this, R.color.accent);
+        cSurface = Palette.color(this, R.color.surface);
+        cSurface2 = Palette.color(this, R.color.surface2);
+        cStroke = Palette.color(this, R.color.stroke);
+        cText = Palette.color(this, R.color.text);
+        cText2 = Palette.color(this, R.color.text2);
+        cText3 = Palette.color(this, R.color.text3);
 
         listView = findViewById(R.id.list);
         emptyBox = findViewById(R.id.empty);
@@ -460,7 +461,7 @@ public class MainActivity extends Activity {
             GradientDrawable bg = new GradientDrawable();
             bg.setShape(GradientDrawable.RECTANGLE);
             bg.setCornerRadius(dp(18));
-            bg.setColor(active ? getColor(R.color.accent_dim) : cSurface);
+            bg.setColor(active ? Palette.color(MainActivity.this, R.color.accent_dim) : cSurface);
             bg.setStroke(dp(1), active ? cAccent : cStroke);
             card.setBackground(bg);
 

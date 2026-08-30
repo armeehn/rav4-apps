@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 import java.math.BigDecimal;
 import java.util.Locale;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone Calculator. Landscape layout: display panel + scrollable
@@ -51,12 +52,12 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        cText = getColor(R.color.text);
-        cText2 = getColor(R.color.text2);
-        cText3 = getColor(R.color.text3);
-        cAccent = getColor(R.color.accent);
-        cAccent2 = getColor(R.color.accent2);
-        cBg = getColor(R.color.bg);
+        cText = Palette.color(this, R.color.text);
+        cText2 = Palette.color(this, R.color.text2);
+        cText3 = Palette.color(this, R.color.text3);
+        cAccent = Palette.color(this, R.color.accent);
+        cAccent2 = Palette.color(this, R.color.accent2);
+        cBg = Palette.color(this, R.color.bg);
 
         exprView = findViewById(R.id.expr);
         resultView = findViewById(R.id.result);

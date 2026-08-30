@@ -11,6 +11,7 @@ import android.view.View;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.reveng.design.Palette;
 
 /**
  * Full-canvas finger-drawing surface built purely with {@link Canvas} and
@@ -50,8 +51,8 @@ public class DrawView extends View {
     public DrawView(Context c, AttributeSet a, int d) { super(c, a, d); init(c); }
 
     private void init(Context c) {
-        bgColor  = c.getResources().getColor(R.color.canvas_dark);
-        penColor = c.getResources().getColor(R.color.accent);
+        bgColor  = Palette.color(c, R.color.canvas_dark);
+        penColor = Palette.color(c, R.color.accent);
         penWidth = dp(6);
 
         stroke.setStyle(Paint.Style.STROKE);

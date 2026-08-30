@@ -8,6 +8,7 @@ import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
+import com.reveng.design.Palette;
 
 /**
  * A self-contained analog speedometer dial drawn entirely with {@link Canvas}.
@@ -53,13 +54,13 @@ public class GaugeView extends View {
     public GaugeView(Context c, AttributeSet a, int d) { super(c, a, d); init(c); }
 
     private void init(Context c) {
-        cAccent    = c.getResources().getColor(R.color.accent);
-        cAccentDim = c.getResources().getColor(R.color.accent_dim);
-        cSurface   = c.getResources().getColor(R.color.surface);
-        cSurface2  = c.getResources().getColor(R.color.surface2);
-        cText      = c.getResources().getColor(R.color.text);
-        cText2     = c.getResources().getColor(R.color.text2);
-        cText3     = c.getResources().getColor(R.color.text3);
+        cAccent    = Palette.color(c, R.color.accent);
+        cAccentDim = Palette.color(c, R.color.accent_dim);
+        cSurface   = Palette.color(c, R.color.surface);
+        cSurface2  = Palette.color(c, R.color.surface2);
+        cText      = Palette.color(c, R.color.text);
+        cText2     = Palette.color(c, R.color.text2);
+        cText3     = Palette.color(c, R.color.text3);
 
         track.setStyle(Paint.Style.STROKE);
         track.setStrokeCap(Paint.Cap.ROUND);

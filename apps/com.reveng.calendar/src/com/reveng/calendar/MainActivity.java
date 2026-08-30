@@ -37,6 +37,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone Calendar app for the Toyota RAV4 GT6 head unit
@@ -95,15 +96,15 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        cBg = getColor(R.color.bg);
-        cAccent = getColor(R.color.accent);
-        cAccentDim = getColor(R.color.accent_dim);
-        cSurface = getColor(R.color.surface);
-        cSurface2 = getColor(R.color.surface2);
-        cStroke = getColor(R.color.stroke);
-        cText = getColor(R.color.text);
-        cText2 = getColor(R.color.text2);
-        cText3 = getColor(R.color.text3);
+        cBg = Palette.color(this, R.color.bg);
+        cAccent = Palette.color(this, R.color.accent);
+        cAccentDim = Palette.color(this, R.color.accent_dim);
+        cSurface = Palette.color(this, R.color.surface);
+        cSurface2 = Palette.color(this, R.color.surface2);
+        cStroke = Palette.color(this, R.color.stroke);
+        cText = Palette.color(this, R.color.text);
+        cText2 = Palette.color(this, R.color.text2);
+        cText3 = Palette.color(this, R.color.text3);
 
         setContentView(buildRoot());
 

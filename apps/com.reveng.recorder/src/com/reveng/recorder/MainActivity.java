@@ -39,6 +39,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone voice recorder. Captures AAC audio to an m4a file in the
@@ -128,10 +129,10 @@ public class MainActivity extends Activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        cAccent = getColor(R.color.accent);
-        cText = getColor(R.color.text);
-        cText2 = getColor(R.color.text2);
-        cSurface2 = getColor(R.color.surface2);
+        cAccent = Palette.color(this, R.color.accent);
+        cText = Palette.color(this, R.color.text);
+        cText2 = Palette.color(this, R.color.text2);
+        cSurface2 = Palette.color(this, R.color.surface2);
 
         status = findViewById(R.id.status);
         elapsed = findViewById(R.id.elapsed);

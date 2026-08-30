@@ -13,6 +13,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import com.reveng.design.Palette;
 
 /** Live local clock (updates every second) with date + a row of world-clock cards. */
 class ClockPanel extends LinearLayout {
@@ -61,7 +62,7 @@ class ClockPanel extends LinearLayout {
         addView(bigTime, tlp);
 
         bigDate = Ui.styled(getContext(), R.style.H1);
-        bigDate.setTextColor(getContext().getColor(R.color.text2));
+        bigDate.setTextColor(Palette.color(getContext(), R.color.text2));
         bigDate.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);

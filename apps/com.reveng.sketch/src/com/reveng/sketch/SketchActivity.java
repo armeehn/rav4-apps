@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone Sketch (drawing pad) for the Toyota RAV4 GT6 head unit.
@@ -61,10 +62,10 @@ public class SketchActivity extends Activity {
         canvas = (DrawView) findViewById(R.id.canvas);
         eraserBtn = (ImageButton) findViewById(R.id.eraser);
 
-        accentColor  = getResources().getColor(R.color.accent);
-        surfaceColor = getResources().getColor(R.color.surface2);
-        strokeColor  = getResources().getColor(R.color.stroke);
-        text2Color   = getResources().getColor(R.color.text2);
+        accentColor  = Palette.color(this, R.color.accent);
+        surfaceColor = Palette.color(this, R.color.surface2);
+        strokeColor  = Palette.color(this, R.color.stroke);
+        text2Color   = Palette.color(this, R.color.text2);
 
         paletteColors[0] = accentColor;                 // accent
         paletteColors[1] = Color.WHITE;                 // white
@@ -144,7 +145,7 @@ public class SketchActivity extends Activity {
             final int idx = i;
             TextView chip = new TextView(this);
             chip.setText(labels[i]);
-            chip.setTextColor(getResources().getColor(R.color.text));
+            chip.setTextColor(Palette.color(this, R.color.text));
             chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
             chip.setGravity(Gravity.CENTER);
             int s = dp(40);
@@ -176,7 +177,7 @@ public class SketchActivity extends Activity {
             g.setStroke(dp(1), sel ? accentColor : strokeColor);
             sizeChips[i].setBackground(g);
             sizeChips[i].setTextColor(sel
-                    ? Color.WHITE : getResources().getColor(R.color.text2));
+                    ? Color.WHITE : Palette.color(this, R.color.text2));
         }
     }
 
