@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Bluetooth</string>
+
+    <string name="state_on">On</string>
+    <string name="state_off">Off</string>
+    <string name="state_turning_on">Turning on…</string>
+    <string name="state_turning_off">Turning off…</string>
+    <string name="state_unavailable">Bluetooth not available</string>
+
+    <string name="hdr_paired">Paired devices</string>
+    <string name="hdr_available">Available devices</string>
+
+    <string name="scan">Scan</string>
+    <string name="scanning">Scanning…</string>
+    <string name="settings">Bluetooth settings</string>
+    <string name="pair_new">Pair new / manage</string>
+
+    <string name="st_connected">Connected</string>
+    <string name="st_connecting">Connecting…</string>
+    <string name="st_disconnecting">Disconnecting…</string>
+    <string name="st_paired">Paired</string>
+    <string name="st_bonding">Pairing…</string>
+    <string name="st_available">Tap to pair</string>
+
+    <string name="empty_off_title">Bluetooth is off</string>
+    <string name="empty_off_hint">Turn on Bluetooth to see paired and nearby devices</string>
+    <string name="empty_no_paired">No paired devices</string>
+    <string name="empty_no_paired_hint">Scan or open settings to pair a new device</string>
+    <string name="empty_scan_hint">Tap Scan to look for nearby devices</string>
+    <string name="empty_none_found">No nearby devices found</string>
+
+    <string name="need_permission">Bluetooth permission is needed to manage devices</string>
+    <string name="grant">Grant access</string>
+
+    <string name="type_phone">Phone</string>
+    <string name="type_audio">Audio device</string>
+    <string name="type_headset">Headset</string>
+    <string name="type_computer">Computer</string>
+    <string name="type_wearable">Wearable</string>
+    <string name="type_imaging">Imaging</string>
+    <string name="type_peripheral">Peripheral</string>
+    <string name="type_device">Device</string>
+
+    <string name="paired_count">%1$d paired</string>
+</resources>

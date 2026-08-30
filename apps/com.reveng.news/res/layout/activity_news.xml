@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@color/bg"
+    android:padding="20dp">
+
+    <!-- ===== LEFT RAIL: brand + source selector ===== -->
+    <LinearLayout
+        android:layout_width="300dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@drawable/bg_card"
+        android:padding="18dp">
+
+        <!-- brand header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="16dp">
+
+            <ImageView
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:src="@drawable/ic_news"
+                android:tint="@color/accent" />
+
+            <TextView
+                style="@style/H1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="@string/app_name" />
+        </LinearLayout>
+
+        <TextView
+            style="@style/Overline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/sources" />
+
+        <!-- source list (populated in code) -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="10dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/sourceList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <!-- refresh -->
+        <LinearLayout
+            android:id="@+id/refreshBtn"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/btn_ghost">
+
+            <ImageView
+                android:id="@+id/refreshIcon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_refresh"
+                android:tint="@color/accent" />
+
+            <TextView
+                style="@style/H2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="@string/refresh" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ===== RIGHT: headline column ===== -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:layout_marginStart="20dp"
+        android:orientation="vertical">
+
+        <!-- header row: current source + status -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="4dp"
+            android:paddingBottom="12dp">
+
+            <TextView
+                android:id="@+id/feedTitle"
+                style="@style/H1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/top_stories" />
+
+            <TextView
+                android:id="@+id/feedStatus"
+                style="@style/Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/text3"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/loading" />
+        </LinearLayout>
+
+        <!-- headline list -->
+        <ScrollView
+            android:id="@+id/headlineScroll"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:scrollbars="none"
+            android:clipToPadding="false"
+            android:paddingBottom="8dp">
+
+            <LinearLayout
+                android:id="@+id/headlineList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+    </LinearLayout>
+</LinearLayout>

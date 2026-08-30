@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sketch: a top toolbar over @color/surface, then a full-bleed drawing canvas.
+     Sized for the RAV4 GT6 head unit (1920x720 landscape). The colour palette
+     and brush-size selector are populated at runtime (see SketchActivity). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="76dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@color/surface"
+        android:paddingLeft="16dp"
+        android:paddingRight="16dp">
+
+        <ImageView
+            android:layout_width="26dp"
+            android:layout_height="26dp"
+            android:src="@drawable/ic_brush"
+            android:contentDescription="@string/app_name" />
+
+        <TextView
+            style="@style/H2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="20dp"
+            android:text="@string/app_name" />
+
+        <TextView
+            style="@style/Overline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:text="@string/lbl_color" />
+
+        <!-- Colour swatches injected here at runtime. -->
+        <LinearLayout
+            android:id="@+id/palette"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:background="@color/stroke" />
+
+        <TextView
+            style="@style/Overline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:text="@string/lbl_size" />
+
+        <!-- Brush-size chips injected here at runtime. -->
+        <LinearLayout
+            android:id="@+id/sizes"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/eraser"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="4dp"
+            android:padding="13dp"
+            android:scaleType="fitCenter"
+            android:background="@drawable/btn_icon"
+            android:src="@drawable/ic_edit"
+            android:contentDescription="@string/lbl_eraser" />
+
+        <ImageButton
+            android:id="@+id/undo"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="4dp"
+            android:padding="13dp"
+            android:scaleType="fitCenter"
+            android:background="@drawable/btn_icon"
+            android:src="@drawable/ic_back"
+            android:contentDescription="@string/lbl_undo" />
+
+        <ImageButton
+            android:id="@+id/clear"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="4dp"
+            android:padding="13dp"
+            android:scaleType="fitCenter"
+            android:background="@drawable/btn_icon"
+            android:src="@drawable/ic_delete"
+            android:contentDescription="@string/lbl_clear" />
+
+        <ImageButton
+            android:id="@+id/save"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginStart="4dp"
+            android:padding="13dp"
+            android:scaleType="fitCenter"
+            android:background="@drawable/btn_accent"
+            android:src="@drawable/ic_save"
+            android:contentDescription="@string/lbl_save" />
+    </LinearLayout>
+
+    <com.reveng.sketch.DrawView
+        android:id="@+id/canvas"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+</LinearLayout>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Calendar</string>
+    <string name="today">Today</string>
+    <string name="prev_month">Previous month</string>
+    <string name="next_month">Next month</string>
+    <string name="new_event">New event</string>
+
+    <string name="agenda_none_title">Nothing scheduled</string>
+    <string name="agenda_none_hint">No events on this day. Tap + to add one.</string>
+
+    <string name="empty_title">Your calendar is clear</string>
+    <string name="empty_hint">No upcoming events found on this device. Tap + to create your first one.</string>
+
+    <string name="need_permission_title">Calendar locked</string>
+    <string name="need_permission_hint">Allow access to show your events in the month view</string>
+    <string name="grant">Grant access</string>
+
+    <string name="all_day">All day</string>
+    <string name="events_count_one">1 event</string>
+    <string name="events_count">%1$d events</string>
+    <string name="no_location">No location</string>
+</resources>
