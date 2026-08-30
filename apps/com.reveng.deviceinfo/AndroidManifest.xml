@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Clean-room standalone Device Info app for the GT6 head unit. Read-only device
+     stats via public android.* APIs. Standalone normal app: new package, no
+     sharedUserId, no system/privileged permissions. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.reveng.deviceinfo"
+    android:versionCode="1"
+    android:versionName="1.0-reveng">
+
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
+
+    <application
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name="com.reveng.deviceinfo.DeviceInfoActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

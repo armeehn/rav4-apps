@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="24dp"
+        android:paddingRight="20dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="12dp">
+
+        <!-- Round bluetooth avatar -->
+        <ImageView
+            android:id="@+id/hdr_icon"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginRight="14dp"
+            android:src="@drawable/ic_bluetooth"
+            android:scaleType="fitCenter"
+            android:padding="13dp"
+            android:tint="@color/accent" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/H1"
+                android:text="@string/app_name" />
+
+            <TextView
+                android:id="@+id/subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                style="@style/Caption"
+                android:text="@string/state_off" />
+        </LinearLayout>
+
+        <!-- On/off toggle -->
+        <Switch
+            android:id="@+id/toggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="10dp" />
+
+        <!-- Scan -->
+        <ImageButton
+            android:id="@+id/btn_scan"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:background="@drawable/btn_icon"
+            android:src="@drawable/ic_search"
+            android:tint="@color/text"
+            android:scaleType="fitCenter"
+            android:padding="14dp"
+            android:contentDescription="@string/scan" />
+
+        <!-- System settings -->
+        <ImageButton
+            android:id="@+id/btn_settings"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginLeft="4dp"
+            android:background="@drawable/btn_icon"
+            android:src="@drawable/ic_settings"
+            android:tint="@color/text"
+            android:scaleType="fitCenter"
+            android:padding="14dp"
+            android:contentDescription="@string/settings" />
+    </LinearLayout>
+
+    <!-- Body -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ScrollView
+            android:id="@+id/content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Paired section -->
+                <TextView
+                    android:id="@+id/hdr_paired"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingLeft="8dp"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="8dp"
+                    style="@style/Overline"
+                    android:text="@string/hdr_paired" />
+
+                <LinearLayout
+                    android:id="@+id/paired_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <TextView
+                    android:id="@+id/paired_empty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp"
+                    android:gravity="center"
+                    style="@style/Caption"
+                    android:visibility="gone"
+                    android:text="@string/empty_no_paired" />
+
+                <!-- Pair new / manage button -->
+                <TextView
+                    android:id="@+id/btn_pair"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/btn_ghost"
+                    android:gravity="center"
+                    android:paddingTop="14dp"
+                    android:paddingBottom="14dp"
+                    android:drawableLeft="@drawable/ic_add"
+                    android:drawableTint="@color/text"
+                    android:drawablePadding="8dp"
+                    android:textColor="@color/text"
+                    android:fontFamily="sans-serif-medium"
+                    android:textSize="15sp"
+                    android:text="@string/pair_new" />
+
+                <!-- Available section -->
+                <LinearLayout
+                    android:id="@+id/avail_header_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingLeft="8dp"
+                    android:paddingTop="22dp"
+                    android:paddingBottom="8dp">
+
+                    <TextView
+                        android:id="@+id/hdr_available"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        style="@style/Overline"
+                        android:text="@string/hdr_available" />
+
+                    <ProgressBar
+                        android:id="@+id/scan_spinner"
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_marginRight="8dp"
+                        android:indeterminateTint="@color/accent"
+                        android:visibility="gone"
+                        style="?android:attr/progressBarStyleSmall" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/scan_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <TextView
+                    android:id="@+id/scan_empty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp"
+                    android:gravity="center"
+                    style="@style/Caption"
+                    android:text="@string/empty_scan_hint" />
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- Global empty state (Bluetooth off / no permission) -->
+        <LinearLayout
+            android:id="@+id/empty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="24dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:src="@drawable/ic_bluetooth"
+                android:tint="@color/text3"
+                android:alpha="0.7" />
+
+            <TextView
+                android:id="@+id/empty_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                style="@style/H2"
+                android:text="@string/empty_off_title" />
+
+            <TextView
+                android:id="@+id/empty_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                style="@style/Caption"
+                android:text="@string/empty_off_hint" />
+
+            <Button
+                android:id="@+id/grant"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:visibility="gone"
+                android:text="@string/grant" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

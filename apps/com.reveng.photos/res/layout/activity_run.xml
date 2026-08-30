@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Header bar -->
+        <LinearLayout
+            android:id="@+id/header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingLeft="20dp"
+            android:paddingRight="20dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="12dp">
+
+            <TextView
+                android:id="@+id/title"
+                style="@style/H1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/app_name" />
+
+            <TextView
+                android:id="@+id/count"
+                style="@style/Caption"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginLeft="12dp"
+                android:gravity="right"
+                android:text="" />
+        </LinearLayout>
+
+        <GridView
+            android:id="@+id/grid"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:numColumns="6"
+            android:stretchMode="columnWidth"
+            android:horizontalSpacing="8dp"
+            android:verticalSpacing="8dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="16dp"
+            android:clipToPadding="false"
+            android:scrollbars="none" />
+    </LinearLayout>
+
+    <!-- Empty / permission state -->
+    <LinearLayout
+        android:id="@+id/empty"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="88dp"
+            android:layout_height="88dp"
+            android:src="@drawable/ic_image"
+            android:tint="@color/text3"
+            android:alpha="0.9" />
+
+        <TextView
+            android:id="@+id/empty_text"
+            style="@style/H2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/empty_no_images" />
+
+        <TextView
+            android:id="@+id/empty_hint"
+            style="@style/Caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textColor="@color/text3"
+            android:text="@string/need_permission" />
+
+        <Button
+            android:id="@+id/grant"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:paddingLeft="28dp"
+            android:paddingRight="28dp"
+            android:minWidth="140dp"
+            android:background="@drawable/btn_ghost"
+            android:textColor="@color/text"
+            android:textAllCaps="false"
+            android:fontFamily="sans-serif-medium"
+            android:stateListAnimator="@null"
+            android:visibility="gone"
+            android:text="@string/grant" />
+    </LinearLayout>
+</FrameLayout>

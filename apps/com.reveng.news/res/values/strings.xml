@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">News</string>
+    <string name="sources">Sources</string>
+    <string name="refresh">Refresh</string>
+    <string name="loading">Loading headlines…</string>
+    <string name="empty">No headlines yet</string>
+    <string name="empty_hint">Pick a source and tap refresh to load the latest stories.</string>
+    <string name="error">Couldn\'t load this feed</string>
+    <string name="back">Back</string>
+    <string name="open_browser">Open in browser</string>
+    <string name="top_stories">Top Stories</string>
+</resources>

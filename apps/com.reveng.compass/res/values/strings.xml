@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Compass</string>
+    <string name="heading">Heading</string>
+    <string name="source">Source</string>
+    <string name="tilt">Tilt</string>
+    <string name="pitch">Pitch</string>
+    <string name="roll">Roll</string>
+    <string name="accuracy">Accuracy</string>
+    <string name="calibrate">Wave the vehicle / device in a figure-8 to calibrate</string>
+    <string name="no_sensor">No compass sensor on this device</string>
+    <string name="no_sensor_hint">This head unit has no magnetometer, so heading cannot be measured.</string>
+</resources>

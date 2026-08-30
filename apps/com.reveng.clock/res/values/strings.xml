@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Clock</string>
+
+    <string name="tab_clock">Clock</string>
+    <string name="tab_alarm">Alarm</string>
+    <string name="tab_stopwatch">Stopwatch</string>
+    <string name="tab_timer">Timer</string>
+
+    <string name="alarms">Alarms</string>
+    <string name="no_alarms">No alarms yet</string>
+    <string name="no_alarms_hint">Tap the + button to add your first alarm</string>
+    <string name="add_alarm">Add alarm</string>
+    <string name="edit_alarm">Edit alarm</string>
+    <string name="label_hint">Label (optional)</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+
+    <string name="stopwatch">Stopwatch</string>
+    <string name="laps">Laps</string>
+    <string name="no_laps">No laps recorded</string>
+    <string name="lap">Lap</string>
+    <string name="reset">Reset</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+
+    <string name="timer">Timer</string>
+    <string name="running">Running</string>
+    <string name="paused">Paused</string>
+    <string name="finished">Time is up</string>
+
+    <string name="dismiss">Dismiss</string>
+    <string name="snooze">Snooze</string>
+    <string name="world_clock">World Clock</string>
+</resources>

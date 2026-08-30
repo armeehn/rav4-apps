@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GPS</string>
+    <string name="waiting">Waiting for GPS fix…</string>
+    <string name="sats_title">Satellites</string>
+    <string name="detail_title">Position detail</string>
+    <string name="open_settings">Location settings</string>
+    <string name="refresh">Refresh</string>
+</resources>

@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@color/bg"
+    android:padding="20dp">
+
+    <!-- ===== LEFT: hero gradient card + search controls ===== -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="42"
+        android:orientation="vertical">
+
+        <!-- Hero card -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_grad"
+            android:padding="24dp">
+
+            <TextView
+                android:id="@+id/city"
+                style="@style/H2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="—" />
+
+            <TextView
+                android:id="@+id/status"
+                style="@style/Caption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/text3"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/loading" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- big emoji + temperature -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/icon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="88sp"
+                    android:includeFontPadding="false"
+                    android:text="…" />
+
+                <TextView
+                    android:id="@+id/temp"
+                    style="@style/Display"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:textSize="96sp"
+                    android:text="--°" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/condition"
+                style="@style/H1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <!-- stat chips -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal">
+
+                <!-- feels like -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_chip"
+                    android:paddingLeft="14dp"
+                    android:paddingRight="14dp"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp">
+
+                    <TextView
+                        style="@style/Overline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="7dp"
+                        android:text="@string/feels" />
+
+                    <TextView
+                        android:id="@+id/chipFeels"
+                        style="@style/Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text"
+                        android:text="--°" />
+                </LinearLayout>
+
+                <!-- humidity -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_chip"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="14dp"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginEnd="6dp"
+                        android:src="@drawable/ic_drop"
+                        android:tint="@color/accent" />
+
+                    <TextView
+                        android:id="@+id/chipHum"
+                        style="@style/Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text"
+                        android:text="--%" />
+                </LinearLayout>
+
+                <!-- wind -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_chip"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="14dp"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp">
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginEnd="6dp"
+                        android:src="@drawable/ic_wind"
+                        android:tint="@color/accent" />
+
+                    <TextView
+                        android:id="@+id/chipWind"
+                        style="@style/Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text"
+                        android:text="--" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- search controls -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <EditText
+                android:id="@+id/cityInput"
+                android:layout_width="0dp"
+                android:layout_height="52dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_field"
+                android:paddingLeft="18dp"
+                android:paddingRight="18dp"
+                android:textColor="@color/text"
+                android:textColorHint="@color/text3"
+                android:textSize="17sp"
+                android:inputType="text"
+                android:imeOptions="actionSearch"
+                android:maxLines="1"
+                android:hint="@string/hint_city" />
+
+            <ImageButton
+                android:id="@+id/goBtn"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_marginStart="10dp"
+                android:background="@drawable/btn_icon"
+                android:src="@drawable/ic_search"
+                android:scaleType="centerInside"
+                android:contentDescription="@string/go" />
+
+            <ImageButton
+                android:id="@+id/locBtn"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/btn_icon"
+                android:src="@drawable/ic_location"
+                android:scaleType="centerInside"
+                android:contentDescription="@string/use_location" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ===== RIGHT: daily + hourly forecast ===== -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="58"
+        android:layout_marginStart="20dp"
+        android:orientation="vertical">
+
+        <TextView
+            style="@style/Overline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:text="@string/daily_title" />
+
+        <LinearLayout
+            android:id="@+id/daily"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal" />
+
+        <TextView
+            style="@style/Overline"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="28dp"
+            android:text="@string/hourly_title" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/hourly"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+        </HorizontalScrollView>
+    </LinearLayout>
+</LinearLayout>

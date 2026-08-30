@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Currency</string>
+    <string name="convert">Convert</string>
+    <string name="from_label">From</string>
+    <string name="to_label">To</string>
+    <string name="amount_hint">0</string>
+    <string name="swap">Swap currencies</string>
+    <string name="refresh">Refresh rates</string>
+    <string name="live_rates">Live rates · 1 USD</string>
+    <string name="updating">Updating rates…</string>
+    <string name="source">Rates by open.er-api.com</string>
+</resources>
