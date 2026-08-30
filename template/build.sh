@@ -7,9 +7,13 @@ PROJ="${1:-$(pwd)}"; PROJ="$(cd "$PROJ" && pwd)"
 
 # d8 (build-tools 34) crashes on class files from JDK 26 even with --release 17,
 # so compile with a real JDK 17 when available. Resolve one, else fall back.
+# $JAVA_HOME is checked first so CI (setup-java) works, but only if it really is 17 --
+# on server x it points at a much newer JDK, which is the crash this loop exists to avoid.
 JAVAC=javac; JAVAC_ARGS="--release 17"
-for j in /usr/lib/jvm/java-17-openjdk "$HOME/.local/opt/jdk17" /usr/lib/jvm/*17*; do
-    if [ -x "$j/bin/javac" ]; then JAVAC="$j/bin/javac"; JAVAC_ARGS=""; break; fi
+for j in "${JAVA_HOME:-}" /usr/lib/jvm/java-17-openjdk "$HOME/.local/opt/jdk17" /usr/lib/jvm/*17*; do
+    [ -n "$j" ] && [ -x "$j/bin/javac" ] || continue
+    "$j/bin/javac" -version 2>&1 | grep -q " 17\." || continue
+    JAVAC="$j/bin/javac"; JAVAC_ARGS=""; break
 done
 SDK="${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}"
 BT="$SDK/build-tools/34.0.0"; PLATFORM="$SDK/platforms/android-33/android.jar"
