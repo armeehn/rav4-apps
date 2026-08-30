@@ -7,11 +7,11 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-AUTHORITY="com.reveng.carlauncher.theme"
-PALETTE="com/reveng/design/Palette"
+AUTHORITY="com.ripostelabs.carlauncher.theme"
+PALETTE="com/ripostelabs/design/Palette"
 fail=0
 
-for d in apps/com.reveng.*; do
+for d in apps/com.ripostelabs.*; do
     pkg="$(basename "$d")"
 
     if ! grep -q "$AUTHORITY" "$d/AndroidManifest.xml"; then
@@ -37,7 +37,7 @@ for d in apps/com.reveng.*; do
         continue
     fi
 
-    # Read the dex out of the zip in python: `unzip` is absent on server x, and a
+    # Read the dex out of the zip in python: `unzip` is absent on some hosts, and a
     # grep through a missing binary reports zero matches rather than an error.
     if ! python3 - "$apk" "$PALETTE" <<'PY'
 import sys, zipfile
@@ -55,7 +55,7 @@ done
 # plays over the radio, does not duck for a navigation prompt, is invisible to the launcher's
 # now-playing card, and the steering-wheel media keys do nothing. None of that fails a build,
 # and none of it is visible on a desk.
-for d in apps/com.reveng.*; do
+for d in apps/com.ripostelabs.*; do
     pkg="$(basename "$d")"
     # WebView is in this list because a page's soundtrack is media too, and the browser is
     # exactly the app that shipped without focus by not looking like a media app.

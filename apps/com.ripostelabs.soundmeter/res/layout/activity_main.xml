@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@color/bg"
+    android:padding="24dp">
+
+    <!-- ===== LEFT: branding + status ===== -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="24"
+        android:orientation="vertical"
+        android:background="@drawable/bg_card_grad"
+        android:padding="24dp">
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_volume"
+            android:tint="@color/accent" />
+
+        <TextView
+            style="@style/Overline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/app_name" />
+
+        <TextView
+            style="@style/H1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/subtitle" />
+
+        <!-- Live listening indicator -->
+        <LinearLayout
+            android:id="@+id/statusRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/ic_mic"
+                android:tint="@color/accent" />
+
+            <TextView
+                android:id="@+id/status"
+                style="@style/Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text"
+                android:text="@string/listening" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <TextView
+            style="@style/Overline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/approx" />
+
+        <!-- Permission CTA (shown only when RECORD_AUDIO is denied) -->
+        <Button
+            android:id="@+id/grant"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:visibility="gone"
+            android:background="@drawable/btn_accent"
+            android:textColor="@color/text"
+            android:textAllCaps="false"
+            android:text="@string/grant" />
+    </LinearLayout>
+
+    <!-- ===== CENTER: gauge + big digital readout ===== -->
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="52"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp">
+
+        <com.ripostelabs.soundmeter.GaugeView
+            android:id="@+id/gauge"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- Huge digital dB readout, seated in the open lower fan of the arc -->
+        <LinearLayout
+            android:id="@+id/readoutBox"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="18dp"
+            android:orientation="horizontal"
+            android:gravity="bottom|center_horizontal">
+
+            <TextView
+                android:id="@+id/db"
+                style="@style/Display"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="128sp"
+                android:text="--" />
+
+            <TextView
+                style="@style/H1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginBottom="26dp"
+                android:textColor="@color/text2"
+                android:textSize="30sp"
+                android:text="@string/unit" />
+        </LinearLayout>
+
+        <!-- No-mic fallback overlay -->
+        <LinearLayout
+            android:id="@+id/noMicBox"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <TextView
+                style="@style/H1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/no_mic" />
+
+            <TextView
+                style="@style/Caption"
+                android:layout_width="300dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="@string/no_mic_hint" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- ===== RIGHT: stat cards + reset ===== -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="26"
+        android:orientation="vertical">
+
+        <TextView
+            style="@style/Overline"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/loudness" />
+
+        <!-- Min -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_card"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp">
+
+            <TextView
+                style="@style/Overline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/min" />
+
+            <TextView
+                android:id="@+id/min"
+                style="@style/H1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="34sp"
+                android:text="-- dB" />
+        </LinearLayout>
+
+        <!-- Avg -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_card"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp">
+
+            <TextView
+                style="@style/Overline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/avg" />
+
+            <TextView
+                android:id="@+id/avg"
+                style="@style/H1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="34sp"
+                android:textColor="@color/accent"
+                android:text="-- dB" />
+        </LinearLayout>
+
+        <!-- Max -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_card"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp">
+
+            <TextView
+                style="@style/Overline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/max" />
+
+            <TextView
+                android:id="@+id/max"
+                style="@style/H1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="34sp"
+                android:text="-- dB" />
+        </LinearLayout>
+
+        <!-- Reset -->
+        <Button
+            android:id="@+id/reset"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/btn_ghost"
+            android:drawableStart="@drawable/ic_refresh"
+            android:drawablePadding="10dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
+            android:textColor="@color/text"
+            android:textAllCaps="false"
+            android:text="@string/reset" />
+    </LinearLayout>
+</LinearLayout>

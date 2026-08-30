@@ -9,7 +9,7 @@
 # All read-only on the car: enumerate -> filter to OEM apps -> pull -> decompile
 # resources -> classify EASY (self-contained) vs HW (touches the vehicle).
 set -euo pipefail
-export PATH="$HOME/.local/bin:$PATH"   # adb/java/jadx live here on server x
+export PATH="$HOME/.local/bin:$PATH"   # adb/java/jadx live here on some hosts
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APKS="$ROOT/apks"; DEC="$ROOT/decompiled"; DOCS="$ROOT/docs"
