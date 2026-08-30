@@ -260,6 +260,17 @@ public final class MediaCitizen {
                 .build());
     }
 
+    /**
+     * v0.8 — take this app off the launcher's card without tearing the session down. A
+     * deactivated session vanishes from {@code getActiveSessions}; the next {@link #setState}
+     * re-activates it. For when the source this session fronts stops being ours at all — the
+     * vendor MCU handed the tuner's audio path to another source, say — where a mere
+     * {@code setState(false, …)} would keep showing a pause card that lies.
+     */
+    public void setIdle() {
+        session.setActive(false);
+    }
+
     public void release() {
         releaseFocus();
         session.setActive(false);

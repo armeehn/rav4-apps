@@ -5,8 +5,8 @@
      Pure UI + MediaStore + MediaPlayer. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.reveng.music"
-    android:versionCode="1"
-    android:versionName="1.0-reveng">
+    android:versionCode="2"
+    android:versionName="1.1-reveng">
 
     <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
 

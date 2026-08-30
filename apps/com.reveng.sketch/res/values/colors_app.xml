@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sketch-only colours, kept out of colors.xml so that file stays a byte-identical copy
+     of the shared pack (scope/sync-design.sh overwrites it). -->
+<resources>
+    <color name="canvas_dark">#FF12151C</color>
+    <color name="canvas_light">#FFF2F3F5</color>
+</resources>

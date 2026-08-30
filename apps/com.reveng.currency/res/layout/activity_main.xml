@@ -76,7 +76,7 @@
                 android:textColor="@color/text"
                 android:textColorHint="@color/text3"
                 android:textSize="30sp"
-                android:fontFamily="sans-serif-light"
+                android:fontFamily="@font/jetbrains_mono"
                 android:inputType="numberDecimal"
                 android:maxLines="1"
                 android:gravity="center_vertical"

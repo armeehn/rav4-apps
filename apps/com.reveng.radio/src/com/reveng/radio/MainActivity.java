@@ -52,6 +52,8 @@ public class MainActivity extends Activity
     private int curFreq = FM_MIN;
     private int curBand = 0;            // getRadioBand(): 0..2 FM, >=3 AM
     private boolean modeLost = false;
+    /** v0.8: the driver paused the tuner (wheel/card); distinct from losing the mode. */
+    private boolean tunerPaused = false;
     private boolean dragging = false;
     private SharedPreferences prefs;
 
@@ -81,16 +83,17 @@ public class MainActivity extends Activity
     private int state = STOPPED;
 
     /**
-     * v0.6.2 — the session half of MediaCitizen only. This screen already manages its own audio
-     * focus (it predates the shared helper and its stream handling is stream-specific); what it
-     * lacked was a MediaSession, without which the launcher's now-playing card cannot see the
-     * radio at all and the steering-wheel keys go nowhere.
+     * v0.6.2 gave the NET streams a MediaSession (the session half of MediaCitizen only —
+     * the stream path manages its own focus and predates the helper). v0.8 extends the same
+     * session to the FM/AM tuner: the launcher's now-playing card now shows the tuned
+     * frequency, and the wheel's next/previous ride seek up/down. One session, one card
+     * entry, whichever tab owns the cabin.
      */
     private MediaCitizen citizen;
     private StationAdapter adapter;
     private AudioFocusRequest focusRequest;
 
-    private int cAccent, cAccentDim, cSurface2, cText, cText2, cText3;
+    private int cAccent, cAccentDim, cSurface2, cText, cText2, cText3, cStroke;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,6 +108,7 @@ public class MainActivity extends Activity
         cText = Palette.color(this, R.color.text);
         cText2 = Palette.color(this, R.color.text2);
         cText3 = Palette.color(this, R.color.text3);
+        cStroke = Palette.color(this, R.color.stroke);
 
         prefs = getSharedPreferences("presets", MODE_PRIVATE);
         tuner = new Tuner(this, this);
@@ -167,13 +171,10 @@ public class MainActivity extends Activity
             final int slot = i;
             TextView p = new TextView(this);
             p.setTextSize(16);
-            p.setTypeface(Typeface.create("sans-serif-medium", 0));
+            p.setTypeface(mono(true));
             p.setGravity(Gravity.CENTER);
             p.setPadding(0, dp(14), 0, dp(14));
-            GradientDrawable bg = new GradientDrawable();
-            bg.setCornerRadius(dp(14));
-            bg.setColor(cSurface2);
-            p.setBackground(bg);
+            p.setBackground(presetBg(false));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
             if (i > 0) lp.leftMargin = dp(10);
             presetRow.addView(p, lp);
@@ -206,10 +207,51 @@ public class MainActivity extends Activity
 
     /** Any tuner control reclaims the audio path if another source stole it. */
     private void onTunerInteraction() {
-        if (modeLost || tuner.getValidMode() != Tuner.SRC_RADIO) {
-            modeLost = false;
-            tuner.claimAudio();
+        if (tunerPaused || modeLost || tuner.getValidMode() != Tuner.SRC_RADIO) {
+            claimTuner();
         }
+    }
+
+    /**
+     * v0.8 — become the thing that is playing, on both sides of the fence: Android audio
+     * focus first (so an app that is playing pauses, and a refusal — a call — keeps the
+     * tuner quiet), then the MCU audio path. Returns false when focus was refused.
+     */
+    private boolean claimTuner() {
+        if (!citizen().takeFocus(MediaCitizen.Focus.MEDIA)) return false;
+        tunerPaused = false;
+        modeLost = false;
+        tuner.claimAudio();
+        return true;
+    }
+
+    /** v0.8 — wheel/card pause for a tuner: hand the audio path back and go quiet. */
+    private void pauseTuner() {
+        tunerPaused = true;
+        tuner.releaseAudio();
+        citizen().releaseFocus();
+        if (tab != TAB_NET) chipStatus.setText(R.string.status_paused);
+        publishTunerSession();
+    }
+
+    /**
+     * v0.8 — what the launcher's media card shows for FM/AM. The MCU owns the audio, so
+     * this is presence and transport only: frequency as title, band as artist, no duration
+     * (the card hides its seek bar for a live source), seek up/down riding next/previous.
+     * When the mode belongs to another source the session goes idle rather than paused —
+     * a pause card for audio we do not own would lie.
+     */
+    private void publishTunerSession() {
+        if (tab == TAB_NET) return;
+        if (!tuner.isConnected() || modeLost) {
+            citizen().setIdle();
+            return;
+        }
+        boolean fmNow = curBand <= 2;
+        String unit = getString(fmNow ? R.string.unit_mhz : R.string.unit_khz);
+        citizen().setMetadata(formatFreq(curFreq) + " " + unit,
+                fmNow ? "FM" + (curBand + 1) : "AM", 0);
+        citizen().setState(!tunerPaused, 0);
     }
 
     // ---- Tabs --------------------------------------------------------------
@@ -226,13 +268,14 @@ public class MainActivity extends Activity
         if (net) {
             // Hand the audio path back to Android media.
             tuner.releaseAudio();
+            citizen().releaseFocus();
             chipStatus.setText("");
+            updateNowPlaying();
         } else {
             stopPlayback();
             abandonStreamFocus();
             if (tuner.isConnected()) {
-                modeLost = false;
-                tuner.claimAudio();
+                claimTuner();
                 // Nudge the MCU onto the requested band; refresh follows via events.
                 boolean wantFm = tab == TAB_FM;
                 boolean haveFm = curBand <= 2;
@@ -251,13 +294,14 @@ public class MainActivity extends Activity
 
     @Override public void onConnected() {
         if (tab != TAB_NET) {
-            tuner.claimAudio();
+            claimTuner();
             refreshTuner();
         }
     }
 
     @Override public void onDisconnected() {
         chipStatus.setText(R.string.status_no_gateway);
+        publishTunerSession();
     }
 
     @Override public void onRadioEvent() {
@@ -266,11 +310,15 @@ public class MainActivity extends Activity
 
     @Override public void onModeLost() {
         modeLost = true;
-        if (tab != TAB_NET) chipStatus.setText(R.string.status_mode_lost);
+        if (tab != TAB_NET) {
+            chipStatus.setText(R.string.status_mode_lost);
+            citizen().releaseFocus();
+            publishTunerSession();
+        }
     }
 
     @Override public void onReclaimRequested() {
-        if (tab != TAB_NET) tuner.claimAudio();
+        if (tab != TAB_NET && !tunerPaused) claimTuner();
     }
 
     // ---- Tuner state -> UI -------------------------------------------------
@@ -280,6 +328,7 @@ public class MainActivity extends Activity
     private void refreshTuner() {
         if (!tuner.isConnected()) {
             chipStatus.setText(R.string.status_connecting);
+            publishTunerSession();
             return;
         }
         int freq = tuner.getFreq();
@@ -305,7 +354,7 @@ public class MainActivity extends Activity
             slider.setProgress(Math.max(0, Math.min(slider.getMax(), (curFreq - min) / step)));
         }
 
-        if (!modeLost) {
+        if (!modeLost && !tunerPaused) {
             StringBuilder sb = new StringBuilder();
             if (tuner.getStereoIcon()) sb.append(getString(R.string.chip_stereo));
             if (tuner.getRdsState()) {
@@ -315,6 +364,7 @@ public class MainActivity extends Activity
             chipStatus.setText(sb);
         }
         refreshPresets();
+        publishTunerSession();
     }
 
     private int sliderToFreq(int progress) {
@@ -340,11 +390,22 @@ public class MainActivity extends Activity
             boolean active = f > 0 && f == curFreq;
             p.setText(f > 0 ? formatFreq(f) : getString(R.string.preset_empty));
             p.setTextColor(active ? cAccent : (f > 0 ? cText : cText3));
-            GradientDrawable bg = new GradientDrawable();
-            bg.setCornerRadius(dp(14));
-            bg.setColor(active ? cAccentDim : cSurface2);
-            p.setBackground(bg);
+            p.setBackground(presetBg(active));
         }
+    }
+
+    /** v0.8 Riposte: preset chips are bordered hard-edged squares, accent when tuned. */
+    private GradientDrawable presetBg(boolean active) {
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(active ? cAccentDim : cSurface2);
+        bg.setStroke(dp(2), active ? cAccent : cStroke);
+        return bg;
+    }
+
+    /** The pack's face (JetBrains Mono) for text built in code. */
+    private Typeface mono(boolean bold) {
+        Typeface base = getResources().getFont(R.font.jetbrains_mono);
+        return bold ? Typeface.create(base, Typeface.BOLD) : base;
     }
 
     // ---- Lifecycle ---------------------------------------------------------
@@ -352,8 +413,8 @@ public class MainActivity extends Activity
     @Override
     protected void onResume() {
         super.onResume();
-        if (tab != TAB_NET && tuner.isConnected()) {
-            tuner.claimAudio();
+        if (tab != TAB_NET && tuner.isConnected() && !tunerPaused) {
+            claimTuner();
             refreshTuner();
         }
     }
@@ -502,19 +563,35 @@ public class MainActivity extends Activity
     private MediaCitizen citizen() {
         if (citizen == null) {
             citizen = MediaCitizen.attach(this, "radio", new MediaCitizen.Transport() {
-                @Override public void onPlay() { togglePlayFromSession(); }
+                @Override public void onPlay() {
+                    if (tab == TAB_NET) togglePlayFromSession();
+                    else if (claimTuner()) refreshTuner();
+                }
 
-                @Override public void onPause() { stopPlayback(); }
+                @Override public void onPause() {
+                    if (tab == TAB_NET) stopPlayback();
+                    else pauseTuner();
+                }
 
-                @Override public void onNext() { step(1); }
+                @Override public void onNext() {
+                    if (tab == TAB_NET) step(1);
+                    else { onTunerInteraction(); tuner.sendKey(Tuner.KEY_SEEK_UP); }
+                }
 
-                @Override public void onPrevious() { step(-1); }
+                @Override public void onPrevious() {
+                    if (tab == TAB_NET) step(-1);
+                    else { onTunerInteraction(); tuner.sendKey(Tuner.KEY_SEEK_DOWN); }
+                }
 
-                @Override public void onStop() { stopPlayback(); }
+                @Override public void onStop() {
+                    if (tab == TAB_NET) stopPlayback();
+                    else pauseTuner();
+                }
 
                 @Override public void onDuck(boolean duck) {
                     // A stream that ducks to a whisper is just noise; pause instead.
-                    if (duck) stopPlayback();
+                    // The tuner has nothing to duck: the MCU owns its volume.
+                    if (tab == TAB_NET && duck) stopPlayback();
                 }
             });
         }
@@ -544,17 +621,23 @@ public class MainActivity extends Activity
     }
 
     private void updateNowPlaying() {
-        // One funnel for every state change, so the card and the wheel cannot drift from the UI.
-        if (current != null) {
-            citizen().setMetadata(current.name, current.genre, 0);
+        // One funnel for every stream state change, so the card and the wheel cannot drift
+        // from the UI. Only while NET owns the screen — the tuner has its own publisher —
+        // and an untouched stream list publishes nothing rather than an empty pause card.
+        if (tab == TAB_NET) {
+            if (current == null && state == STOPPED) {
+                citizen().setIdle();
+            } else {
+                if (current != null) citizen().setMetadata(current.name, current.genre, 0);
+                citizen().setState(state == PLAYING, 0);
+            }
         }
-        citizen().setState(state == PLAYING, 0);
 
         if (current == null) {
             nowTitle.setText(R.string.nothing_playing);
             nowStatus.setText(R.string.tap_to_play);
             nowAvatar.setColorFilter(cText2);
-            setOval(nowAvatar, cSurface2);
+            setBadge(nowAvatar, cSurface2);
             btnPlay.setImageResource(R.drawable.ic_play);
             return;
         }
@@ -567,15 +650,15 @@ public class MainActivity extends Activity
 
         boolean live = state != STOPPED;
         nowAvatar.setColorFilter(live ? cAccent : cText2);
-        setOval(nowAvatar, live ? cAccentDim : cSurface2);
+        setBadge(nowAvatar, live ? cAccentDim : cSurface2);
         btnPlay.setImageResource(live ? R.drawable.ic_stop : R.drawable.ic_play);
     }
 
-    private void setOval(ImageView v, int color) {
-        GradientDrawable oval = new GradientDrawable();
-        oval.setShape(GradientDrawable.OVAL);
-        oval.setColor(color);
-        v.setBackground(oval);
+    /** v0.8 Riposte: badges are hard-edged squares, not circles. */
+    private void setBadge(ImageView v, int color) {
+        GradientDrawable badge = new GradientDrawable();
+        badge.setColor(color);
+        v.setBackground(badge);
     }
 
     private final class StationAdapter extends BaseAdapter {
@@ -597,9 +680,9 @@ public class MainActivity extends Activity
                     header = new TextView(MainActivity.this);
                     header.setTextColor(cText3);
                     header.setTextSize(11);
-                    header.setLetterSpacing(0.14f);
+                    header.setLetterSpacing(0.1f);
                     header.setAllCaps(true);
-                    header.setTypeface(Typeface.create("sans-serif-medium", 0));
+                    header.setTypeface(mono(true));
                     header.setPadding(dp(16), dp(18), dp(16), dp(8));
                 }
                 header.setText((String) item);
@@ -639,7 +722,7 @@ public class MainActivity extends Activity
 
                 title = new TextView(MainActivity.this);
                 title.setTextSize(17);
-                title.setTypeface(Typeface.create("sans-serif-medium", 0));
+                title.setTypeface(mono(true));
                 title.setSingleLine(true);
                 title.setEllipsize(TextUtils.TruncateAt.END);
                 col.addView(title, new LinearLayout.LayoutParams(
@@ -663,17 +746,12 @@ public class MainActivity extends Activity
             genre.setText(s.genre);
             boolean active = s == current;
 
-            GradientDrawable oval = new GradientDrawable();
-            oval.setShape(GradientDrawable.OVAL);
-            oval.setColor(active ? cAccentDim : cSurface2);
-            avatar.setBackground(oval);
+            setBadge(avatar, active ? cAccentDim : cSurface2);
             avatar.setColorFilter(active ? cAccent : cText2);
             title.setTextColor(active ? cAccent : cText);
 
             if (active) {
                 GradientDrawable bg = new GradientDrawable();
-                bg.setShape(GradientDrawable.RECTANGLE);
-                bg.setCornerRadius(dp(16));
                 bg.setColor(cAccentDim);
                 row.setBackground(bg);
             } else {

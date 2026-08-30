@@ -431,7 +431,7 @@ public class MainActivity extends Activity
 
                 title = new TextView(MainActivity.this);
                 title.setTextSize(17);
-                title.setTypeface(android.graphics.Typeface.create("sans-serif-medium", 0));
+                title.setTypeface(mono(true));
                 title.setSingleLine(true);
                 title.setEllipsize(android.text.TextUtils.TruncateAt.END);
                 col.addView(title, new LinearLayout.LayoutParams(
@@ -455,20 +455,17 @@ public class MainActivity extends Activity
             artist.setText(t.artist);
             boolean active = position == current;
 
-            // rounded avatar oval; accent when active, surface2 otherwise
-            GradientDrawable oval = new GradientDrawable();
-            oval.setShape(GradientDrawable.OVAL);
-            oval.setColor(active ? cAccentDim : cSurface2);
-            avatar.setBackground(oval);
+            // v0.8 Riposte: hard-edged square badge; accent when active, surface2 otherwise
+            GradientDrawable badge = new GradientDrawable();
+            badge.setColor(active ? cAccentDim : cSurface2);
+            avatar.setBackground(badge);
             avatar.setColorFilter(active ? cAccent : cText2);
 
             title.setTextColor(active ? cAccent : cText);
 
-            // rounded highlight background for the active row
+            // dim-accent highlight for the active row — square, like everything else
             if (active) {
                 GradientDrawable bg = new GradientDrawable();
-                bg.setShape(GradientDrawable.RECTANGLE);
-                bg.setCornerRadius(dp(16));
                 bg.setColor(cAccentDim);
                 row.setBackground(bg);
             } else {
@@ -480,5 +477,13 @@ public class MainActivity extends Activity
 
     private int dp(int v) {
         return (int) (v * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    /** The pack's face (JetBrains Mono) for text built in code. */
+    private android.graphics.Typeface mono(boolean bold) {
+        android.graphics.Typeface base = getResources().getFont(R.font.jetbrains_mono);
+        return bold
+                ? android.graphics.Typeface.create(base, android.graphics.Typeface.BOLD)
+                : base;
     }
 }
