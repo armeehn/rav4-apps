@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sound Meter</string>
+    <string name="subtitle">Ambient dB SPL</string>
+    <string name="level">Level</string>
+    <string name="unit">dB</string>
+    <string name="min">Min</string>
+    <string name="avg">Avg</string>
+    <string name="max">Max</string>
+    <string name="reset">Reset</string>
+    <string name="loudness">Loudness</string>
+    <string name="listening">Listening</string>
+    <string name="paused">Paused</string>
+    <string name="need_permission">Microphone access is required to measure sound.</string>
+    <string name="grant">Grant microphone access</string>
+    <string name="no_mic">No microphone on this device</string>
+    <string name="no_mic_hint">This head unit has no usable microphone, so sound level cannot be measured.</string>
+    <string name="approx">Approximate, uncalibrated SPL</string>
+</resources>

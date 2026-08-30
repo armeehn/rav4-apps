@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#FF0B0E14</color>
+    <color name="bg2">#FF10141C</color>
+    <color name="surface">#FF161B24</color>
+    <color name="surface2">#FF1E2431</color>
+    <color name="stroke">#22FFFFFF</color>
+    <color name="accent">#FF5B9DFF</color>
+    <color name="accent2">#FF7C5CFF</color>
+    <color name="accent_dim">#335B9DFF</color>
+    <color name="text">#FFF2F5FA</color>
+    <color name="text2">#FFAAB3C2</color>
+    <color name="text3">#FF6B7484</color>
+    <color name="ripple">#33FFFFFF</color>
+    <color name="scrim">#CC000000</color>
+    <!-- v0.5.1 semantic role. Published by the launcher, so a theme sets its own. -->
+    <color name="error">#FFFF4D5E</color>
+</resources>

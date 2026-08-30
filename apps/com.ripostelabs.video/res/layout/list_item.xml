@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:layout_marginLeft="8dp"
+    android:layout_marginRight="8dp"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="4dp"
+    android:padding="12dp"
+    android:background="@drawable/bg_card"
+    android:foreground="?android:attr/selectableItemBackground">
+
+    <!-- Thumbnail frame (clipped to rounded corners in code) -->
+    <FrameLayout
+        android:id="@+id/thumb_frame"
+        android:layout_width="140dp"
+        android:layout_height="80dp"
+        android:background="@drawable/bg_thumb">
+
+        <ImageView
+            android:id="@+id/thumb"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:contentDescription="@string/app_name" />
+
+        <ImageView
+            android:id="@+id/play_overlay"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="center"
+            android:padding="9dp"
+            android:background="@drawable/bg_play_circle"
+            android:src="@drawable/ic_play"
+            android:tint="#FFFFFFFF"
+            android:contentDescription="@string/app_name" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginLeft="14dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/title"
+            style="@style/H2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <!-- Duration chip -->
+        <LinearLayout
+            android:id="@+id/duration_chip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingLeft="9dp"
+            android:paddingRight="11dp"
+            android:paddingTop="5dp"
+            android:paddingBottom="5dp"
+            android:background="@drawable/chip">
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginRight="6dp"
+                android:src="@drawable/ic_movie"
+                android:tint="@color/accent"
+                android:contentDescription="@string/app_name" />
+            <TextView
+                android:id="@+id/duration"
+                style="@style/Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text2" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

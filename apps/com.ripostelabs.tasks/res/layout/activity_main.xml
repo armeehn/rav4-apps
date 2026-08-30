@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single-list to-do UI, centered content column tuned for the 1920x720
+     GT6 landscape head unit. Header + progress, an add row (field + FAB),
+     then the task list with a polished empty state. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@color/bg">
+
+    <!-- left gutter -->
+    <View
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1" />
+
+    <!-- ================= centered content column ================= -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="3"
+        android:orientation="vertical"
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp"
+        android:paddingTop="22dp"
+        android:paddingBottom="0dp">
+
+        <!-- Header: title + count -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="12dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                style="@style/H1"
+                android:text="@string/app_name" />
+
+            <TextView
+                android:id="@+id/count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/Caption"
+                android:text="" />
+        </LinearLayout>
+
+        <!-- Progress bar -->
+        <ProgressBar
+            android:id="@+id/progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginBottom="16dp"
+            android:max="100"
+            android:progress="0"
+            android:progressTint="@color/accent"
+            android:progressBackgroundTint="@color/surface2" />
+
+        <!-- Add row: field + FAB -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="14dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_field"
+                android:paddingLeft="16dp"
+                android:paddingRight="10dp">
+
+                <EditText
+                    android:id="@+id/input"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:hint="@string/add_hint"
+                    android:textColorHint="@color/text3"
+                    android:textColor="@color/text"
+                    android:textSize="16sp"
+                    android:singleLine="true"
+                    android:imeOptions="actionDone"
+                    android:inputType="text|textCapSentences" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btn_fab"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_marginLeft="12dp"
+                android:background="@drawable/btn_fab"
+                android:src="@drawable/ic_add"
+                android:tint="#FFFFFFFF"
+                android:scaleType="fitCenter"
+                android:padding="13dp"
+                android:elevation="4dp"
+                android:contentDescription="@string/add_task" />
+        </LinearLayout>
+
+        <!-- List + empty state -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <ListView
+                android:id="@+id/list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:divider="@null"
+                android:dividerHeight="0dp"
+                android:scrollbarStyle="outsideOverlay"
+                android:clipToPadding="false"
+                android:paddingTop="2dp"
+                android:paddingBottom="24dp" />
+
+            <!-- Polished empty state -->
+            <LinearLayout
+                android:id="@+id/empty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingBottom="40dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/empty_icon"
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:src="@drawable/ic_check"
+                    android:tint="@color/text3"
+                    android:alpha="0.7" />
+
+                <TextView
+                    android:id="@+id/empty_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    style="@style/H2"
+                    android:text="@string/empty_title" />
+
+                <TextView
+                    android:id="@+id/empty_hint"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    style="@style/Caption"
+                    android:text="@string/empty_hint" />
+            </LinearLayout>
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- right gutter -->
+    <View
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1" />
+</LinearLayout>

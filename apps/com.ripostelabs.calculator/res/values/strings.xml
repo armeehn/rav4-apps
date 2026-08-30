@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Calculator</string>
+    <string name="history">History</string>
+    <string name="no_history">No calculations yet</string>
+    <string name="clear_history">Clear</string>
+    <string name="rad">RAD</string>
+    <string name="deg">DEG</string>
+</resources>
