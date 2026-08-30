@@ -35,6 +35,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
 
         tabIcons = new int[]{
                 R.drawable.ic_clock, R.drawable.ic_alarm,

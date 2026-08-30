@@ -66,17 +66,60 @@ Verified on the emulated head unit (LXC 124, 1920x720 @240dpi), which is what ca
 `content query --uri content://com.reveng.carlauncher.theme/active` also returns the full row to
 a different uid, so the provider is genuinely exported and R8 did not strip it.
 
+## Landed (continued)
+
+### 0.5.1 — semantic colour
+The design pack gained an `error` role, mapped to the launcher's published `error`, so a theme
+sets its own danger colour. The recorder's record affordance follows it.
+
+The sound meter's green/amber/red gauge bands deliberately **do not**: they encode a measured
+scale, not chrome, and a theme whose error colour is orange would collide with the amber band.
+
+### 0.5.2 — the colours that XML resolved
+`Palette.color` only helps where Java asks for a colour. A colour written in XML — a shape's
+solid, a ripple, a style's `textColor` — is resolved at inflate time from the app's own
+`colors.xml` and cannot follow a palette published at runtime. That is ~860 references across
+the suite, and it was the real gap: with only the Java sites converted, a light theme produced a
+*half-themed* screen (light ground, dark cards), which is worse than no theming at all.
+
+`Palette.apply(activity)` walks the finished view tree and re-colours text, `ColorDrawable`
+backgrounds, `GradientDrawable` solids and strokes, and ripples — **but only where the current
+value is exactly a design-pack default.** That rule is what makes it safe to run over a whole
+screen: it repaints what the design system painted and leaves a gauge band, a chart series or a
+photo alone. With no launcher the themed value equals the default, so every replacement is a
+no-op. Roles are resolved by resource *name*, so the shared class never references any app's `R`.
+
+### 0.5.3 — it follows the theme while running
+A `ContentObserver` on the provider recreates a watching activity when the palette actually
+changes (compared by fingerprint, because the launcher republishes on every theme *and*
+day/night change, and republishing an identical palette is allowed). `recreate()` rather than a
+second walk: colours set from Java at build time — an icon tint, a paint in a custom view's
+constructor — are not reachable from the view tree afterwards.
+
+### 0.6 — proven on the panel
+Switched the launcher from Midnight to Daylight on the emulated head unit and brought the
+already-running Clock forward, **without restarting it**:
+
+| sampled | Midnight | Daylight | launcher published |
+|---|---|---|---|
+| page background | `#0B0E11` | `#F4F6F8` | `#F6F7F8` |
+| world-clock card (an XML `bg_card` drawable) | `#161B22` | `#FFFFFF` | `surface = #FFFFFF` |
+
+The card is the one that matters: it is a shape drawable whose colour came from XML, so before
+0.5.2 it stayed dark on a light ground. All 26 apps build, and `scope/check-theme-wiring.sh`
+(in CI) now also asserts every Activity calls `Palette.apply`. Both of its assertions have
+negative controls.
+
 ## Open
 
-### 0.6 — the rest of the colour, and proof on glass
-Two honest gaps:
+### Correction to an earlier claim
+A previous revision of this file said "~2,400 hardcoded `0xAARRGGBB` literals remain". **That
+number was wrong.** It came from a grep that swept `build/` directories and counted generated
+`R.java` resource IDs. The real figure in app sources is **34 literals**, of which 11 were exact
+design-pack values (now themed) and the rest are white, black, transparent, or deliberately
+semantic — the sound meter's gauge bands. There is no large per-app colour pass outstanding.
 
-- **~2,400 hardcoded `0xAARRGGBB` literals** remain in the apps' Java. Only the 135 sites that
-  already went through the shared `R.color.*` roles were converted; the literals are a
-  per-app design pass, not a mechanical substitution, and rewriting them blind would ship
-  twenty-six subtly broken apps.
-- **Nothing here has run on the real head unit.** The theme path is now proven on the
-  *emulated* panel (above), but the emulator has no vendor gateway, no root and no car. What
-  remains unproven on glass: the day/night re-paint (it needs the illumination broadcast), the
-  derived colours against a light theme, and every app's actual behaviour. One session at the
-  car (RAV4-23).
+### Still needs the car
+Nothing here has run on the **real** head unit. The emulator has no vendor gateway, no root and
+no car, so the day/night re-paint (it needs the illumination broadcast rather than a theme
+switch) and each app's actual behaviour against real hardware remain unproven (RAV4-23).

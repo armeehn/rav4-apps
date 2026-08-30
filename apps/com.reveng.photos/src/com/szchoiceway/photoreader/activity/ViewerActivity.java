@@ -17,6 +17,7 @@ import com.reveng.photos.R;
 
 import java.io.InputStream;
 import java.util.ArrayList;
+import com.reveng.design.Palette;
 
 /**
  * Full-screen image viewer with pinch-to-zoom, pan, double-tap zoom, and
@@ -36,6 +37,8 @@ public class ViewerActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         setContentView(R.layout.activity_viewer);
         image = findViewById(R.id.image);
 

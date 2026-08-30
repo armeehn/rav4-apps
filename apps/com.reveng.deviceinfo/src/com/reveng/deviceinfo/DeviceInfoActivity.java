@@ -29,6 +29,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.util.Locale;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone Device Info screen. Reads device state through public,
@@ -69,6 +70,8 @@ public class DeviceInfoActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         setContentView(R.layout.activity_main);
         colLeft = findViewById(R.id.colLeft);
         colRight = findViewById(R.id.colRight);

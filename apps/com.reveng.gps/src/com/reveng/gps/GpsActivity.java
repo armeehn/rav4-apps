@@ -30,6 +30,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone GPS status dashboard. Everything is read straight off the
@@ -68,6 +69,8 @@ public class GpsActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         setContentView(R.layout.activity_main);
 
         statusView    = findViewById(R.id.status);

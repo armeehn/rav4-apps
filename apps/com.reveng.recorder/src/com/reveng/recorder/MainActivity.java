@@ -54,7 +54,13 @@ public class MainActivity extends Activity
         implements MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener {
 
     private static final int REQ_PERM = 1;
-    private static final int RED = 0xFFFF4D5E;
+    /**
+     * v0.5.1 — the record affordance follows the launcher's error role. Resolved per call
+     * rather than cached in a static: the palette can change while the app is running.
+     */
+    private int red() {
+        return Palette.color(this, R.color.error);
+    }
 
     private static final class Rec {
         final File file;
@@ -127,6 +133,8 @@ public class MainActivity extends Activity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         setContentView(R.layout.activity_main);
 
         cAccent = Palette.color(this, R.color.accent);
@@ -262,10 +270,10 @@ public class MainActivity extends Activity
         if (on) {
             GradientDrawable oval = new GradientDrawable();
             oval.setShape(GradientDrawable.OVAL);
-            oval.setColor(RED);
+            oval.setColor(red());
             btnRecord.setBackground(oval);
             status.setText(R.string.recording);
-            status.setTextColor(RED);
+            status.setTextColor(red());
             btnStop.setVisibility(View.VISIBLE);
         } else {
             btnRecord.setBackgroundResource(R.drawable.btn_fab);
