@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Clean-room standalone Sketch (drawing pad) for the Toyota RAV4 GT6 head unit.
+     Standalone normal app: own package, no sharedUserId, no permissions.
+     Drawings are saved to the app's own external Pictures dir (no storage perm)
+     and, on API 29+, published to the gallery via MediaStore. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.reveng.sketch"
+    android:versionCode="1"
+    android:versionName="1.0-reveng">
+
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
+
+    <application
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name="com.reveng.sketch.SketchActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

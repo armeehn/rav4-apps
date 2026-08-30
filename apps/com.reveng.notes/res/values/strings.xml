@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Notes</string>
+    <string name="search_hint">Search notes</string>
+    <string name="new_note">New note</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="back">Back</string>
+    <string name="untitled">Untitled note</string>
+    <string name="editor_hint">Start typing…</string>
+    <string name="empty_title">No notes yet</string>
+    <string name="empty_hint">Tap the + button to create your first note</string>
+    <string name="detail_empty_title">Nothing selected</string>
+    <string name="detail_empty_hint">Pick a note on the left, or tap + to start a new one</string>
+    <string name="no_results">No matching notes</string>
+    <string name="notes_count_one">1 note</string>
+    <string name="notes_count">%1$d notes</string>
+    <string name="delete_title">Delete note?</string>
+    <string name="delete_msg">This note will be permanently removed.</string>
+    <string name="cancel">Cancel</string>
+</resources>

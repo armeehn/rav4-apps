@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Music</string>
+    <string name="empty_no_tracks">No music found</string>
+    <string name="empty_hint">Add audio files to your device to see them here</string>
+    <string name="need_permission">Audio permission is needed to show your music</string>
+    <string name="grant">Grant access</string>
+    <string name="nothing_playing">Nothing playing</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="prev">Previous</string>
+    <string name="next">Next</string>
+    <string name="tracks_count">%1$d tracks</string>
+</resources>

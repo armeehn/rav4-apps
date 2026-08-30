@@ -1,0 +1,317 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Master-detail: contacts list (~38%) on the left, contact detail (~62%) on
+     the right. Tuned for the 1920x720 GT6 landscape head unit. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@color/bg">
+
+    <!-- ================= LEFT: master list ================= -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.38"
+        android:orientation="vertical"
+        android:background="@color/bg2"
+        android:paddingLeft="20dp"
+        android:paddingRight="20dp"
+        android:paddingTop="18dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/H1"
+                android:text="@string/app_name" />
+
+            <TextView
+                android:id="@+id/count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                style="@style/Caption"
+                android:text="" />
+        </LinearLayout>
+
+        <!-- Search field -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_field"
+            android:paddingLeft="14dp"
+            android:paddingRight="10dp"
+            android:layout_marginBottom="12dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_search"
+                android:tint="@color/text3" />
+
+            <EditText
+                android:id="@+id/search"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginLeft="8dp"
+                android:background="@android:color/transparent"
+                android:hint="@string/search_hint"
+                android:textColorHint="@color/text3"
+                android:textColor="@color/text"
+                android:textSize="15sp"
+                android:singleLine="true"
+                android:imeOptions="actionSearch"
+                android:inputType="textPersonName" />
+        </LinearLayout>
+
+        <!-- List + empty state + FAB -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <ListView
+                android:id="@+id/list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:divider="@null"
+                android:dividerHeight="0dp"
+                android:scrollbarStyle="outsideOverlay"
+                android:clipToPadding="false"
+                android:paddingTop="2dp"
+                android:paddingBottom="96dp" />
+
+            <!-- Polished empty / permission state -->
+            <LinearLayout
+                android:id="@+id/empty"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingLeft="24dp"
+                android:paddingRight="24dp"
+                android:paddingBottom="40dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/empty_icon"
+                    android:layout_width="88dp"
+                    android:layout_height="88dp"
+                    android:src="@drawable/ic_person"
+                    android:tint="@color/text3"
+                    android:alpha="0.7" />
+
+                <TextView
+                    android:id="@+id/empty_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    style="@style/H2"
+                    android:text="@string/empty_title" />
+
+                <TextView
+                    android:id="@+id/empty_hint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    style="@style/Caption"
+                    android:text="@string/empty_hint" />
+
+                <TextView
+                    android:id="@+id/grant"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:background="@drawable/btn_accent"
+                    android:paddingLeft="26dp"
+                    android:paddingRight="26dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp"
+                    android:text="@string/grant"
+                    android:textColor="#FFFFFFFF"
+                    android:textSize="15sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- FAB: system insert-contact -->
+            <ImageButton
+                android:id="@+id/btn_fab"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_gravity="bottom|right"
+                android:layout_marginBottom="22dp"
+                android:layout_marginRight="6dp"
+                android:background="@drawable/btn_fab"
+                android:src="@drawable/ic_add"
+                android:tint="#FFFFFFFF"
+                android:scaleType="fitCenter"
+                android:padding="16dp"
+                android:elevation="6dp"
+                android:contentDescription="@string/new_contact" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- ================= RIGHT: detail ================= -->
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.62"
+        android:background="@color/bg">
+
+        <!-- Detail -->
+        <ScrollView
+            android:id="@+id/detail_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="30dp"
+            android:paddingRight="30dp"
+            android:paddingTop="26dp"
+            android:paddingBottom="26dp"
+            android:clipToPadding="false"
+            android:scrollbars="none"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Identity row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <FrameLayout
+                        android:id="@+id/detail_avatar"
+                        android:layout_width="76dp"
+                        android:layout_height="76dp">
+
+                        <TextView
+                            android:id="@+id/detail_monogram"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:textColor="@color/accent"
+                            android:textSize="30sp"
+                            android:fontFamily="sans-serif-medium" />
+
+                        <ImageView
+                            android:id="@+id/detail_photo"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:scaleType="centerCrop"
+                            android:visibility="gone" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="18dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/detail_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            style="@style/H1"
+                            android:textSize="26sp"
+                            android:text="" />
+
+                        <TextView
+                            android:id="@+id/detail_sub"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            style="@style/Caption"
+                            android:text="" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Action buttons -->
+                <LinearLayout
+                    android:id="@+id/detail_actions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="22dp" />
+
+                <!-- Phone section -->
+                <TextView
+                    android:id="@+id/phone_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="26dp"
+                    android:layout_marginBottom="10dp"
+                    style="@style/Overline"
+                    android:text="@string/section_phone" />
+
+                <LinearLayout
+                    android:id="@+id/phone_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+
+                <!-- Email section -->
+                <TextView
+                    android:id="@+id/email_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="22dp"
+                    android:layout_marginBottom="10dp"
+                    style="@style/Overline"
+                    android:text="@string/section_email" />
+
+                <LinearLayout
+                    android:id="@+id/email_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" />
+            </LinearLayout>
+        </ScrollView>
+
+        <!-- Detail empty state -->
+        <LinearLayout
+            android:id="@+id/detail_empty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <ImageView
+                android:layout_width="104dp"
+                android:layout_height="104dp"
+                android:src="@drawable/ic_person"
+                android:tint="@color/text3"
+                android:alpha="0.6" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                style="@style/H1"
+                android:text="@string/detail_empty_title" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                style="@style/Caption"
+                android:text="@string/detail_empty_hint" />
+        </LinearLayout>
+    </FrameLayout>
+</LinearLayout>

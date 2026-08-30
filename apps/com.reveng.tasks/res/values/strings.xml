@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Tasks</string>
+    <string name="add_hint">Add a task…</string>
+    <string name="add_task">Add task</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="edit_title">Edit task</string>
+    <string name="empty_title">No tasks yet</string>
+    <string name="empty_hint">Type above and tap + to add your first task</string>
+    <string name="all_done_title">All done!</string>
+    <string name="all_done_hint">Every task is checked off. Nice work.</string>
+    <string name="progress_none">No tasks</string>
+    <string name="progress_fmt">%1$d of %2$d done</string>
+</resources>

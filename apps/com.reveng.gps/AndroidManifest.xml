@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Clean-room standalone replacement for the GT6 built-in "GPS" app
+     (com.szchoiceway.gps). Standalone normal app: new package, no sharedUserId,
+     no system/privileged permissions. All data comes from the on-device
+     LocationManager + GnssStatus APIs (no network). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.reveng.gps"
+    android:versionCode="1"
+    android:versionName="1.0-reveng">
+
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
+
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
+    <application
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name="com.reveng.gps.GpsActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

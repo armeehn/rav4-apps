@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Weather</string>
+    <string name="hint_city">Search city</string>
+    <string name="go">Search</string>
+    <string name="use_location">Use my location</string>
+    <string name="loading">Loading weather…</string>
+    <string name="daily_title">Daily forecast</string>
+    <string name="hourly_title">Next hours</string>
+    <string name="feels">Feels</string>
+</resources>

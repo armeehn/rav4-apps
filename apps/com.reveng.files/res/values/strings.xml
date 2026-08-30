@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Files</string>
+    <string name="storage_label">Storage</string>
+    <string name="location_label">Location</string>
+    <string name="up">Up</string>
+    <string name="home">Home</string>
+    <string name="new_folder">New folder</string>
+    <string name="empty_folder">This folder is empty</string>
+    <string name="empty_hint">No files or folders here</string>
+    <string name="need_permission">All-files access required</string>
+    <string name="need_permission_hint">Grant access to all files to browse device storage</string>
+    <string name="grant">Grant access</string>
+    <string name="open">Open</string>
+    <string name="share">Share</string>
+    <string name="rename">Rename</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+    <string name="create">Create</string>
+    <string name="ok">OK</string>
+    <string name="delete_confirm">Delete this item?</string>
+    <string name="items_count">%1$d items</string>
+</resources>

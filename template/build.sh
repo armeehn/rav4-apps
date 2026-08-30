@@ -4,6 +4,13 @@
 set -euo pipefail
 export PATH="$HOME/.local/bin:$PATH"   # java/keytool live here on server x
 PROJ="${1:-$(pwd)}"; PROJ="$(cd "$PROJ" && pwd)"
+
+# d8 (build-tools 34) crashes on class files from JDK 26 even with --release 17,
+# so compile with a real JDK 17 when available. Resolve one, else fall back.
+JAVAC=javac; JAVAC_ARGS="--release 17"
+for j in /usr/lib/jvm/java-17-openjdk "$HOME/.local/opt/jdk17" /usr/lib/jvm/*17*; do
+    if [ -x "$j/bin/javac" ]; then JAVAC="$j/bin/javac"; JAVAC_ARGS=""; break; fi
+done
 SDK="${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}"
 BT="$SDK/build-tools/34.0.0"; PLATFORM="$SDK/platforms/android-33/android.jar"
 AAPT2="$BT/aapt2"; D8="$BT/d8"; ZIP="$BT/zipalign"; SIGN="$BT/apksigner"
@@ -19,8 +26,8 @@ find "$PROJ/res" -type f | while read -r f; do "$AAPT2" compile "$f" -o "$OUT/co
   --manifest "$PROJ/AndroidManifest.xml" --java "$OUT/gen" \
   $(find "$OUT/compiled" -name '*.flat' -printf '%p ') >/dev/null
 # 2. compile java (app sources + generated R.java)
-javac -source 17 -target 17 -d "$OUT/classes" -classpath "$PLATFORM" \
-  $(find "$PROJ/src" "$OUT/gen" -name '*.java') 2>/dev/null
+"$JAVAC" $JAVAC_ARGS -d "$OUT/classes" -classpath "$PLATFORM" \
+  $(find "$PROJ/src" "$OUT/gen" -name '*.java')
 # 3. dex
 "$D8" --lib "$PLATFORM" --output "$OUT" $(find "$OUT/classes" -name '*.class') >/dev/null 2>&1
 # 4. assemble: add classes.dex into the resource apk (python fallback: no zip on server x)

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Clean-room standalone replacement for the GT6 built-in "Weather" app
+     (com.choiceway.weather). Standalone normal app: new package, no sharedUserId,
+     no system/privileged permissions. Data from the free, no-key Open-Meteo API. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.reveng.weather"
+    android:versionCode="1"
+    android:versionName="1.0-reveng">
+
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <application
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name="com.reveng.weather.WeatherActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
