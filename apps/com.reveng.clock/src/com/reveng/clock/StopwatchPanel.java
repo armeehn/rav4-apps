@@ -14,6 +14,7 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Locale;
+import com.reveng.design.Palette;
 
 /** Stopwatch with start/stop, lap and reset, driven by a Handler ticker. */
 class StopwatchPanel extends LinearLayout {
@@ -76,7 +77,7 @@ class StopwatchPanel extends LinearLayout {
 
         // reset
         ImageButton reset = Ui.iconButton(getContext(), R.drawable.ic_back,
-                getContext().getColor(R.color.text2), 64);
+                Palette.color(getContext(), R.color.text2), 64);
         reset.setBackgroundResource(R.drawable.btn_ghost);
         reset.setOnClickListener(v -> reset());
         controls.addView(reset, ctrlLp(64, 0));
@@ -98,7 +99,7 @@ class StopwatchPanel extends LinearLayout {
 
         // lap
         lapBtn = Ui.iconButton(getContext(), R.drawable.ic_timer,
-                getContext().getColor(R.color.text2), 64);
+                Palette.color(getContext(), R.color.text2), 64);
         lapBtn.setBackgroundResource(R.drawable.btn_ghost);
         lapBtn.setOnClickListener(v -> lap());
         controls.addView(lapBtn, ctrlLp(64, 20));

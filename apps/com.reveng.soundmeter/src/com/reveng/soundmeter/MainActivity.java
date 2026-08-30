@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 import java.io.File;
 import java.io.IOException;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone Sound Meter. Samples the microphone's peak amplitude via
@@ -74,9 +75,9 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        cText = getColor(R.color.text);
-        cText2 = getColor(R.color.text2);
-        cText3 = getColor(R.color.text3);
+        cText = Palette.color(this, R.color.text);
+        cText2 = Palette.color(this, R.color.text2);
+        cText3 = Palette.color(this, R.color.text3);
 
         gauge = findViewById(R.id.gauge);
         dbView = findViewById(R.id.db);

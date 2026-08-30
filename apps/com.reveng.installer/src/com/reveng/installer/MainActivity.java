@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room replacement for the GT6 built-in "Apk Installer"
@@ -100,11 +101,11 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        cAccent = getColor(R.color.accent);
-        cAccentDim = getColor(R.color.accent_dim);
-        cSurface2 = getColor(R.color.surface2);
-        cText = getColor(R.color.text);
-        cText2 = getColor(R.color.text2);
+        cAccent = Palette.color(this, R.color.accent);
+        cAccentDim = Palette.color(this, R.color.accent_dim);
+        cSurface2 = Palette.color(this, R.color.surface2);
+        cText = Palette.color(this, R.color.text);
+        cText2 = Palette.color(this, R.color.text2);
 
         apkList = findViewById(R.id.apk_list);
         appList = findViewById(R.id.app_list);

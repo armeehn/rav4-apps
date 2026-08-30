@@ -48,6 +48,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone file manager. Browses the on-disk filesystem with
@@ -89,12 +90,12 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        cAccent = getColor(R.color.accent);
-        cAccentDim = getColor(R.color.accent_dim);
-        cSurface2 = getColor(R.color.surface2);
-        cText = getColor(R.color.text);
-        cText2 = getColor(R.color.text2);
-        cText3 = getColor(R.color.text3);
+        cAccent = Palette.color(this, R.color.accent);
+        cAccentDim = Palette.color(this, R.color.accent_dim);
+        cSurface2 = Palette.color(this, R.color.surface2);
+        cText = Palette.color(this, R.color.text);
+        cText2 = Palette.color(this, R.color.text2);
+        cText3 = Palette.color(this, R.color.text3);
 
         list = findViewById(R.id.list);
         empty = findViewById(R.id.empty);
@@ -525,8 +526,8 @@ public class MainActivity extends Activity {
                 GradientDrawable rowBg = new GradientDrawable();
                 rowBg.setShape(GradientDrawable.RECTANGLE);
                 rowBg.setCornerRadius(dp(16));
-                rowBg.setColor(getColor(R.color.surface));
-                rowBg.setStroke(dp(1), getColor(R.color.stroke));
+                rowBg.setColor(Palette.color(MainActivity.this, R.color.surface));
+                rowBg.setStroke(dp(1), Palette.color(MainActivity.this, R.color.stroke));
                 row.setBackground(rowBg);
                 LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,

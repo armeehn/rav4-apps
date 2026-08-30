@@ -9,6 +9,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room "Clock" app for the RAV4 GT6 head unit. A left navigation rail
@@ -39,16 +40,16 @@ public class MainActivity extends Activity {
                 R.drawable.ic_clock, R.drawable.ic_alarm,
                 R.drawable.ic_stopwatch, R.drawable.ic_timer};
 
-        cAccent = getColor(R.color.accent);
-        cAccentDim = getColor(R.color.accent_dim);
-        cText3 = getColor(R.color.text3);
+        cAccent = Palette.color(this, R.color.accent);
+        cAccentDim = Palette.color(this, R.color.accent_dim);
+        cText3 = Palette.color(this, R.color.text3);
 
         // re-arm any enabled alarms (idempotent) in case they were lost
         new AlarmStore(this).rescheduleAll();
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.HORIZONTAL);
-        root.setBackgroundColor(getColor(R.color.bg));
+        root.setBackgroundColor(Palette.color(this, R.color.bg));
 
         root.addView(buildNavRail(), new LinearLayout.LayoutParams(
                 Ui.dp(this, 116), ViewGroup.LayoutParams.MATCH_PARENT));
@@ -74,7 +75,7 @@ public class MainActivity extends Activity {
     private View buildNavRail() {
         LinearLayout rail = new LinearLayout(this);
         rail.setOrientation(LinearLayout.VERTICAL);
-        rail.setBackgroundColor(getColor(R.color.surface));
+        rail.setBackgroundColor(Palette.color(this, R.color.surface));
         rail.setGravity(Gravity.CENTER_HORIZONTAL);
         int pv = Ui.dp(this, 18);
         rail.setPadding(0, pv, 0, pv);

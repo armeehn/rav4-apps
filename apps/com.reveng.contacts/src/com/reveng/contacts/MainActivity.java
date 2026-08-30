@@ -42,6 +42,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone Contacts app for the GT6 head unit. Reads the device
@@ -112,14 +113,14 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        cAccent = getColor(R.color.accent);
-        cAccentDim = getColor(R.color.accent_dim);
-        cSurface = getColor(R.color.surface);
-        cSurface2 = getColor(R.color.surface2);
-        cStroke = getColor(R.color.stroke);
-        cText = getColor(R.color.text);
-        cText2 = getColor(R.color.text2);
-        cText3 = getColor(R.color.text3);
+        cAccent = Palette.color(this, R.color.accent);
+        cAccentDim = Palette.color(this, R.color.accent_dim);
+        cSurface = Palette.color(this, R.color.surface);
+        cSurface2 = Palette.color(this, R.color.surface2);
+        cStroke = Palette.color(this, R.color.stroke);
+        cText = Palette.color(this, R.color.text);
+        cText2 = Palette.color(this, R.color.text2);
+        cText3 = Palette.color(this, R.color.text3);
 
         listView = findViewById(R.id.list);
         search = findViewById(R.id.search);

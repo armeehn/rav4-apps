@@ -15,6 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.Locale;
+import com.reveng.design.Palette;
 
 /** Countdown timer with presets, start/pause/reset, and an alarm sound on finish. */
 class TimerPanel extends LinearLayout {
@@ -85,7 +86,7 @@ class TimerPanel extends LinearLayout {
         for (int i = 0; i < presets.length; i++) {
             final long ms = presets[i];
             TextView pill = Ui.pill(getContext(), presetLabels[i], false,
-                    getContext().getColor(R.color.text));
+                    Palette.color(getContext(), R.color.text));
             pill.setOnClickListener(v -> setPreset(ms));
             LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -103,7 +104,7 @@ class TimerPanel extends LinearLayout {
         addView(controls, clp);
 
         ImageButton reset = Ui.iconButton(getContext(), R.drawable.ic_back,
-                getContext().getColor(R.color.text2), 64);
+                Palette.color(getContext(), R.color.text2), 64);
         reset.setBackgroundResource(R.drawable.btn_ghost);
         reset.setOnClickListener(v -> reset());
         LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
@@ -139,7 +140,7 @@ class TimerPanel extends LinearLayout {
         remainingMs = ms;
         big.setText(fmt(ms));
         status.setText(R.string.tab_timer);
-        big.setTextColor(getContext().getColor(R.color.text));
+        big.setTextColor(Palette.color(getContext(), R.color.text));
         startBtn.setImageResource(R.drawable.ic_play);
         startLabel.setText(R.string.start);
     }
@@ -173,7 +174,7 @@ class TimerPanel extends LinearLayout {
         ui.removeCallbacks(tick);
         remainingMs = durationMs;
         big.setText(fmt(durationMs));
-        big.setTextColor(getContext().getColor(R.color.text));
+        big.setTextColor(Palette.color(getContext(), R.color.text));
         status.setText(R.string.tab_timer);
         startBtn.setImageResource(R.drawable.ic_play);
         startLabel.setText(R.string.start);
@@ -184,7 +185,7 @@ class TimerPanel extends LinearLayout {
         finished = true;
         ui.removeCallbacks(tick);
         status.setText(R.string.finished);
-        big.setTextColor(getContext().getColor(R.color.accent));
+        big.setTextColor(Palette.color(getContext(), R.color.accent));
         startBtn.setImageResource(R.drawable.ic_play);
         startLabel.setText(R.string.reset);
         playSound();

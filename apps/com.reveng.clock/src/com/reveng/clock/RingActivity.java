@@ -16,6 +16,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import com.reveng.design.Palette;
 
 /** Full-screen alarm ring: alarm-stream Ringtone + vibration, Dismiss / Snooze. */
 public class RingActivity extends Activity {
@@ -57,10 +58,10 @@ public class RingActivity extends Activity {
     }
 
     private View buildUi() {
-        int cText = getColor(R.color.text);
-        int cText2 = getColor(R.color.text2);
-        int cAccent = getColor(R.color.accent);
-        int cBg = getColor(R.color.bg);
+        int cText = Palette.color(this, R.color.text);
+        int cText2 = Palette.color(this, R.color.text2);
+        int cAccent = Palette.color(this, R.color.accent);
+        int cBg = Palette.color(this, R.color.bg);
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);

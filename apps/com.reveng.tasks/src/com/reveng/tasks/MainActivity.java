@@ -29,6 +29,7 @@ import android.widget.Toast;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone Tasks (to-do / checklist) app. A single list of tasks;
@@ -74,12 +75,12 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        cAccent = getColor(R.color.accent);
-        cSurface = getColor(R.color.surface);
-        cStroke = getColor(R.color.stroke);
-        cText = getColor(R.color.text);
-        cText2 = getColor(R.color.text2);
-        cText3 = getColor(R.color.text3);
+        cAccent = Palette.color(this, R.color.accent);
+        cSurface = Palette.color(this, R.color.surface);
+        cStroke = Palette.color(this, R.color.stroke);
+        cText = Palette.color(this, R.color.text);
+        cText2 = Palette.color(this, R.color.text2);
+        cText3 = Palette.color(this, R.color.text3);
 
         listView = findViewById(R.id.list);
         input = findViewById(R.id.input);

@@ -15,6 +15,7 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 
 import java.util.List;
+import com.reveng.design.Palette;
 
 /** Alarm list: add / edit / delete, enable toggle, persisted + scheduled. */
 class AlarmPanel extends LinearLayout {
@@ -74,7 +75,7 @@ class AlarmPanel extends LinearLayout {
 
         android.widget.ImageView icon = new android.widget.ImageView(getContext());
         icon.setImageResource(R.drawable.ic_alarm);
-        icon.setColorFilter(getContext().getColor(R.color.text3));
+        icon.setColorFilter(Palette.color(getContext(), R.color.text3));
         e.addView(icon, new LinearLayout.LayoutParams(Ui.dp(getContext(), 56), Ui.dp(getContext(), 56)));
 
         TextView t = Ui.text(getContext(), R.style.H2, getContext().getString(R.string.no_alarms));
@@ -120,7 +121,7 @@ class AlarmPanel extends LinearLayout {
         TextView time = Ui.styled(getContext(), R.style.Display);
         time.setTextSize(42);
         time.setText(a.timeText());
-        if (!a.enabled) time.setTextColor(getContext().getColor(R.color.text3));
+        if (!a.enabled) time.setTextColor(Palette.color(getContext(), R.color.text3));
         col.addView(time);
 
         TextView label = Ui.text(getContext(), R.style.Caption,
@@ -144,7 +145,7 @@ class AlarmPanel extends LinearLayout {
 
         // delete
         ImageButton del = Ui.iconButton(getContext(), R.drawable.ic_delete,
-                getContext().getColor(R.color.text2), 44);
+                Palette.color(getContext(), R.color.text2), 44);
         del.setOnClickListener(v -> {
             store.cancel(a.id);
             List<Alarm> all = store.load();
@@ -186,8 +187,8 @@ class AlarmPanel extends LinearLayout {
         final EditText labelField = new EditText(getContext());
         labelField.setHint(R.string.label_hint);
         labelField.setBackgroundResource(R.drawable.bg_field);
-        labelField.setTextColor(getContext().getColor(R.color.text));
-        labelField.setHintTextColor(getContext().getColor(R.color.text3));
+        labelField.setTextColor(Palette.color(getContext(), R.color.text));
+        labelField.setHintTextColor(Palette.color(getContext(), R.color.text3));
         int fp = Ui.dp(getContext(), 14);
         labelField.setPadding(fp, fp, fp, fp);
         labelField.setSingleLine(true);

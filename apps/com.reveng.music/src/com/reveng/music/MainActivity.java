@@ -29,6 +29,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room local music player entry point. Lists all device audio from
@@ -92,11 +93,11 @@ public class MainActivity extends Activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        cAccent = getColor(R.color.accent);
-        cAccentDim = getColor(R.color.accent_dim);
-        cSurface2 = getColor(R.color.surface2);
-        cText = getColor(R.color.text);
-        cText2 = getColor(R.color.text2);
+        cAccent = Palette.color(this, R.color.accent);
+        cAccentDim = Palette.color(this, R.color.accent_dim);
+        cSurface2 = Palette.color(this, R.color.surface2);
+        cText = Palette.color(this, R.color.text);
+        cText2 = Palette.color(this, R.color.text2);
 
         list = findViewById(R.id.list);
         empty = findViewById(R.id.empty);
