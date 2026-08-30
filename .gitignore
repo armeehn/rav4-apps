@@ -3,6 +3,7 @@ decompiled/
 decompiled-full/
 *.apk
 *.dex
+*.idsig
 build/
 app-debug.apk
 debug.keystore
