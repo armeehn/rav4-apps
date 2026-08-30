@@ -50,7 +50,10 @@ find "$PROJ/res" -type f | while read -r f; do "$AAPT2" compile "$f" -o "$OUT/co
 # resolution here by design, and one more source root costs nothing.
 SHARED_SRC="$PROJ/../_design/src"
 [ -d "$SHARED_SRC" ] || SHARED_SRC=""
-"$JAVAC" $JAVAC_ARGS -d "$OUT/classes" -classpath "$PLATFORM" \
+# -encoding is explicit: several sources carry × ÷ √ π as literals, and javac otherwise
+# decodes them with the ambient locale's charset — green on a UTF-8 shell, 200 syntax
+# errors on a runner that happens to start in the C locale.
+"$JAVAC" $JAVAC_ARGS -encoding UTF-8 -d "$OUT/classes" -classpath "$PLATFORM" \
   $(find "$PROJ/src" $SHARED_SRC "$OUT/gen" -name '*.java')
 # 3. dex
 "$D8" --lib "$PLATFORM" --output "$OUT" $(find "$OUT/classes" -name '*.class') >/dev/null 2>&1

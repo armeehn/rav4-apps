@@ -87,6 +87,14 @@ public final class MediaCitizen {
     private AudioFocusRequest focusRequest;
     private boolean pausedByFocusLoss;
 
+    /**
+     * One instance for the life of this citizen. Pre-O, {@code abandonAudioFocus} matches the
+     * listener by identity, and every evaluation of {@code this::onFocusChange} is a *new*
+     * object — so requesting with one and abandoning with another leaves the focus stack
+     * entry in place forever, and everything else in the cabin stays ducked.
+     */
+    private final AudioManager.OnAudioFocusChangeListener focusListener = this::onFocusChange;
+
     private MediaCitizen(Context context, String tag, Transport transport) {
         this.appContext = context.getApplicationContext();
         this.transport = transport;
@@ -164,11 +172,11 @@ public final class MediaCitizen {
             focusRequest = new AudioFocusRequest.Builder(gain)
                     .setAudioAttributes(attrs)
                     .setWillPauseWhenDucked(false)
-                    .setOnAudioFocusChangeListener(this::onFocusChange)
+                    .setOnAudioFocusChangeListener(focusListener)
                     .build();
             result = am.requestAudioFocus(focusRequest);
         } else {
-            result = am.requestAudioFocus(this::onFocusChange,
+            result = am.requestAudioFocus(focusListener,
                     recording ? AudioManager.STREAM_VOICE_CALL : AudioManager.STREAM_MUSIC, gain);
         }
         return result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
@@ -186,7 +194,7 @@ public final class MediaCitizen {
                 focusRequest = null;
             }
         } else {
-            am.abandonAudioFocus(this::onFocusChange);
+            am.abandonAudioFocus(focusListener);
         }
     }
 
@@ -232,12 +240,14 @@ public final class MediaCitizen {
     }
 
     /**
-     * Publish transport state. The session is only {@code active} while something is playing:
-     * an always-active session would keep this app on the launcher's card long after it stopped,
-     * and would keep claiming the wheel's media buttons.
+     * Publish transport state. The session stays {@code active} across a pause and is only torn
+     * down in {@link #release}: a session deactivated on pause is no longer an *active* session,
+     * so the wheel's play button has nothing to resume it with and the launcher's now-playing
+     * card empties the moment the driver pauses. Pause is expressed in the {@link PlaybackState}
+     * instead, which is what a card reads to draw a play glyph rather than a pause one.
      */
     public void setState(boolean playing, long positionMs) {
-        session.setActive(playing);
+        session.setActive(true);
         session.setPlaybackState(new PlaybackState.Builder()
                 .setActions(PlaybackState.ACTION_PLAY
                         | PlaybackState.ACTION_PAUSE
