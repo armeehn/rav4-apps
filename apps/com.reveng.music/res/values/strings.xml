@@ -6,6 +6,7 @@
     <string name="need_permission">Audio permission is needed to show your music</string>
     <string name="grant">Grant access</string>
     <string name="nothing_playing">Nothing playing</string>
+    <string name="none_playable">No track could be played</string>
     <string name="play">Play</string>
     <string name="pause">Pause</string>
     <string name="prev">Previous</string>

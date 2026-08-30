@@ -135,6 +135,7 @@ public class RingActivity extends Activity {
     }
 
     private void stopRinging() {
+        RingNotice.clear(this);
         ui.removeCallbacksAndMessages(null);
         try { if (ringtone != null && ringtone.isPlaying()) ringtone.stop(); } catch (Exception ignored) {}
         try { if (vibrator != null) vibrator.cancel(); } catch (Exception ignored) {}
@@ -147,7 +148,6 @@ public class RingActivity extends Activity {
 
     private void snooze() {
         stopRinging();
-        Alarm snoozed = new Alarm(alarmId, 0, 0, true, label);
         // Schedule a one-shot in SNOOZE_MIN minutes using the same receiver path.
         long when = System.currentTimeMillis() + SNOOZE_MIN * 60000L;
         new AlarmStore(this).scheduleAt(alarmId, when, label, timeText);

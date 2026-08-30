@@ -3,7 +3,6 @@ package com.reveng.browser;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -25,6 +24,7 @@ import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import com.reveng.design.Palette;
+import com.reveng.design.WebAudio;
 
 /**
  * Clean-room standalone Browser built on the framework {@link WebView}. No
@@ -44,6 +44,12 @@ public class BrowserActivity extends Activity {
     private ImageButton refreshBtn;
 
     private boolean loading = false;
+
+    /**
+     * v0.6.4 — audio focus, and the suspend-on-leave that goes with it. Until now this app was
+     * the one member of the suite that played over the radio without asking.
+     */
+    private WebAudio audio;
 
     // Quick links shown on the home page: label + URL.
     private static final String[][] QUICK_LINKS = {
@@ -69,6 +75,7 @@ public class BrowserActivity extends Activity {
         refreshBtn = findViewById(R.id.refreshBtn);
 
         configureWebView();
+        audio = WebAudio.attach(web, "browser");
         buildQuickLinks();
 
         findViewById(R.id.backBtn).setOnClickListener(v -> { if (web.canGoBack()) web.goBack(); });
@@ -109,7 +116,6 @@ public class BrowserActivity extends Activity {
         s.setDisplayZoomControls(false);
         s.setSupportZoom(true);
         s.setJavaScriptCanOpenWindowsAutomatically(true);
-        s.setMediaPlaybackRequiresUserGesture(false);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         // Modern desktop-ish UA so sites serve their full experience.
         s.setUserAgentString("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -177,14 +183,17 @@ public class BrowserActivity extends Activity {
 
         ImageView icon = new ImageView(this);
         icon.setImageResource(R.drawable.ic_globe);
-        icon.setColorFilter(Color.parseColor("#FF5B9DFF"));  // @color/accent
+        // Palette.apply's walk cannot reach a ColorFilter or a colour set from Java, so these
+        // two have to be resolved through Palette or the cards stay dark-theme blue on a
+        // light launcher palette.
+        icon.setColorFilter(Palette.color(this, R.color.accent));
         LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(40), dp(40));
         icon.setLayoutParams(ilp);
         card.addView(icon);
 
         TextView tv = new TextView(this);
         tv.setText(label);
-        tv.setTextColor(Color.parseColor("#FFF2F5FA"));      // @color/text
+        tv.setTextColor(Palette.color(this, R.color.text));
         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         tv.setGravity(Gravity.CENTER);
         tv.setTypeface(tv.getTypeface(), android.graphics.Typeface.BOLD);
@@ -257,6 +266,24 @@ public class BrowserActivity extends Activity {
     }
 
     // ---------------------------------------------------------------- misc
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        audio.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        audio.onResume();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        audio.release();
+    }
 
     @Override
     public void onBackPressed() {

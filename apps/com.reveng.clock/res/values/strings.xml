@@ -30,6 +30,9 @@
     <string name="paused">Paused</string>
     <string name="finished">Time is up</string>
 
+    <string name="channel_alarms">Alarms</string>
+    <string name="channel_alarms_desc">A ringing alarm</string>
+
     <string name="dismiss">Dismiss</string>
     <string name="snooze">Snooze</string>
     <string name="world_clock">World Clock</string>

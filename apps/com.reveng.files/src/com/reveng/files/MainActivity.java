@@ -38,6 +38,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -356,6 +357,10 @@ public class MainActivity extends Activity {
             String name = in.getText().toString().trim();
             if (TextUtils.isEmpty(name)) return;
             File dest = new File(f.getParentFile(), name);
+            if (dest.equals(f)) return;
+            // renameTo replaces the destination without a word, so a typo landing on an
+            // existing name would silently destroy that file.
+            if (dest.exists()) { toast("That name is already taken"); return; }
             if (f.renameTo(dest)) navigate(currentDir);
             else toast("Rename failed");
         });
@@ -395,9 +400,14 @@ public class MainActivity extends Activity {
         b.show();
     }
 
+    /**
+     * Depth-first delete. A symlinked directory is unlinked, never descended into: isDirectory()
+     * follows links, so recursing through one would delete the contents of whatever it points
+     * at — outside the folder the driver picked, and this app holds MANAGE_EXTERNAL_STORAGE.
+     */
     private boolean deleteRecursive(File f) {
         try {
-            if (f.isDirectory()) {
+            if (f.isDirectory() && !isSymlink(f)) {
                 File[] kids = f.listFiles();
                 if (kids != null) for (File k : kids) deleteRecursive(k);
             }
@@ -405,6 +415,17 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * Only the last path component is tested: canonicalising the whole path would also report
+     * true for an ordinary folder that merely sits under a symlinked parent, which is most of
+     * /sdcard on this unit.
+     */
+    private static boolean isSymlink(File f) throws IOException {
+        File parent = f.getParentFile();
+        File resolved = parent == null ? f : new File(parent.getCanonicalPath(), f.getName());
+        return !resolved.getCanonicalFile().equals(resolved.getAbsoluteFile());
     }
 
     private void showInfo(File f) {
