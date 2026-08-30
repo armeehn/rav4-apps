@@ -40,6 +40,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import com.reveng.design.Palette;
+import com.reveng.design.MediaCitizen;
 
 /**
  * Clean-room standalone voice recorder. Captures AAC audio to an m4a file in the
@@ -91,6 +92,9 @@ public class MainActivity extends Activity
     // recording state
     private MediaRecorder recorder;
     private boolean recording = false;
+
+    /** v0.6.1 — exclusive audio focus while recording, so nothing else is captured through the cabin mic. */
+    private MediaCitizen citizen;
     private File recordingFile;
     private long recStartMs;
 
@@ -204,6 +208,14 @@ public class MainActivity extends Activity
     }
 
     private void startRecording() {
+        // Exclusive focus: a ducked radio is still audible, and still ends up in the
+        // capture. A refusal means something else already holds the microphone.
+        if (citizen == null) {
+            citizen = MediaCitizen.attach(this, "recorder", new SilentTransport());
+        }
+        if (!citizen.takeFocus(MediaCitizen.Focus.RECORDING)) {
+            return;
+        }
         File dir = recordDir();
         if (dir == null) { toast("Storage unavailable"); return; }
         String stamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
@@ -234,6 +246,9 @@ public class MainActivity extends Activity
     }
 
     private void stopRecording() {
+        if (citizen != null) {
+            citizen.releaseFocus();
+        }
         if (!recording) return;
         recording = false;
         ui.removeCallbacks(recTick);
@@ -699,5 +714,23 @@ public class MainActivity extends Activity
         ui.removeCallbacks(playTick);
         releaseRecorder();
         stopPlayback();
+    }
+
+    /**
+     * Capture has no transport to offer: there is nothing for the wheel or the launcher to
+     * play, pause or skip. Only the focus half of MediaCitizen is used here.
+     */
+    private static final class SilentTransport implements MediaCitizen.Transport {
+        @Override public void onPlay() { }
+
+        @Override public void onPause() { }
+
+        @Override public void onNext() { }
+
+        @Override public void onPrevious() { }
+
+        @Override public void onStop() { }
+
+        @Override public void onDuck(boolean duck) { }
     }
 }

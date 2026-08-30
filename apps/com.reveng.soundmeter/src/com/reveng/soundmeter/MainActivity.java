@@ -16,6 +16,7 @@ import android.widget.TextView;
 import java.io.File;
 import java.io.IOException;
 import com.reveng.design.Palette;
+import com.reveng.design.MediaCitizen;
 
 /**
  * Clean-room standalone Sound Meter. Samples the microphone's peak amplitude via
@@ -48,6 +49,9 @@ public class MainActivity extends Activity {
 
     private MediaRecorder recorder;
     private boolean sampling = false;
+
+    /** v0.6.1 — exclusive audio focus while sampling, so the meter measures the cabin and not the radio. */
+    private MediaCitizen citizen;
     private File sink; // throwaway output; amplitude is read, bytes are discarded
 
     // Smoothed level + statistics (dB) since start / last reset.
@@ -154,6 +158,14 @@ public class MainActivity extends Activity {
     // ---------------- sampling ----------------
 
     private void startSampling() {
+        // Exclusive focus: a ducked radio is still audible, and still ends up in the
+        // capture. A refusal means something else already holds the microphone.
+        if (citizen == null) {
+            citizen = MediaCitizen.attach(this, "soundmeter", new SilentTransport());
+        }
+        if (!citizen.takeFocus(MediaCitizen.Focus.RECORDING)) {
+            return;
+        }
         if (sampling || !hasPerm()) return;
         try {
             sink = new File(getCacheDir(), "sm_sink.tmp");
@@ -180,6 +192,9 @@ public class MainActivity extends Activity {
     }
 
     private void stopSampling() {
+        if (citizen != null) {
+            citizen.releaseFocus();
+        }
         sampling = false;
         ui.removeCallbacks(tick);
         setListening(false);
@@ -267,5 +282,23 @@ public class MainActivity extends Activity {
         statusRow.setVisibility(View.GONE);
         grantBtn.setVisibility(View.GONE);
         resetBtn.setEnabled(false);
+    }
+
+    /**
+     * Capture has no transport to offer: there is nothing for the wheel or the launcher to
+     * play, pause or skip. Only the focus half of MediaCitizen is used here.
+     */
+    private static final class SilentTransport implements MediaCitizen.Transport {
+        @Override public void onPlay() { }
+
+        @Override public void onPause() { }
+
+        @Override public void onNext() { }
+
+        @Override public void onPrevious() { }
+
+        @Override public void onStop() { }
+
+        @Override public void onDuck(boolean duck) { }
     }
 }

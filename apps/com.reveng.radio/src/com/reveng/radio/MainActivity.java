@@ -25,6 +25,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.Locale;
 import com.reveng.design.Palette;
+import com.reveng.design.MediaCitizen;
 
 /**
  * Clean-room radio for the GT6 head unit: a real FM/AM tuner driven through
@@ -78,6 +79,14 @@ public class MainActivity extends Activity
     private MediaPlayer player;
     private Station current;
     private int state = STOPPED;
+
+    /**
+     * v0.6.2 — the session half of MediaCitizen only. This screen already manages its own audio
+     * focus (it predates the shared helper and its stream handling is stream-specific); what it
+     * lacked was a MediaSession, without which the launcher's now-playing card cannot see the
+     * radio at all and the steering-wheel keys go nowhere.
+     */
+    private MediaCitizen citizen;
     private StationAdapter adapter;
     private AudioFocusRequest focusRequest;
 
@@ -352,6 +361,10 @@ public class MainActivity extends Activity
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (citizen != null) {
+            citizen.release();
+            citizen = null;
+        }
         tuner.unbind();
         if (player != null) {
             try { player.release(); } catch (Exception ignored) {}
@@ -486,7 +499,57 @@ public class MainActivity extends Activity
         if (adapter != null) adapter.notifyDataSetChanged();
     }
 
+    private MediaCitizen citizen() {
+        if (citizen == null) {
+            citizen = MediaCitizen.attach(this, "radio", new MediaCitizen.Transport() {
+                @Override public void onPlay() { togglePlayFromSession(); }
+
+                @Override public void onPause() { stopPlayback(); }
+
+                @Override public void onNext() { step(1); }
+
+                @Override public void onPrevious() { step(-1); }
+
+                @Override public void onStop() { stopPlayback(); }
+
+                @Override public void onDuck(boolean duck) {
+                    // A stream that ducks to a whisper is just noise; pause instead.
+                    if (duck) stopPlayback();
+                }
+            });
+        }
+        return citizen;
+    }
+
+    /** Play the current station, or the first one if nothing has been chosen yet. */
+    private void togglePlayFromSession() {
+        if (state != STOPPED) {
+            return;
+        }
+        if (current != null) {
+            playStation(current);
+        } else if (!stations.isEmpty()) {
+            playStation(stations.get(0));
+        }
+    }
+
+    /** Move [delta] stations from the current one, wrapping. */
+    private void step(int delta) {
+        if (stations.isEmpty()) {
+            return;
+        }
+        int i = current == null ? -1 : stations.indexOf(current);
+        int next = ((i + delta) % stations.size() + stations.size()) % stations.size();
+        playStation(stations.get(next));
+    }
+
     private void updateNowPlaying() {
+        // One funnel for every state change, so the card and the wheel cannot drift from the UI.
+        if (current != null) {
+            citizen().setMetadata(current.name, current.genre, 0);
+        }
+        citizen().setState(state == PLAYING, 0);
+
         if (current == null) {
             nowTitle.setText(R.string.nothing_playing);
             nowStatus.setText(R.string.tap_to_play);
