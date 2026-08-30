@@ -49,6 +49,23 @@ third-tier label drawn for a dark palette vanishes on a light one: `stroke`, `ri
 `accent_dim` and `scrim` keep the resource's own alpha and take the launcher's hue, and `text3`
 is `text2` pushed toward the background so three text tiers survive any palette.
 
+**Every app declares the provider in `<queries>`.** Without it an app targeting API 30+ cannot
+see the provider *at all*: package visibility hides it, `query()` returns null, and the app
+silently keeps its built-in palette. It is the one line that makes the whole feature work, and
+nothing about it fails loudly — the first build of this shipped without it and looked fine
+until it was put on a panel.
+
+Verified on the emulated head unit (LXC 124, 1920x720 @240dpi), which is what caught that:
+
+| | Clock's accent |
+|---|---|
+| launcher not installed | `#5B9DFF` — the design pack's own value, i.e. the fallback |
+| launcher installed, before the `<queries>` fix | `#5B9DFF` — silently unthemed |
+| launcher installed, after | `#2F81F7` — the launcher's Midnight primary |
+
+`content query --uri content://com.reveng.carlauncher.theme/active` also returns the full row to
+a different uid, so the provider is genuinely exported and R8 did not strip it.
+
 ## Open
 
 ### 0.6 — the rest of the colour, and proof on glass
@@ -58,7 +75,8 @@ Two honest gaps:
   already went through the shared `R.color.*` roles were converted; the literals are a
   per-app design pass, not a mechanical substitution, and rewriting them blind would ship
   twenty-six subtly broken apps.
-- **Nothing here has run on the head unit.** All twenty-six compile and are signed, and the
-  shared class is verified present in each dex, but "builds" is not "works": the provider read,
-  the day/night re-paint and every derived colour are unproven on glass. That is one session at
-  the car (tracked as RAV4-23).
+- **Nothing here has run on the real head unit.** The theme path is now proven on the
+  *emulated* panel (above), but the emulator has no vendor gateway, no root and no car. What
+  remains unproven on glass: the day/night re-paint (it needs the illumination broadcast), the
+  derived colours against a light theme, and every app's actual behaviour. One session at the
+  car (RAV4-23).
