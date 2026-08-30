@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.os.Looper;
 import android.util.TypedValue;
@@ -136,6 +137,13 @@ public final class Palette {
             case "text3":
                 return blend(opaque(s.onSurfaceMuted), opaque(s.background),
                         TEXT3_TOWARD_BACKGROUND);
+
+            // v0.8: the drawn offset shadow under raised cards. Ink on a light field,
+            // plain black on a dark one, so the block reads as shadow rather than glow.
+            case "shadow":
+                return isLight(s.background)
+                        ? opaque(s.onBackground)
+                        : 0xFF000000;
             default:
                 return fallback;
         }
@@ -231,6 +239,14 @@ public final class Palette {
         return (from & 0xFF000000) | ((int) rgbSource & 0x00FFFFFF);
     }
 
+    /** Whether {@code argb} is a light colour (perceptual luma over the midpoint). */
+    private static boolean isLight(long argb) {
+        int r = (int) ((argb >> 16) & 0xFF);
+        int g = (int) ((argb >> 8) & 0xFF);
+        int b = (int) (argb & 0xFF);
+        return (299 * r + 587 * g + 114 * b) / 1000 > 140;
+    }
+
     /** {@code amount} of the way from {@code a} to {@code b}, per channel. */
     private static int blend(int a, int b, float amount) {
         int r = (int) (((a >> 16) & 0xFF) + ((((b >> 16) & 0xFF) - ((a >> 16) & 0xFF)) * amount));
@@ -260,11 +276,11 @@ public final class Palette {
      */
     private static final String[] ROLES = {
         "bg", "bg2", "surface", "surface2", "stroke", "accent", "accent2", "accent_dim",
-        "text", "text2", "text3", "ripple", "scrim", "error",
+        "text", "text2", "text3", "ripple", "scrim", "error", "shadow",
     };
 
-    /** Hairline width for our own card/field shapes; the XML pack draws them at 1dp. */
-    private static final float STROKE_DP = 1f;
+    /** Border width for our own card/field shapes; the v0.8 pack draws them at 2dp. */
+    private static final float STROKE_DP = 2f;
 
     /**
      * Re-colour everything the *resources* coloured, then keep it current.
@@ -366,33 +382,76 @@ public final class Palette {
                 d.mutate();
                 ((RippleDrawable) d).setColor(ColorStateList.valueOf(themed));
             }
+            // A ripple is a LayerDrawable: keep walking so its content — an accent button's
+            // fill, a bordered ghost body — follows the palette too. (v0.8)
+            retintLayers(v, (RippleDrawable) d, map);
             return;
         }
 
         if (d instanceof GradientDrawable) {
-            GradientDrawable g = (GradientDrawable) d;
-            ColorStateList solid = g.getColor();
-            if (solid == null) {
-                return;
-            }
-            int themed = themedFor(solid.getDefaultColor(), map);
-            if (themed == 0) {
-                return;
-            }
-            g.mutate();
-            ((GradientDrawable) v.getBackground()).setColor(themed);
+            d.mutate();
+            retintShape(v, (GradientDrawable) v.getBackground(), map);
+            return;
+        }
 
-            // Stroke has no getter either. These shapes are ours and every one that carries a
-            // solid also carries a 1dp @color/stroke hairline, so re-draw it: a hairline left
-            // at its dark-palette value vanishes on a light theme.
-            int stroke = colorByName(v.getContext(), "stroke");
-            if (stroke != 0) {
-                int px = (int) TypedValue.applyDimension(
-                        TypedValue.COMPLEX_UNIT_DIP, STROKE_DP,
-                        v.getResources().getDisplayMetrics());
-                ((GradientDrawable) v.getBackground()).setStroke(px, stroke);
+        // v0.8: the hard-edge cards are layer-lists (offset shadow block + bordered body).
+        if (d instanceof LayerDrawable) {
+            d.mutate();
+            retintLayers(v, (LayerDrawable) v.getBackground(), map);
+        }
+    }
+
+    private static void retintLayers(View v, LayerDrawable layers, int[][] map) {
+        for (int i = 0; i < layers.getNumberOfLayers(); i++) {
+            Drawable child = layers.getDrawable(i);
+            if (child instanceof GradientDrawable) {
+                retintShape(v, (GradientDrawable) child, map);
+            } else if (child instanceof LayerDrawable) {
+                retintLayers(v, (LayerDrawable) child, map);
             }
         }
+    }
+
+    /**
+     * Re-colour one shape's solid, then re-draw the structural border on the shapes that
+     * carry one. Stroke has no getter, so which shapes are bordered is decided by what the
+     * fill <em>was</em>: every pack shape filled with a ground colour (bg/bg2/surface/
+     * surface2) is drawn with the 2dp border, and shadow blocks, accent fills and dim
+     * highlights are not — a rule the pack's own drawables are written to keep.
+     */
+    private static void retintShape(View v, GradientDrawable g, int[][] map) {
+        ColorStateList solid = g.getColor();
+        if (solid == null) {
+            return;
+        }
+        int was = solid.getDefaultColor();
+        int themed = themedFor(was, map);
+        if (themed != 0) {
+            g.mutate();
+            g.setColor(themed);
+        }
+        if (!isGround(v.getContext(), was)) {
+            return;
+        }
+        int stroke = colorByName(v.getContext(), "stroke");
+        if (stroke != 0) {
+            int px = (int) TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP, STROKE_DP,
+                    v.getResources().getDisplayMetrics());
+            g.mutate();
+            g.setStroke(px, stroke);
+        }
+    }
+
+    /** Whether {@code color} is one of the pack's ground fills — the bordered ones. */
+    private static boolean isGround(Context ctx, int color) {
+        for (String role : new String[]{"bg", "bg2", "surface", "surface2"}) {
+            int id = roleId(ctx, role);
+            if (id != 0 && ctx.getColor(id) == color) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** The themed replacement for {@code current}, or 0 if it is not a design-pack default. */

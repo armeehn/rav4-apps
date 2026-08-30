@@ -142,7 +142,7 @@
                     android:drawableTint="@color/text"
                     android:drawablePadding="8dp"
                     android:textColor="@color/text"
-                    android:fontFamily="sans-serif-medium"
+                    android:fontFamily="@font/jetbrains_mono"
                     android:textSize="15sp"
                     android:text="@string/pair_new" />
 

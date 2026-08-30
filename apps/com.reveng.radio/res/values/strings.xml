@@ -24,6 +24,7 @@
     <string name="status_connecting">connecting to tuner…</string>
     <string name="status_no_gateway">tuner gateway unavailable</string>
     <string name="status_mode_lost">audio taken by another source — tap any control</string>
+    <string name="status_paused">paused — play resumes the tuner</string>
     <string name="chip_stereo">ST</string>
     <string name="chip_rds">RDS</string>
 

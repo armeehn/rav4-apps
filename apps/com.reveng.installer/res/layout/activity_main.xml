@@ -52,7 +52,7 @@
                 android:background="@drawable/btn_accent"
                 android:textColor="#FFFFFFFF"
                 android:textAllCaps="false"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="@font/jetbrains_mono"
                 android:text="@string/tab_install" />
 
             <Button
@@ -64,7 +64,7 @@
                 android:background="@drawable/btn_ghost"
                 android:textColor="@color/text2"
                 android:textAllCaps="false"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="@font/jetbrains_mono"
                 android:text="@string/tab_apps" />
         </LinearLayout>
 
@@ -165,7 +165,7 @@
                 android:background="@drawable/btn_accent"
                 android:textColor="#FFFFFFFF"
                 android:textAllCaps="false"
-                android:fontFamily="sans-serif-medium"
+                android:fontFamily="@font/jetbrains_mono"
                 android:visibility="gone"
                 android:text="@string/grant" />
         </LinearLayout>
