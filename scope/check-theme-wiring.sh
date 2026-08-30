@@ -51,5 +51,18 @@ PY
     fi
 done
 
-[ "$fail" -eq 0 ] && echo "OK: every app declares the provider and carries the palette client"
+# v0.6.1: an app that plays or captures audio must go through MediaCitizen. Without it it
+# plays over the radio, does not duck for a navigation prompt, is invisible to the launcher's
+# now-playing card, and the steering-wheel media keys do nothing. None of that fails a build,
+# and none of it is visible on a desk.
+for d in apps/com.reveng.*; do
+    pkg="$(basename "$d")"
+    grep -rqE "MediaPlayer|MediaRecorder|AudioRecord|VideoView" "$d/src" 2>/dev/null || continue
+    grep -rq "MediaCitizen" "$d/src" 2>/dev/null || {
+        echo "FAIL $pkg: uses audio but never takes audio focus (MediaCitizen)"
+        fail=1
+    }
+done
+
+[ "$fail" -eq 0 ] && echo "OK: theme wiring and audio citizenship both intact"
 exit "$fail"

@@ -29,6 +29,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import com.reveng.design.MediaCitizen;
 import com.reveng.design.Palette;
 
 /**
@@ -69,6 +70,13 @@ public class MainActivity extends Activity
     private SeekBar seek;
 
     private MediaPlayer player;
+
+    /**
+     * v0.6.1-0.6.3 — audio focus, the session the launcher's now-playing card reads, and the
+     * steering-wheel media buttons. Created lazily on first playback so merely opening the
+     * library does not claim the cabin's audio.
+     */
+    private MediaCitizen citizen;
     private int current = -1;
     private boolean prepared = false;
     private boolean userSeeking = false;
@@ -215,6 +223,52 @@ public class MainActivity extends Activity
         grantBtn.setVisibility(show && !hasPerm() ? View.VISIBLE : View.GONE);
     }
 
+    /** The transport the system and the wheel drive; each action is what the UI button does. */
+    private MediaCitizen citizen() {
+        if (citizen == null) {
+            citizen = MediaCitizen.attach(this, "music", new MediaCitizen.Transport() {
+                @Override public void onPlay() {
+                    if (player != null && prepared && !player.isPlaying()) togglePlay();
+                }
+
+                @Override public void onPause() {
+                    if (player != null && prepared && player.isPlaying()) togglePlay();
+                }
+
+                @Override public void onNext() { playNext(); }
+
+                @Override public void onPrevious() { playPrevious(); }
+
+                @Override public void onStop() {
+                    if (player != null && prepared && player.isPlaying()) togglePlay();
+                }
+
+                @Override public void onDuck(boolean duck) {
+                    if (player == null) return;
+                    float v = MediaCitizen.duckVolume(duck);
+                    try { player.setVolume(v, v); } catch (Exception ignored) {}
+                }
+            });
+        }
+        return citizen;
+    }
+
+    /** Publish what is playing, so the launcher card and the wheel stay in step with the UI. */
+    private void publishState() {
+        if (citizen == null) return;
+        boolean playing = player != null && prepared && player.isPlaying();
+        int pos = 0;
+        if (player != null && prepared) {
+            try { pos = player.getCurrentPosition(); } catch (Exception ignored) {}
+        }
+        citizen.setState(playing, pos);
+    }
+
+    private void playPrevious() {
+        if (tracks.isEmpty()) return;
+        playAt((current - 1 + tracks.size()) % tracks.size());
+    }
+
     private void playAt(int index) {
         if (index < 0 || index >= tracks.size()) return;
         current = index;
@@ -235,6 +289,13 @@ public class MainActivity extends Activity
             playNext();
             return;
         }
+        // Refused focus means something else owns the cabin (a call, usually); starting anyway
+        // would talk over it.
+        if (!citizen().takeFocus(MediaCitizen.Focus.MEDIA)) {
+            return;
+        }
+        citizen().setMetadata(t.title, t.artist, t.duration);
+
         nowTitle.setText(t.title);
         nowArtist.setText(t.artist);
         seek.setProgress(0);
@@ -252,6 +313,7 @@ public class MainActivity extends Activity
         if (dur > 0) { seek.setMax(dur); durTime.setText(fmt(dur)); }
         mp.start();
         btnPlay.setImageResource(R.drawable.ic_pause);
+        publishState();
     }
 
     private void togglePlay() {
@@ -263,9 +325,13 @@ public class MainActivity extends Activity
             player.pause();
             btnPlay.setImageResource(R.drawable.ic_play);
         } else {
+            if (!citizen().takeFocus(MediaCitizen.Focus.MEDIA)) {
+                return;
+            }
             player.start();
             btnPlay.setImageResource(R.drawable.ic_pause);
         }
+        publishState();
     }
 
     private void playNext() {
@@ -290,6 +356,10 @@ public class MainActivity extends Activity
     protected void onDestroy() {
         super.onDestroy();
         ui.removeCallbacks(tick);
+        if (citizen != null) {
+            citizen.release();
+            citizen = null;
+        }
         if (player != null) {
             try { player.release(); } catch (Exception ignored) {}
             player = null;

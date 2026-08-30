@@ -110,7 +110,55 @@ The card is the one that matters: it is a shape drawable whose colour came from 
 (in CI) now also asserts every Activity calls `Palette.apply`. Both of its assertions have
 negative controls.
 
+### 0.6.1 — audio focus
+Only the radio ever asked for audio focus. Everything else — music, video, recorder, sound meter
+— just started playing or recording. In a car that means music plays *over* the radio and does
+not duck when navigation speaks, because audio focus is the platform's only mechanism for "one
+thing at a time".
+
+`MediaCitizen` generalises what the radio was already doing by hand. Playback takes
+`Focus.MEDIA` (ducks for prompts, yields to a call); capture takes `Focus.RECORDING`, which is
+`GAIN_TRANSIENT_EXCLUSIVE` — a *ducked* radio is still audible and still ends up on the
+recording. A refused request is honoured: the app does not start.
+
+### 0.6.2 — a session the launcher can see
+The launcher's now-playing card reads active media sessions
+(`NowPlayingRepository` → `MediaSessionManager.getActiveSessions`). **No app in the suite
+published one**, so our own Music app was invisible to our own launcher: the card sat empty
+while it played. Music, radio and video now publish a `MediaSession` with metadata and
+playback state, and the session is active only while something is playing — an always-active
+session would sit on the launcher's card long after the app stopped.
+
+### 0.6.3 — the steering wheel
+Media buttons are delivered to whichever app owns the active session, and only through a
+`PendingIntent` registered on it. With the session in place the wheel's play/pause, next and
+previous reach the app; each maps to exactly what the on-screen button does.
+
+### 0.7 — proven on the panel
+With a tagged test track on the emulated head unit:
+
+- `dumpsys media_session` → `Media button session is com.reveng.music/music`, `state=3`
+  (playing), `actions=567` — so the wheel keys are routed to our app.
+- The launcher's now-playing card showed **Test Tone / Riposte Labs**, source chip "Music",
+  live position `0:14 / 0:30`, with transport controls.
+- Tapping **pause on the launcher's card** moved the Music session to `state=2` (paused,
+  speed 0.0) — the card drives the app through the session, which is the same path the wheel
+  uses.
+
+`scope/check-theme-wiring.sh` now also fails any app that touches `MediaPlayer`,
+`MediaRecorder`, `AudioRecord` or `VideoView` without going through `MediaCitizen`. Negative
+control confirmed.
+
 ## Open
+
+### On how these were found
+A grep-driven audit of the suite produced five candidate defects. **Three were false positives**,
+and reading the code killed each one: the clock already uses `setAlarmClock` (exempt from
+exact-alarm restrictions) with a `SecurityException` fallback; the video player uses
+`VideoView.stopPlayback()`, which releases the MediaPlayer it owns; and device-info's
+`registerReceiver(null, filter)` is a sticky-broadcast *query* that registers nothing. Only the
+two absence-of-feature findings — no audio focus, no media session — survived. A grep is good at
+proving something is missing and bad at proving something is wrong.
 
 ### Correction to an earlier claim
 A previous revision of this file said "~2,400 hardcoded `0xAARRGGBB` literals remain". **That

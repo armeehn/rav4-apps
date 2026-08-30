@@ -3,6 +3,7 @@ package com.reveng.video;
 import android.app.Activity;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import com.reveng.design.MediaCitizen;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
@@ -24,6 +25,12 @@ public class PlayerActivity extends Activity {
     private VideoView video;
     private MediaController controller;
     private final ArrayList<Uri> uris = new ArrayList<>();
+
+    /**
+     * v0.6.1 — video is media too: without audio focus its soundtrack plays over the radio and
+     * does not duck for a navigation prompt.
+     */
+    private MediaCitizen citizen;
     private int index = 0;
     private int resumePos = 0;
 
@@ -74,6 +81,7 @@ public class PlayerActivity extends Activity {
             mp.setLooping(false);
             if (resumePos > 0) { video.seekTo(resumePos); resumePos = 0; }
             video.start();
+        publish();
             // show controls briefly on start
             controller.show(3000);
         });
@@ -99,9 +107,15 @@ public class PlayerActivity extends Activity {
         if (i < 0 || i >= uris.size()) return;
         index = i;
         resumePos = 0;
-        video.setVideoURI(uris.get(i));
+        Uri playing = uris.get(i);
+        if (!citizen().takeFocus(MediaCitizen.Focus.MEDIA)) {
+            return;
+        }
+        citizen().setMetadata(playing.getLastPathSegment(), null, 0);
+        video.setVideoURI(playing);
         video.requestFocus();
         video.start();
+        publish();
     }
 
     private void goImmersive() {
@@ -119,6 +133,37 @@ public class PlayerActivity extends Activity {
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) goImmersive();
+    }
+
+    private MediaCitizen citizen() {
+        if (citizen == null) {
+            citizen = MediaCitizen.attach(this, "video", new MediaCitizen.Transport() {
+                @Override public void onPlay() { if (video != null) { video.start(); publish(); } }
+
+                @Override public void onPause() { if (video != null) { video.pause(); publish(); } }
+
+                @Override public void onNext() { }
+
+                @Override public void onPrevious() { }
+
+                @Override public void onStop() { if (video != null) { video.pause(); publish(); } }
+
+                @Override public void onDuck(boolean duck) {
+                    // VideoView exposes no volume control, so a duck request is honoured by
+                    // pausing: a spoken direction the driver cannot hear is worse than a gap.
+                    if (video == null) return;
+                    if (duck) video.pause(); else video.start();
+                }
+            });
+        }
+        return citizen;
+    }
+
+    private void publish() {
+        if (citizen == null || video == null) return;
+        int pos = 0;
+        try { pos = video.getCurrentPosition(); } catch (Exception ignored) {}
+        citizen.setState(video.isPlaying(), pos);
     }
 
     @Override
@@ -142,5 +187,9 @@ public class PlayerActivity extends Activity {
     protected void onDestroy() {
         super.onDestroy();
         if (video != null) video.stopPlayback();
+        if (citizen != null) {
+            citizen.release();
+            citizen = null;
+        }
     }
 }
