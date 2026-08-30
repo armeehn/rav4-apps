@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Clean-room standalone "Clock" app for the Toyota RAV4 GT6 head unit.
+     Standalone normal app: new package, no sharedUserId, no system/privileged
+     signing, no platform permissions. Pure android.* framework, no AndroidX. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.ripostelabs.clock"
+    android:versionCode="1"
+    android:versionName="1.0-riposte">
+
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
+
+
+    <!-- The launcher's theme provider (see com.ripostelabs.design.Palette). Without this an app
+         targeting API 30+ cannot see the provider at all: the query returns null and the app
+         silently keeps its built-in palette. Declaring the authority is the whole grant. -->
+    <queries>
+        <provider android:authorities="com.ripostelabs.carlauncher.theme" />
+    </queries>
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- The full-screen intent is delivered as a notification; API 33+ gates that. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:allowBackup="true"
+        android:hardwareAccelerated="true"
+        android:theme="@style/AppTheme">
+
+        <activity
+            android:name="com.ripostelabs.clock.MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name="com.ripostelabs.clock.RingActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:theme="@style/AppTheme"
+            android:configChanges="orientation|screenSize|keyboardHidden" />
+
+        <receiver
+            android:name="com.ripostelabs.clock.AlarmReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name="com.ripostelabs.clock.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

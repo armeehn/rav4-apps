@@ -2,13 +2,13 @@
 # Gradle-free Android build: aapt2 -> javac -> d8 -> zipalign -> apksigner.
 # Builds a signed debug APK from a template-style project (this dir or $1).
 set -euo pipefail
-export PATH="$HOME/.local/bin:$PATH"   # java/keytool live here on server x
+export PATH="$HOME/.local/bin:$PATH"   # java/keytool live here on some hosts
 PROJ="${1:-$(pwd)}"; PROJ="$(cd "$PROJ" && pwd)"
 
 # d8 (build-tools 34) crashes on class files from JDK 26 even with --release 17,
 # so compile with a real JDK 17 when available. Resolve one, else fall back.
 # $JAVA_HOME is checked first so CI (setup-java) works, but only if it really is 17 --
-# on server x it points at a much newer JDK, which is the crash this loop exists to avoid.
+# on many machines it points at a much newer JDK, which is the crash this loop avoids.
 JAVAC=javac; JAVAC_ARGS="--release 17"
 for j in "${JAVA_HOME:-}" /usr/lib/jvm/java-17-openjdk "$HOME/.local/opt/jdk17" /usr/lib/jvm/*17*; do
     [ -n "$j" ] && [ -x "$j/bin/javac" ] || continue
@@ -57,7 +57,7 @@ SHARED_SRC="$PROJ/../_design/src"
   $(find "$PROJ/src" $SHARED_SRC "$OUT/gen" -name '*.java')
 # 3. dex
 "$D8" --lib "$PLATFORM" --output "$OUT" $(find "$OUT/classes" -name '*.class') >/dev/null 2>&1
-# 4. assemble: add classes.dex into the resource apk (python fallback: no zip on server x)
+# 4. assemble: add classes.dex into the resource apk (python fallback: hosts without zip(1))
 cd "$OUT" && cp base.apk unsigned.apk
 if command -v zip >/dev/null; then zip -qj unsigned.apk classes.dex
 else python3 -c 'import zipfile; z=zipfile.ZipFile("unsigned.apk","a",zipfile.ZIP_DEFLATED); z.write("classes.dex","classes.dex"); z.close()'
