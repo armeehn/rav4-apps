@@ -1,6 +1,9 @@
 package com.reveng.clock;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
@@ -17,6 +20,8 @@ import com.reveng.design.Palette;
  * all styled from the shared design system. Pure android.* framework, no AndroidX.
  */
 public class MainActivity extends Activity {
+
+    private static final int REQ_NOTIFY = 1;
 
     private final String[] tabLabels = {"Clock", "Alarm", "Stopwatch", "Timer"};
     private int[] tabIcons;
@@ -48,6 +53,7 @@ public class MainActivity extends Activity {
 
         // re-arm any enabled alarms (idempotent) in case they were lost
         new AlarmStore(this).rescheduleAll();
+        askNotificationPermission();
 
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.HORIZONTAL);
@@ -72,6 +78,22 @@ public class MainActivity extends Activity {
 
         setContentView(root);
         select(0);
+    }
+
+    /**
+     * The alarm reaches the screen as a full-screen intent, which is a notification, which on
+     * API 33+ needs a runtime grant. Asked when the app is opened rather than when an alarm
+     * fires: a permission dialog is no use to a driver whose alarm should already be ringing.
+     */
+    private void askNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            return;
+        }
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                == PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQ_NOTIFY);
     }
 
     private View buildNavRail() {

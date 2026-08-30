@@ -33,6 +33,8 @@ public class PlayerActivity extends Activity {
     private MediaCitizen citizen;
     private int index = 0;
     private int resumePos = 0;
+    /** True only while a duck — not the driver — is what stopped playback. */
+    private boolean pausedByDuck = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -152,7 +154,18 @@ public class PlayerActivity extends Activity {
                     // VideoView exposes no volume control, so a duck request is honoured by
                     // pausing: a spoken direction the driver cannot hear is worse than a gap.
                     if (video == null) return;
-                    if (duck) video.pause(); else video.start();
+                    if (duck) {
+                        pausedByDuck = video.isPlaying();
+                        video.pause();
+                        return;
+                    }
+                    // Resume only what the duck itself stopped. MediaCitizen calls onDuck(false)
+                    // on every focus gain, so an unconditional start() restarts a video the
+                    // driver had paused by hand.
+                    if (pausedByDuck) {
+                        pausedByDuck = false;
+                        video.start();
+                    }
                 }
             });
         }

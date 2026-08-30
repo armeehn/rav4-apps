@@ -17,6 +17,10 @@ public class AlarmReceiver extends BroadcastReceiver {
         ring.putExtra(AlarmStore.EXTRA_ID, id);
         ring.putExtra(AlarmStore.EXTRA_LABEL, label);
         ring.putExtra(AlarmStore.EXTRA_TIME, time);
+
+        // Both paths, deliberately. The direct start is instant when it is allowed; the
+        // full-screen intent is what still rings when a background activity start is not.
+        RingNotice.post(context, ring, label, time);
         context.startActivity(ring);
 
         // A non-repeating alarm has now consumed itself; reschedule for next day so

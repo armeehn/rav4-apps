@@ -78,6 +78,8 @@ public class MainActivity extends Activity
      */
     private MediaCitizen citizen;
     private int current = -1;
+    /** Consecutive tracks that would not open; see {@link #skipUnplayable}. */
+    private int skips = 0;
     private boolean prepared = false;
     private boolean userSeeking = false;
     private TrackAdapter adapter;
@@ -271,6 +273,15 @@ public class MainActivity extends Activity
 
     private void playAt(int index) {
         if (index < 0 || index >= tracks.size()) return;
+
+        // Focus BEFORE prepareAsync. Refused focus means something else owns the cabin (a call,
+        // usually) and starting anyway would talk over it — but by the time an asked-afterwards
+        // refusal is seen, preparation is already in flight and onPrepared starts the player
+        // regardless, so the early return would not actually keep us quiet.
+        if (!citizen().takeFocus(MediaCitizen.Focus.MEDIA)) {
+            return;
+        }
+
         current = index;
         Track t = tracks.get(index);
         prepared = false;
@@ -285,15 +296,10 @@ public class MainActivity extends Activity
             player.setDataSource(this, t.uri);
             player.prepareAsync();
         } catch (Exception e) {
-            // skip to next on failure
-            playNext();
+            skipUnplayable();
             return;
         }
-        // Refused focus means something else owns the cabin (a call, usually); starting anyway
-        // would talk over it.
-        if (!citizen().takeFocus(MediaCitizen.Focus.MEDIA)) {
-            return;
-        }
+        skips = 0;
         citizen().setMetadata(t.title, t.artist, t.duration);
 
         nowTitle.setText(t.title);
@@ -337,6 +343,23 @@ public class MainActivity extends Activity
     private void playNext() {
         if (tracks.isEmpty()) return;
         playAt((current + 1) % tracks.size());
+    }
+
+    /**
+     * A track that would not open — the file is gone since the last media scan, say. Move on,
+     * but only until every entry has been tried: playNext wraps, so a library whose files are
+     * all missing would otherwise recurse playAt -> playNext -> playAt until the stack blows.
+     */
+    private void skipUnplayable() {
+        if (++skips < tracks.size()) {
+            playNext();
+            return;
+        }
+        skips = 0;
+        citizen().releaseFocus();
+        nowTitle.setText(R.string.none_playable);
+        nowArtist.setText("");
+        btnPlay.setImageResource(R.drawable.ic_play);
     }
 
     @Override

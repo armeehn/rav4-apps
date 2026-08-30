@@ -6,8 +6,10 @@
 name: apps-ci
 
 on:
+  # Every branch, not just main. Scoping this to main meant the suite's whole
+  # development branch never once ran CI, which is where the build is actually
+  # at risk — main only ever sees changes that have already been proven somewhere.
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
