@@ -431,7 +431,7 @@ public class MainActivity extends Activity
 
                 title = new TextView(MainActivity.this);
                 title.setTextSize(17);
-                title.setTypeface(mono(true));
+                title.setTypeface(face(true));
                 title.setSingleLine(true);
                 title.setEllipsize(android.text.TextUtils.TruncateAt.END);
                 col.addView(title, new LinearLayout.LayoutParams(
@@ -455,17 +455,19 @@ public class MainActivity extends Activity
             artist.setText(t.artist);
             boolean active = position == current;
 
-            // v0.8 Riposte: hard-edged square badge; accent when active, surface2 otherwise
+            // avatar badge: a circle, or a hard-edged square when the theme asks for it
             GradientDrawable badge = new GradientDrawable();
+            if (!Palette.hardEdge(MainActivity.this)) badge.setShape(GradientDrawable.OVAL);
             badge.setColor(active ? cAccentDim : cSurface2);
             avatar.setBackground(badge);
             avatar.setColorFilter(active ? cAccent : cText2);
 
             title.setTextColor(active ? cAccent : cText);
 
-            // dim-accent highlight for the active row — square, like everything else
+            // dim-accent highlight for the active row, cornered per the active theme
             if (active) {
                 GradientDrawable bg = new GradientDrawable();
+                bg.setCornerRadius(dp(16) * Palette.cornerScale(MainActivity.this));
                 bg.setColor(cAccentDim);
                 row.setBackground(bg);
             } else {
@@ -479,11 +481,8 @@ public class MainActivity extends Activity
         return (int) (v * getResources().getDisplayMetrics().density + 0.5f);
     }
 
-    /** The pack's face (JetBrains Mono) for text built in code. */
-    private android.graphics.Typeface mono(boolean bold) {
-        android.graphics.Typeface base = getResources().getFont(R.font.jetbrains_mono);
-        return bold
-                ? android.graphics.Typeface.create(base, android.graphics.Typeface.BOLD)
-                : base;
+    /** The face the active theme asks for (brand mono under Riposte, sans otherwise). */
+    private android.graphics.Typeface face(boolean bold) {
+        return Palette.typeface(this, bold);
     }
 }

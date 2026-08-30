@@ -1,26 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- v0.8: Riposte night as the shipped default (ink field, low-blue marigold accent).
-     These are only the fallback: with the launcher installed every role follows its
-     published palette at runtime (see Palette.java). -->
 <resources>
-    <color name="bg">#FF14110E</color>
-    <color name="bg2">#FF181511</color>
-    <color name="surface">#FF1D1A17</color>
-    <color name="surface2">#FF241F1B</color>
-    <!-- Opaque on purpose: Riposte borders are structural, not hairlines. At runtime the
-         alpha is kept and the RGB follows the launcher's on-surface colour. -->
-    <color name="stroke">#FFCFC7B8</color>
-    <color name="accent">#FFC9891F</color>
-    <color name="accent2">#FF12B795</color>
-    <color name="accent_dim">#33C9891F</color>
-    <color name="text">#FFCFC7B8</color>
-    <color name="text2">#FF9C948A</color>
-    <color name="text3">#FF6E675E</color>
-    <color name="ripple">#33CFC7B8</color>
+    <color name="bg">#FF0B0E14</color>
+    <color name="bg2">#FF10141C</color>
+    <color name="surface">#FF161B24</color>
+    <color name="surface2">#FF1E2431</color>
+    <color name="stroke">#22FFFFFF</color>
+    <color name="accent">#FF5B9DFF</color>
+    <color name="accent2">#FF7C5CFF</color>
+    <color name="accent_dim">#335B9DFF</color>
+    <color name="text">#FFF2F5FA</color>
+    <color name="text2">#FFAAB3C2</color>
+    <color name="text3">#FF6B7484</color>
+    <color name="ripple">#33FFFFFF</color>
     <color name="scrim">#CC000000</color>
     <!-- v0.5.1 semantic role. Published by the launcher, so a theme sets its own. -->
     <color name="error">#FFFF4D5E</color>
-    <!-- v0.8: the hard offset shadow under raised cards. Black on a dark field; at
-         runtime it becomes the launcher's on-background ink when the field is light. -->
-    <color name="shadow">#FF000000</color>
 </resources>

@@ -63,7 +63,7 @@
                 android:background="@drawable/btn_ghost"
                 android:textColor="@color/text"
                 android:textSize="15sp"
-                android:fontFamily="@font/jetbrains_mono"
+                android:fontFamily="sans-serif-medium"
                 android:textAllCaps="false"
                 android:text="km/h" />
         </LinearLayout>
@@ -138,7 +138,7 @@
                 android:background="@drawable/btn_ghost"
                 android:textColor="@color/text"
                 android:textSize="15sp"
-                android:fontFamily="@font/jetbrains_mono"
+                android:fontFamily="sans-serif-medium"
                 android:textAllCaps="false"
                 android:text="@string/open_settings" />
         </LinearLayout>
@@ -185,7 +185,7 @@
                 android:background="@drawable/btn_ghost"
                 android:textColor="@color/text"
                 android:textSize="14sp"
-                android:fontFamily="@font/jetbrains_mono"
+                android:fontFamily="sans-serif-medium"
                 android:textAllCaps="false"
                 android:text="@string/reset" />
         </LinearLayout>
