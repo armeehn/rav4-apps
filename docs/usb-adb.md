@@ -5,6 +5,11 @@
   connection over the **iPhone Personal Hotspot** subnet (172.20.10.x), NAT'd and
   dropped whenever the phone/car sleeps. We have **never** seen the unit enumerate
   as a raw USB serial.
+- This is Android 13: **Wireless debugging requires pairing** (Developer options ▸
+  Wireless debugging ▸ Pair device with code) on first connect, and it turns
+  **OFF on every reboot**. The **connect port rotates each reboot** — so the
+  working command is not fixed; re-enable Wireless debugging and read the new
+  `ip:port` off the on-screen dialog each time before `adb connect`.
 - `tailscale status` does **not** list the head unit — so `rav4-tailscale-setup.sh`
   was never completed / isn't running. The reliable always-on path isn't set up yet.
 

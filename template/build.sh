@@ -34,14 +34,14 @@ if [ ! -f "$KS" ]; then
 fi
 
 OUT="$PROJ/build"; rm -rf "$OUT"; mkdir -p "$OUT/compiled" "$OUT/gen" "$OUT/classes"
-# 1. compile + link resources, generate R.java
-# Errors are NOT swallowed. A resource that would not compile used to go to /dev/null, its
-# .flat was simply absent, link succeeded over what was left, and the app shipped green and
-# died on a NotFoundException in the car.
-while read -r f; do
-    "$AAPT2" compile "$f" -o "$OUT/compiled" || { echo "aapt2 compile failed: $f" >&2; exit 1; }
-done < <(find "$PROJ/res" -type f)
+# 1. compile + link resources, generate R.java.
+#    No error-swallowing: a failed compile/link must abort the build (set -e),
+#    not slip through and produce a broken/mis-targeted APK.
+find "$PROJ/res" -type f | while read -r f; do "$AAPT2" compile "$f" -o "$OUT/compiled"; done
+# --min/--target-sdk-version pin the APK to the car's API level (28..33);
+# without them aapt2 stamps targetSdk 1, which changes runtime behaviour.
 "$AAPT2" link -o "$OUT/base.apk" -I "$PLATFORM" \
+  --min-sdk-version 28 --target-sdk-version 33 \
   --manifest "$PROJ/AndroidManifest.xml" --java "$OUT/gen" \
   $(find "$OUT/compiled" -name '*.flat' -printf '%p ') >/dev/null
 # 2. compile java (app sources + the shared design sources + generated R.java).
