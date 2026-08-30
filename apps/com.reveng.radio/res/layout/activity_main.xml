@@ -100,8 +100,7 @@
                 android:layout_height="wrap_content"
                 android:textColor="@color/text"
                 android:textSize="104sp"
-                android:fontFamily="@font/jetbrains_mono_extrabold"
-                android:letterSpacing="0.03"
+                android:fontFamily="sans-serif-thin"
                 android:includeFontPadding="false"
                 android:text="87.50" />
 

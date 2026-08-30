@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- v0.8: Riposte type — JetBrains Mono only, weights 400/700/800, tracked heads and
-     labels. textViewStyle/buttonStyle sweep every unstyled widget onto the family too. -->
 <resources>
     <style name="AppTheme" parent="@android:style/Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/bg</item>
@@ -10,55 +8,37 @@
         <item name="android:navigationBarColor">@color/bg</item>
         <item name="android:textColorPrimary">@color/text</item>
         <item name="android:textColorSecondary">@color/text2</item>
-        <item name="android:textViewStyle">@style/RvTextView</item>
-        <item name="android:buttonStyle">@style/RvButton</item>
-    </style>
-    <style name="RvTextView" parent="@android:style/Widget.Material.TextView">
-        <item name="android:fontFamily">@font/jetbrains_mono</item>
-    </style>
-    <style name="RvButton" parent="@android:style/Widget.Material.Button">
-        <item name="android:fontFamily">@font/jetbrains_mono</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:letterSpacing">0.1</item>
-        <item name="android:background">@drawable/btn_ghost</item>
     </style>
     <style name="Display">
         <item name="android:textColor">@color/text</item>
         <item name="android:textSize">64sp</item>
-        <item name="android:fontFamily">@font/jetbrains_mono_extrabold</item>
-        <item name="android:letterSpacing">0.03</item>
+        <item name="android:fontFamily">sans-serif-thin</item>
         <item name="android:includeFontPadding">false</item>
     </style>
     <style name="H1">
         <item name="android:textColor">@color/text</item>
         <item name="android:textSize">22sp</item>
-        <item name="android:fontFamily">@font/jetbrains_mono</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:letterSpacing">0.03</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     <style name="H2">
         <item name="android:textColor">@color/text</item>
         <item name="android:textSize">17sp</item>
-        <item name="android:fontFamily">@font/jetbrains_mono</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:letterSpacing">0.03</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     <style name="Body">
         <item name="android:textColor">@color/text</item>
         <item name="android:textSize">15sp</item>
-        <item name="android:fontFamily">@font/jetbrains_mono</item>
+        <item name="android:fontFamily">sans-serif</item>
     </style>
     <style name="Caption">
         <item name="android:textColor">@color/text2</item>
         <item name="android:textSize">13sp</item>
-        <item name="android:fontFamily">@font/jetbrains_mono</item>
     </style>
     <style name="Overline">
         <item name="android:textColor">@color/text3</item>
         <item name="android:textSize">11sp</item>
-        <item name="android:letterSpacing">0.1</item>
-        <item name="android:fontFamily">@font/jetbrains_mono</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.14</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textAllCaps">true</item>
     </style>
 </resources>

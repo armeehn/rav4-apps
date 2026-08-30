@@ -171,7 +171,7 @@ public class MainActivity extends Activity
             final int slot = i;
             TextView p = new TextView(this);
             p.setTextSize(16);
-            p.setTypeface(mono(true));
+            p.setTypeface(face(true));
             p.setGravity(Gravity.CENTER);
             p.setPadding(0, dp(14), 0, dp(14));
             p.setBackground(presetBg(false));
@@ -394,18 +394,20 @@ public class MainActivity extends Activity
         }
     }
 
-    /** v0.8 Riposte: preset chips are bordered hard-edged squares, accent when tuned. */
+    /** Preset chip: a rounded dim pill normally, a bordered hard-edged square under Riposte. */
     private GradientDrawable presetBg(boolean active) {
         GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(dp(14) * Palette.cornerScale(this));
         bg.setColor(active ? cAccentDim : cSurface2);
-        bg.setStroke(dp(2), active ? cAccent : cStroke);
+        if (Palette.hardEdge(this)) {
+            bg.setStroke(dp(2), active ? cAccent : (cStroke | 0xFF000000));
+        }
         return bg;
     }
 
-    /** The pack's face (JetBrains Mono) for text built in code. */
-    private Typeface mono(boolean bold) {
-        Typeface base = getResources().getFont(R.font.jetbrains_mono);
-        return bold ? Typeface.create(base, Typeface.BOLD) : base;
+    /** The face the active theme asks for (brand mono under Riposte, sans otherwise). */
+    private Typeface face(boolean bold) {
+        return Palette.typeface(this, bold);
     }
 
     // ---- Lifecycle ---------------------------------------------------------
@@ -654,9 +656,10 @@ public class MainActivity extends Activity
         btnPlay.setImageResource(live ? R.drawable.ic_stop : R.drawable.ic_play);
     }
 
-    /** v0.8 Riposte: badges are hard-edged squares, not circles. */
+    /** Avatar badge: a circle, or a hard-edged square when the theme asks for it. */
     private void setBadge(ImageView v, int color) {
         GradientDrawable badge = new GradientDrawable();
+        if (!Palette.hardEdge(this)) badge.setShape(GradientDrawable.OVAL);
         badge.setColor(color);
         v.setBackground(badge);
     }
@@ -680,9 +683,9 @@ public class MainActivity extends Activity
                     header = new TextView(MainActivity.this);
                     header.setTextColor(cText3);
                     header.setTextSize(11);
-                    header.setLetterSpacing(0.1f);
+                    header.setLetterSpacing(0.14f);
                     header.setAllCaps(true);
-                    header.setTypeface(mono(true));
+                    header.setTypeface(face(true));
                     header.setPadding(dp(16), dp(18), dp(16), dp(8));
                 }
                 header.setText((String) item);
@@ -722,7 +725,7 @@ public class MainActivity extends Activity
 
                 title = new TextView(MainActivity.this);
                 title.setTextSize(17);
-                title.setTypeface(mono(true));
+                title.setTypeface(face(true));
                 title.setSingleLine(true);
                 title.setEllipsize(TextUtils.TruncateAt.END);
                 col.addView(title, new LinearLayout.LayoutParams(
@@ -752,6 +755,7 @@ public class MainActivity extends Activity
 
             if (active) {
                 GradientDrawable bg = new GradientDrawable();
+                bg.setCornerRadius(dp(16) * Palette.cornerScale(MainActivity.this));
                 bg.setColor(cAccentDim);
                 row.setBackground(bg);
             } else {

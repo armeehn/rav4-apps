@@ -1,21 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- v0.8 Riposte: the hero card. Same hard-edge chrome as bg_card (the gradient is
-     gone — it also never followed the launcher palette) plus the 6dp accent top bar. -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:left="4dp" android:top="4dp">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/shadow" />
-        </shape>
-    </item>
-    <item android:right="4dp" android:bottom="4dp">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/surface2" />
-            <stroke android:width="2dp" android:color="@color/stroke" />
-        </shape>
-    </item>
-    <item android:right="4dp" android:height="6dp" android:gravity="top">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/accent" />
-        </shape>
-    </item>
-</layer-list>
+<!-- v0.9: the hero card is a raised solid now. The old hardcoded navy gradient could not
+     follow the published palette at all, which a light theme turns from subtle into wrong. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/surface2"/>
+    <corners android:radius="22dp"/>
+    <stroke android:width="1dp" android:color="@color/stroke"/>
+</shape>
