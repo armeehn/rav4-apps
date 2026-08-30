@@ -57,6 +57,8 @@ public class SketchActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         setContentView(R.layout.activity_main);
 
         canvas = (DrawView) findViewById(R.id.canvas);

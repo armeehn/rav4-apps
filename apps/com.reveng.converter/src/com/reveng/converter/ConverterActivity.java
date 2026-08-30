@@ -20,6 +20,7 @@ import android.widget.TextView;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone unit converter. Pure android.* (no AndroidX).
@@ -110,6 +111,8 @@ public class ConverterActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         setContentView(R.layout.activity_main);
 
         input = (EditText) findViewById(R.id.input);

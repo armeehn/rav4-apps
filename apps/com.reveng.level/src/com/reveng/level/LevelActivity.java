@@ -60,6 +60,8 @@ public class LevelActivity extends Activity implements SensorEventListener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         setContentView(R.layout.activity_main);
 
         level = findViewById(R.id.level);

@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room gallery entry point. Lists device images from MediaStore in a grid and
@@ -56,6 +57,8 @@ public class RunActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
 
         // ACTION_VIEW of a single image -> jump straight into the viewer
         Intent in = getIntent();

@@ -11,6 +11,7 @@ import android.widget.MediaController;
 import android.widget.VideoView;
 
 import java.util.ArrayList;
+import com.reveng.design.Palette;
 
 /**
  * Full-screen video player built on android.widget.VideoView + MediaController.
@@ -29,6 +30,8 @@ public class PlayerActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         // keep the screen on during playback + go immersive full-screen
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         requestWindowFeature(Window.FEATURE_NO_TITLE);

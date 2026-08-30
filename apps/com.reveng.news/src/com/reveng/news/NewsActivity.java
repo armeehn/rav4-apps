@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone News (RSS/Atom reader). No AndroidX, no support libraries
@@ -82,6 +83,8 @@ public class NewsActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         setContentView(R.layout.activity_news);
 
         sourceList = findViewById(R.id.sourceList);

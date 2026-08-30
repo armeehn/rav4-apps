@@ -34,6 +34,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone Weather app. Pulls current conditions + daily/hourly
@@ -63,6 +64,8 @@ public class WeatherActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         setContentView(R.layout.activity_main);
 
         cityView = findViewById(R.id.city);

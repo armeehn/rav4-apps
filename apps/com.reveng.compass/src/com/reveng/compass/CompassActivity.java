@@ -8,6 +8,7 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone Compass. Reads device orientation from motion sensors via
@@ -54,6 +55,8 @@ public class CompassActivity extends Activity implements SensorEventListener {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         setContentView(R.layout.activity_main);
 
         compass = findViewById(R.id.compass);

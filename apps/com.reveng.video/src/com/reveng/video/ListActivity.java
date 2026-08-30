@@ -29,6 +29,7 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room video library entry point. Lists device videos from MediaStore as a
@@ -61,6 +62,8 @@ public class ListActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
 
         // ACTION_VIEW of a single video -> jump straight into the player
         Intent in = getIntent();

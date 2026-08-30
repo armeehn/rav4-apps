@@ -19,6 +19,17 @@ for d in apps/com.reveng.*; do
         fail=1
     fi
 
+    # v0.5.2: every Activity must hand its view tree to Palette.apply, or everything the
+    # design-pack *resources* coloured (card backgrounds, hairlines, styled text) stays on
+    # the built-in palette while the Java-set colours follow the launcher — a half-themed
+    # screen, which is worse than an unthemed one.
+    for a in $(grep -rl "extends Activity" "$d/src" 2>/dev/null); do
+        grep -q "Palette.apply(this)" "$a" || {
+            echo "FAIL $pkg: $(basename "$a") never calls Palette.apply(this)"
+            fail=1
+        }
+    done
+
     apk="$d/app-debug.apk"
     if [ ! -f "$apk" ]; then
         echo "FAIL $pkg: not built"

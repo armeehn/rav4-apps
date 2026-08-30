@@ -32,6 +32,7 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import com.reveng.design.Palette;
 
 /**
  * Clean-room standalone Currency converter. Live exchange rates come from the
@@ -92,6 +93,8 @@ public class CurrencyActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         setContentView(R.layout.activity_main);
 
         amount = findViewById(R.id.amount);

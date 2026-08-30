@@ -15,6 +15,7 @@ import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.reveng.design.Palette;
 
 /**
  * In-app article reader built on the framework {@link WebView} (no AndroidX).
@@ -36,6 +37,8 @@ public class ReaderActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // v0.5.2: re-paint anything the design-pack resources coloured.
+        Palette.apply(this);
         setContentView(R.layout.activity_reader);
 
         web = findViewById(R.id.reader);
