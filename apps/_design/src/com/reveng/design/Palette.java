@@ -7,9 +7,11 @@ import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
+import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.RippleDrawable;
 import android.os.Looper;
 import android.util.TypedValue;
@@ -81,6 +83,12 @@ public final class Palette {
     private static final String COL_ERROR = "error";
     private static final String COL_ACCENT2 = "accent2";
 
+    // v0.9 style columns — appended by launcher v0.8+, absent on older launchers. Read
+    // tolerantly: missing columns mean "the original style", exactly like no launcher at all.
+    private static final String COL_CORNER_SCALE = "corner_scale";
+    private static final String COL_MONO_TYPE = "mono_type";
+    private static final String COL_HARD_EDGE = "hard_edge";
+
     /** How far {@code text3} sits from {@code text2} toward the background. */
     private static final float TEXT3_TOWARD_BACKGROUND = 0.45f;
 
@@ -147,6 +155,53 @@ public final class Palette {
         cached = null;
     }
 
+    // ---------------------------------------------------------------- v0.9 style
+
+    /** Multiplier for every corner radius the design pack draws (Riposte publishes 0). */
+    public static float cornerScale(Context context) {
+        Snapshot s = snapshot(context);
+        return s == null ? 1f : s.cornerScale;
+    }
+
+    /** Whether the active theme asks for the JetBrains Mono brand type. */
+    public static boolean monoType(Context context) {
+        Snapshot s = snapshot(context);
+        return s != null && s.monoType;
+    }
+
+    /** Whether the active theme asks for structural 2dp borders instead of hairlines. */
+    public static boolean hardEdge(Context context) {
+        Snapshot s = snapshot(context);
+        return s != null && s.hardEdge;
+    }
+
+    /**
+     * The face for text built in code: the bundled JetBrains Mono when the active theme asks
+     * for it, the original system sans otherwise. Layout XML never calls this — the
+     * {@link #apply} walk re-faces what the resources typed.
+     */
+    public static Typeface typeface(Context context, boolean bold) {
+        if (monoType(context)) {
+            Typeface mono = fontByName(context, "jetbrains_mono");
+            if (mono != null) {
+                return bold ? Typeface.create(mono, Typeface.BOLD) : mono;
+            }
+        }
+        return Typeface.create(bold ? "sans-serif-medium" : "sans-serif", Typeface.NORMAL);
+    }
+
+    private static Typeface fontByName(Context ctx, String name) {
+        int id = ctx.getResources().getIdentifier(name, "font", ctx.getPackageName());
+        if (id == 0) {
+            return null;
+        }
+        try {
+            return ctx.getResources().getFont(id);
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     private static String roleName(Context context, int colorRes) {
         try {
             return context.getResources().getResourceEntryName(colorRes);
@@ -191,6 +246,21 @@ public final class Palette {
             s.onSurfaceMuted = c.getLong(c.getColumnIndexOrThrow(COL_ON_SURFACE_MUTED));
             s.error = c.getLong(c.getColumnIndexOrThrow(COL_ERROR));
             s.accent2 = c.getLong(c.getColumnIndexOrThrow(COL_ACCENT2));
+
+            // Style columns are optional: an older launcher publishes colours only, and the
+            // absence of a column must read as the shipped style, not as an error.
+            int corner = c.getColumnIndex(COL_CORNER_SCALE);
+            if (corner >= 0) {
+                s.cornerScale = c.getFloat(corner);
+            }
+            int mono = c.getColumnIndex(COL_MONO_TYPE);
+            if (mono >= 0) {
+                s.monoType = c.getInt(mono) == 1;
+            }
+            int hard = c.getColumnIndex(COL_HARD_EDGE);
+            if (hard >= 0) {
+                s.hardEdge = c.getInt(hard) == 1;
+            }
             return s;
         } catch (Exception e) {
             return null;
@@ -249,6 +319,12 @@ public final class Palette {
         long onSurfaceMuted;
         long error;
         long accent2;
+
+        // v0.9 — the active theme's style. Defaults are the shipped design: full radii,
+        // system sans, hairline strokes. Only a theme that asks for more (Riposte) moves them.
+        float cornerScale = 1f;
+        boolean monoType;
+        boolean hardEdge;
     }
 
     // ---------------------------------------------------------------- v0.5.2
@@ -265,6 +341,9 @@ public final class Palette {
 
     /** Hairline width for our own card/field shapes; the XML pack draws them at 1dp. */
     private static final float STROKE_DP = 1f;
+
+    /** Border width when the active theme asks for hard edges (Riposte). */
+    private static final float HARD_STROKE_DP = 2f;
 
     /**
      * Re-colour everything the *resources* coloured, then keep it current.
@@ -319,7 +398,10 @@ public final class Palette {
         }
         Context ctx = root.getContext();
         int[][] map = roleMap(ctx);
-        if (map.length == 0) {
+        // v0.9: an unchanged palette no longer means an unchanged look — a theme may keep the
+        // default colours and still ask for the brand style, so the walk runs for either.
+        boolean styled = cornerScale(ctx) != 1f || monoType(ctx) || hardEdge(ctx);
+        if (map.length == 0 && !styled) {
             return;
         }
         walk(root, map);
@@ -334,6 +416,9 @@ public final class Palette {
             if (themed != 0) {
                 t.setTextColor(themed);
             }
+            if (monoType(t.getContext())) {
+                applyMono(t);
+            }
         }
 
         if (v instanceof ViewGroup) {
@@ -342,6 +427,24 @@ public final class Palette {
                 walk(g.getChildAt(i), map);
             }
         }
+    }
+
+    /**
+     * Re-face one text onto the brand family, keeping what the original face expressed:
+     * emphasis (a bold or medium face) stays the 700 weight, and display-sized numerals —
+     * the pack draws those in a thin face the mono family does not have — take the 800.
+     */
+    private static void applyMono(TextView t) {
+        Context ctx = t.getContext();
+        boolean display = t.getTextSize() >= TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_SP, 40, t.getResources().getDisplayMetrics());
+        Typeface mono = fontByName(ctx, display ? "jetbrains_mono_extrabold" : "jetbrains_mono");
+        if (mono == null) {
+            return;
+        }
+        Typeface was = t.getTypeface();
+        boolean bold = was != null && was.isBold();
+        t.setTypeface(!display && bold ? Typeface.create(mono, Typeface.BOLD) : mono);
     }
 
     private static void retintBackground(View v, int[][] map) {
@@ -366,33 +469,99 @@ public final class Palette {
                 d.mutate();
                 ((RippleDrawable) d).setColor(ColorStateList.valueOf(themed));
             }
+            // A ripple is a LayerDrawable: keep walking so its content — an accent button's
+            // fill, a bordered ghost body — follows the palette too. (v0.8)
+            retintLayers(v, (RippleDrawable) d, map);
             return;
         }
 
         if (d instanceof GradientDrawable) {
-            GradientDrawable g = (GradientDrawable) d;
-            ColorStateList solid = g.getColor();
-            if (solid == null) {
-                return;
-            }
-            int themed = themedFor(solid.getDefaultColor(), map);
-            if (themed == 0) {
-                return;
-            }
-            g.mutate();
-            ((GradientDrawable) v.getBackground()).setColor(themed);
+            d.mutate();
+            retintShape(v, (GradientDrawable) v.getBackground(), map);
+            return;
+        }
 
-            // Stroke has no getter either. These shapes are ours and every one that carries a
-            // solid also carries a 1dp @color/stroke hairline, so re-draw it: a hairline left
-            // at its dark-palette value vanishes on a light theme.
-            int stroke = colorByName(v.getContext(), "stroke");
-            if (stroke != 0) {
-                int px = (int) TypedValue.applyDimension(
-                        TypedValue.COMPLEX_UNIT_DIP, STROKE_DP,
-                        v.getResources().getDisplayMetrics());
-                ((GradientDrawable) v.getBackground()).setStroke(px, stroke);
+        // Layer-lists get each shape child re-styled in place.
+        if (d instanceof LayerDrawable) {
+            d.mutate();
+            retintLayers(v, (LayerDrawable) v.getBackground(), map);
+        }
+    }
+
+    private static void retintLayers(View v, LayerDrawable layers, int[][] map) {
+        for (int i = 0; i < layers.getNumberOfLayers(); i++) {
+            Drawable child = layers.getDrawable(i);
+            if (child instanceof GradientDrawable) {
+                retintShape(v, (GradientDrawable) child, map);
+            } else if (child instanceof LayerDrawable) {
+                retintLayers(v, (LayerDrawable) child, map);
             }
         }
+    }
+
+    /**
+     * Re-style one shape: scale its corner radius by the theme's {@code cornerScale},
+     * re-colour its solid, then re-draw the stroke on the shapes that carry one. Stroke has
+     * no getter, so which shapes are bordered is decided by what the fill <em>was</em>:
+     * every pack shape filled with a ground colour (bg/bg2/surface/surface2) is drawn with
+     * the hairline — a 2dp opaque structural border instead when the theme asks for hard
+     * edges — and accent fills and dim highlights are not. The pack's one gradient (the
+     * hero card, whose fill cannot be read back) still gets the radius and the hard border.
+     */
+    private static void retintShape(View v, GradientDrawable g, int[][] map) {
+        Context ctx = v.getContext();
+        float scale = cornerScale(ctx);
+        if (scale != 1f) {
+            g.mutate();
+            g.setCornerRadius(g.getCornerRadius() * scale);
+        }
+
+        ColorStateList solid = g.getColor();
+        if (solid == null) {
+            if (hardEdge(ctx)) {
+                strokeShape(v, g);
+            }
+            return;
+        }
+        int was = solid.getDefaultColor();
+        int themed = themedFor(was, map);
+        if (themed != 0) {
+            g.mutate();
+            g.setColor(themed);
+        }
+        if (!isGround(ctx, was)) {
+            return;
+        }
+        strokeShape(v, g);
+    }
+
+    private static void strokeShape(View v, GradientDrawable g) {
+        Context ctx = v.getContext();
+        int stroke = colorByName(ctx, "stroke");
+        if (stroke == 0) {
+            return;
+        }
+        boolean hard = hardEdge(ctx);
+        if (hard) {
+            // Structural, not a hairline: full-strength on-surface ink.
+            stroke |= 0xFF000000;
+        }
+        int px = (int) TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, hard ? HARD_STROKE_DP : STROKE_DP,
+                v.getResources().getDisplayMetrics());
+        g.mutate();
+        g.setStroke(px, stroke);
+    }
+
+    /** Whether {@code color} is one of the pack's ground fills — the bordered ones. */
+    private static boolean isGround(Context ctx, int color) {
+        for (String role : new String[]{"bg", "bg2", "surface", "surface2"}) {
+            int id = roleId(ctx, role);
+            if (id != 0 && ctx.getColor(id) == color) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** The themed replacement for {@code current}, or 0 if it is not a design-pack default. */
@@ -507,12 +676,15 @@ public final class Palette {
         }
     }
 
-    /** A cheap fingerprint of the palette this app would paint right now. */
+    /** A cheap fingerprint of the palette and style this app would paint right now. */
     private static int revision(Context ctx) {
         int h = 17;
         for (String role : ROLES) {
             h = h * 31 + colorByName(ctx, role);
         }
+        h = h * 31 + Float.floatToIntBits(cornerScale(ctx));
+        h = h * 31 + (monoType(ctx) ? 1 : 0);
+        h = h * 31 + (hardEdge(ctx) ? 1 : 0);
         return h;
     }
 }

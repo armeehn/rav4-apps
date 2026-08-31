@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- v0.9: the hero card is a raised solid now. The old hardcoded navy gradient could not
+     follow the published palette at all, which a light theme turns from subtle into wrong. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <gradient android:angle="135" android:startColor="#FF1C2740" android:endColor="#FF141A26"/>
+    <solid android:color="@color/surface2"/>
     <corners android:radius="22dp"/>
     <stroke android:width="1dp" android:color="@color/stroke"/>
 </shape>

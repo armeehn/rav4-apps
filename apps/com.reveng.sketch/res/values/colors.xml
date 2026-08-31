@@ -13,8 +13,6 @@
     <color name="text3">#FF6B7484</color>
     <color name="ripple">#33FFFFFF</color>
     <color name="scrim">#CC000000</color>
-    <color name="canvas_dark">#FF12151C</color>
-    <color name="canvas_light">#FFF2F3F5</color>
     <!-- v0.5.1 semantic role. Published by the launcher, so a theme sets its own. -->
     <color name="error">#FFFF4D5E</color>
 </resources>
