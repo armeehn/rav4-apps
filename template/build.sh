@@ -49,6 +49,8 @@ find "$PROJ/res" -type f | while read -r f; do "$AAPT2" compile "$f" -o "$OUT/co
 # palette client). It is compiled in rather than pre-built into a jar: there is no dependency
 # resolution here by design, and one more source root costs nothing.
 SHARED_SRC="$PROJ/../_design/src"
+# The template itself lives beside apps/, not inside it, so fall back to the repo copy.
+[ -d "$SHARED_SRC" ] || SHARED_SRC="$(dirname "$0")/../apps/_design/src"
 [ -d "$SHARED_SRC" ] || SHARED_SRC=""
 # -encoding is explicit: several sources carry × ÷ √ π as literals, and javac otherwise
 # decodes them with the ambient locale's charset — green on a UTF-8 shell, 200 syntax

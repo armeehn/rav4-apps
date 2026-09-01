@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# For each OEM app found by scope-apps.sh, scaffold a rewrite project under apps/<pkg>/
-# from the template, pre-loaded with the OEM's own extracted strings so fixing the
-# typos/copy is a direct diff. Also carries the OEM package name so the rewrite drops
-# into the same launcher/intent slot.
+# For each OEM app found by scope-apps.sh, scaffold a STANDALONE rewrite under
+# apps/com.ripostelabs.<leaf>/ (e.g. com.szchoiceway.videoplayer -> com.ripostelabs.videoplayer),
+# pre-loaded with the OEM's own extracted strings so fixing the typos/copy is a direct
+# diff. The OEM package name is used only to find its decompiled strings: a rewrite
+# never takes the vendor's package (PackageManager refuses a sharedUserId member with a
+# foreign signature, and the platform key is unobtainable — see README, "They are
+# standalone apps, not overlays").
 #
 #   ./generate-skeletons.sh              # from docs/candidates.txt (scope output)
 #   ./generate-skeletons.sh com.foo ...  # explicit package list
@@ -30,15 +33,15 @@ for pkg in "${pkgs[@]}"; do
     echo "!! REFUSING $pkg — DO-NOT-REPLACE (safety-critical / reflected-into)" >&2
     continue
   fi
-  dst="$APPS/$pkg"
-  if [ -d "$dst" ]; then echo "skip (exists): $pkg"; continue; fi
-  echo ">> scaffolding $pkg"
-  mkdir -p "$dst/res/values" "$dst/res/layout" "$dst/src/${pkg//.//}"
-  # manifest with the OEM package name
-  sed "s/com\.rav4apps\.template/$pkg/g" "$TPL/AndroidManifest.xml" > "$dst/AndroidManifest.xml"
-  # MainActivity in the OEM package namespace
-  sed "s/com\.rav4apps\.template/$pkg/g" "$TPL/src/com/rav4apps/template/MainActivity.java" \
-    > "$dst/src/${pkg//.//}/MainActivity.java"
+  # Our own package: the leaf of the OEM name under com.ripostelabs.
+  new="com.ripostelabs.$(printf '%s' "${pkg##*.}" | tr 'A-Z' 'a-z')"
+  dst="$APPS/$new"
+  if [ -d "$dst" ]; then echo "skip (exists): $new"; continue; fi
+  echo ">> scaffolding $new (from $pkg)"
+  mkdir -p "$dst/res/values" "$dst/res/layout" "$dst/src/${new//.//}"
+  sed "s/com\.rav4apps\.template/$new/g" "$TPL/AndroidManifest.xml" > "$dst/AndroidManifest.xml"
+  sed "s/com\.rav4apps\.template/$new/g" "$TPL/src/com/rav4apps/template/MainActivity.java" \
+    > "$dst/src/${new//.//}/MainActivity.java"
   cp "$TPL/res/layout/activity_main.xml" "$dst/res/layout/"
   # seed strings: prefer the OEM's own extracted copy (so typos are visible & fixable)
   oem_strings="$DEC/$pkg/res/values/strings.xml"

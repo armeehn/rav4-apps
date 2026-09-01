@@ -1,5 +1,10 @@
 # rav4apps Magisk module
 
+> **Deprecated, not the shipping path.** Overlaying an OEM app at its own package name
+> fails on this unit (`sharedUserId` signature check, platform key unobtainable). The
+> suite ships as standalone `com.ripostelabs.*` APKs instead; see the top-level README.
+> This directory is kept as the record of the attempt.
+
 Systemless overlay. Each replacement APK is stored under this dir at the SAME
 path the OEM app occupies on the device, ALWAYS under `system/` (e.g. a
 `/product/app/Foo/Foo.apk` file lives here as `system/product/app/Foo/Foo.apk`).

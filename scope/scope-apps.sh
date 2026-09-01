@@ -5,6 +5,7 @@
 #   ./scope-apps.sh                 # device over USB
 #   ./scope-apps.sh 100.x.y.z       # device over tailnet (adb connect :5555)
 #   ./scope-apps.sh 172.20.10.10    # device over hotspot LAN
+#   ./scope-apps.sh --offline       # no car: reclassify from apks/ + docs/candidates.txt
 #
 # All read-only on the car: enumerate -> filter to OEM apps -> pull -> decompile
 # resources -> classify EASY (self-contained) vs HW (touches the vehicle).
@@ -20,14 +21,23 @@ APKTOOL="$HOME/.local/opt/apktool.jar"
 . "$(dirname "$0")/protected-apps.sh"
 
 ADB=adb
+OFFLINE="no"
+if [ "${1:-}" = "--offline" ]; then OFFLINE="yes"; shift; fi
 TARGET="${1:-}"
-if [ -n "$TARGET" ]; then
+
+# Offline: the classifier only needs the cached APKs and the candidate list, so a
+# rule change can be re-run at the desk instead of waiting for the next drive.
+if [ "$OFFLINE" = "yes" ]; then
+  [ -s "$DOCS/candidates.txt" ] || { echo "!! --offline needs docs/candidates.txt from a previous device run." >&2; exit 1; }
+  SER="offline"
+  dsh() { :; }
+elif [ -n "$TARGET" ]; then
   case "$TARGET" in *:*) EP="$TARGET";; *) EP="$TARGET:5555";; esac
   echo ">> adb connect $EP"; $ADB connect "$EP" >/dev/null 2>&1 || true; SER="$EP"
 else
   SER="$($ADB devices | awk 'NR>1 && $2=="device"{print $1; exit}')"
 fi
-if [ -z "${SER:-}" ] || ! $ADB -s "$SER" get-state >/dev/null 2>&1; then
+if [ "$OFFLINE" = "no" ] && { [ -z "${SER:-}" ] || ! $ADB -s "$SER" get-state >/dev/null 2>&1; }; then
   SER="$($ADB devices | awk 'NR>1 && $2=="device"{print $1; exit}')"
 fi
 if [ -z "${SER:-}" ]; then
@@ -35,13 +45,15 @@ if [ -z "${SER:-}" ]; then
   $ADB devices -l >&2; exit 1
 fi
 echo ">> using device: $SER"
-dsh() { $ADB -s "$SER" shell "$@"; }
+[ "$OFFLINE" = "yes" ] || dsh() { $ADB -s "$SER" shell "$@"; }
 
 echo ">> fingerprint: $(dsh getprop ro.build.fingerprint 2>/dev/null)"
 echo ">> android:     $(dsh getprop ro.build.version.release 2>/dev/null)"
 
-echo ">> enumerating packages..."
-dsh pm list packages -f 2>/dev/null | sed 's/^package://' > "$DOCS/packages-raw.txt"
+if [ "$OFFLINE" = "no" ]; then
+  echo ">> enumerating packages..."
+  dsh pm list packages -f 2>/dev/null | sed 's/^package://' > "$DOCS/packages-raw.txt"
+fi
 
 grep -E '^/(system|vendor|product|system_ext|oem|odm)/' "$DOCS/packages-raw.txt" \
   | grep -vE '=com\.android\.(inputmethod|internal|providers|systemui|settings|documentsui|externalstorage|shell|se|carrier|cts|egg|traceur|dreams|bips|bookmark|captiveportal|emergency|htmlviewer|keychain|location|managedprovisioning|mms|pacprocessor|phone|proxyhandler|server|sharedstoragebackup|statementservice|vpndialogs|wallpaper)' \
@@ -54,7 +66,7 @@ echo ">> $N candidate OEM/vendor apps"
 REPORT="$DOCS/scope-report.md"
 {
   echo "# GT6 head unit - built-in app scope report"; echo
-  echo "Device: \`$SER\`  ·  $(dsh getprop ro.build.fingerprint 2>/dev/null)"; echo
+  if [ "$OFFLINE" = "yes" ]; then echo "Offline re-run from cached \`apks/\` ($(date +%F))"; else echo "Device: \`$SER\`  ·  $(dsh getprop ro.build.fingerprint 2>/dev/null)"; fi; echo
   echo "| Package | APK | class | gateway | vendor svc | notes |"
   echo "|---|---|---|---|---|---|"
 } > "$REPORT"
@@ -66,6 +78,7 @@ while IFS= read -r line; do
   echo "   -- $pkg"
   local_apk="$APKS/$pkg.apk"
   if [ ! -f "$local_apk" ]; then
+    [ "$OFFLINE" = "yes" ] && { echo "      (no cached apk)"; continue; }
     $ADB -s "$SER" pull "$path" "$local_apk" >/dev/null 2>&1 || { echo "      (pull failed)"; continue; }
   fi
   sz=$(du -h "$local_apk" 2>/dev/null | cut -f1)
@@ -79,18 +92,18 @@ while IFS= read -r line; do
     [ -f "$outdir/AndroidManifest.xml" ] || decode_ok="no"
   fi
   # Classify. This unit has NO AOSP car framework (android.car); vehicle
-  # integration runs through the szchoiceway gateway. apktool ran with -s so
-  # there is no smali to grep — detect from the DECODED manifest (sharedUserId,
-  # the Choiceway broadcast permission) and from `strings` on the raw APK
-  # (dex string constants: gateway package, SysVarProvider, the MCU tty).
+  # integration runs through the szchoiceway gateway. Only the DECODED MANIFEST
+  # decides HW: system sharedUserId, the Choiceway broadcast permission, a
+  # <uses-permission> on a vendor permission, or a <uses-library> on a vendor
+  # jar. The earlier `strings` sweep of the whole APK is gone: a media player
+  # that merely names android.car in an unused constant was flagged HW, and a
+  # false HW hides an EASY rewrite behind "RE first". `strings` still feeds the
+  # advisory vendor-svc column, which never changes the class.
   gw="no"; vend="no"; manifest="$outdir/AndroidManifest.xml"
   if [ -f "$manifest" ]; then
-    grep -qE 'sharedUserId="android\.uid\.system"|com\.szchoiceway\.permission\.broadcast' "$manifest" 2>/dev/null && gw="YES"
-  fi
-  if [ "$gw" = "no" ] && [ -f "$local_apk" ]; then
-    strings "$local_apk" 2>/dev/null \
-      | grep -qE 'com\.szchoiceway|eventcenter|SysVarProvider|ttyHS1|android\.car|CarPropertyManager' \
-      && gw="YES"
+    grep -qE 'sharedUserId="android\.uid\.system"' "$manifest" 2>/dev/null && gw="YES"
+    grep -E '<uses-(permission|library)' "$manifest" 2>/dev/null \
+      | grep -qE 'android:name="(com\.szchoiceway|com\.choiceway|vendor\.|android\.car)' && gw="YES"
   fi
   strings "$local_apk" 2>/dev/null \
     | grep -qE 'com\.(szchoiceway|choiceway|toyota|denso|panasonic|harman|qti|qualcomm)\.|vendor\.' \

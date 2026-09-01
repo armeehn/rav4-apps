@@ -3,6 +3,11 @@
     package="com.rav4apps.template">
     <!-- Match the head unit: Android 13 (API 33). minSdk 28 mirrors the OEM apps. -->
     <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="33"/>
+    <!-- The launcher's theme provider. Without this line an API 30+ app cannot see it at
+         all and silently keeps its own colours (see apps/_design Palette). -->
+    <queries>
+        <provider android:authorities="com.ripostelabs.carlauncher.theme" />
+    </queries>
     <application android:label="@string/app_name" android:allowBackup="false">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
