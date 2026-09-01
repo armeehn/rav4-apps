@@ -1,5 +1,10 @@
 # Approach & constraints
 
+> **Status (2026-09):** the Magisk-overlay route described under constraint 1 is dead.
+> Every rewrite ships as a standalone `com.ripostelabs.*` package; see the README section
+> "They are standalone apps, not overlays" for why. The rest of this file still holds:
+> the vehicle boundary and the signing constraint are what shaped the standalone pivot.
+
 ## Two rewrite modes
 - **Clean-room rewrite (default):** new Android app, our UI + correct copy.
   Best for self-contained apps (settings screens, media/USB player, clock,
@@ -14,9 +19,13 @@
 
 ## The three real constraints (in bite order)
 1. **Install/replace.** Sideloading a *new* app is trivial with adb. *Replacing*
-   a system app needs root -> use a **Magisk systemless module** overlaying the
-   APK; never touch /system directly (A/B + dm-verity safe). Revert = disable the
-   module (Magisk safe mode / adb) and reboot; worst case restore the EDL backup.
+   a system app in place is **not possible here**: most OEM apps share
+   `android.uid.system`, and PackageManager refuses a `sharedUserId` member whose
+   signature differs from the rest, so an overlay at the vendor's package name
+   bootloops or is rejected. The `magisk-module/` packer is kept only as a record
+   of that attempt. Rewrites install beside the OEM app under their own name and
+   are launched from the launcher; the OEM app is left in place (or disabled per
+   user with `pm disable-user`, which is reversible).
 2. **Vehicle boundary.** This unit has **no AOSP car framework** — there is no
    `android.car` / `CarPropertyManager` / VHAL. Anything touching
    climate/radio/camera/reverse/CAN goes through the **szchoiceway gateway**
