@@ -39,7 +39,7 @@ jobs:
           [ -d "$ANDROID_SDK_ROOT" ] || { echo "no Android SDK on this runner"; exit 1; }
 
           failed=""
-          for d in apps/com.reveng.*; do
+          for d in apps/com.ripostelabs.*; do
             if ! template/build.sh "$d" >"/tmp/$(basename "$d").log" 2>&1; then
               failed="$failed $(basename "$d")"
               echo "::group::FAILED $(basename "$d")"
@@ -48,7 +48,7 @@ jobs:
             fi
           done
           [ -z "$failed" ] || { echo "failed:$failed"; exit 1; }
-          echo "built $(ls -d apps/com.reveng.* | wc -l) apps"
+          echo "built $(ls -d apps/com.ripostelabs.* | wc -l) apps"
 
       # A missing <queries> entry does not fail a build, does not log anything at
       # build time, and leaves the app silently unthemed on the panel.

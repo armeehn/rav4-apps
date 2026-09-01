@@ -120,7 +120,7 @@ def patch_manifest(mf):
 
 def main():
     done, missing = [], []
-    for app in sorted(APPS.glob("com.reveng.*")):
+    for app in sorted(APPS.glob("com.ripostelabs.*")):
         suffix = app.name.rsplit(".", 1)[-1]
         if suffix not in ICONS:
             missing.append(app.name)

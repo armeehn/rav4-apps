@@ -1,0 +1,60 @@
+# GitHub-side CI for outside contributors.
+#
+# Mirrors .gitea/workflows/apps-ci.yml, which runs on the self-hosted Gitea runner.
+# Both build all 26 apps and run the theme-wiring check; a pull request opened on
+# GitHub would otherwise get no signal at all.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      # build.sh needs a real JDK 17: d8 from build-tools 34 crashes on class
+      # files from a newer JDK even with --release 17.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # GitHub's ubuntu runners ship an Android SDK and set ANDROID_HOME.
+      # build.sh reads ANDROID_SDK_ROOT.
+      - name: Install SDK packages
+        run: |
+          export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          yes | "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-33" "build-tools;34.0.0" >/dev/null
+
+      - name: Build every app
+        run: |
+          failed=""
+          for d in apps/com.ripostelabs.*; do
+            if ! template/build.sh "$d" >"/tmp/$(basename "$d").log" 2>&1; then
+              failed="$failed $(basename "$d")"
+              echo "::group::FAILED $(basename "$d")"
+              tail -30 "/tmp/$(basename "$d").log"
+              echo "::endgroup::"
+            fi
+          done
+          [ -z "$failed" ] || { echo "failed:$failed"; exit 1; }
+          echo "built $(ls -d apps/com.ripostelabs.* | wc -l) apps"
+
+      # A missing <queries> entry does not fail a build, logs nothing at build
+      # time, and leaves the app silently unthemed on the panel.
+      - name: Theme wiring
+        run: scope/check-theme-wiring.sh

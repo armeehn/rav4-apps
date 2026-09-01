@@ -1,15 +1,23 @@
 #!/usr/bin/env bash
-# deploy-module.sh — thin laptop-side deploy. All building happens on server
-# x; this only fetches the built Magisk module and installs it on the unit.
+# deploy-module.sh — thin client-side deploy. Building happens on a build host;
+# this only fetches the built Magisk module from it and installs it on the unit.
 #
 #   ./deploy-module.sh                 # unit over USB
-#   ./deploy-module.sh 100.x.y.z      # unit over the tailnet
-#   ./deploy-module.sh --reboot [ip]  # reboot the unit after install
+#   ./deploy-module.sh 10.0.0.5        # unit over the network (adb :5555)
+#   ./deploy-module.sh --reboot [ip]   # reboot the unit after install
 #
-# Env: RAV4_SERVER (default x.hq.ripostelabs.xyz)
+# Env: RAV4_SERVER — an ssh/rsync target holding a built rav4-apps checkout.
+#      Required; there is no sensible default for someone else's machine.
 set -euo pipefail
 
-SERVER="${RAV4_SERVER:-x.hq.ripostelabs.xyz}"
+SERVER="${RAV4_SERVER:-}"
+[ -n "$SERVER" ] || {
+    echo "!! RAV4_SERVER is not set."
+    echo "   Point it at the host that built the module, e.g."
+    echo "     RAV4_SERVER=user@buildhost ./deploy-module.sh"
+    echo "   Or build locally and install the zip with magisk --install-module."
+    exit 1
+}
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 ZIP=rav4apps-module.zip
 
@@ -32,7 +40,7 @@ if [ -n "$TARGET" ]; then
     ADB=(adb -s "$EP")
 fi
 "${ADB[@]}" get-state >/dev/null 2>&1 || {
-    echo "!! no adb device (car awake? USB plugged / tailscale up?)"; exit 1; }
+    echo "!! no adb device (car awake? USB plugged in / network up?)"; exit 1; }
 
 "${ADB[@]}" push "$ROOT/$ZIP" "/sdcard/Download/$ZIP"
 "${ADB[@]}" shell su -c "magisk --install-module /sdcard/Download/$ZIP"
