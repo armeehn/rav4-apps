@@ -5,8 +5,8 @@
      Pure UI + MediaStore + MediaPlayer. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.ripostelabs.music"
-    android:versionCode="1"
-    android:versionName="1.0-riposte">
+    android:versionCode="2"
+    android:versionName="1.1-riposte">
 
     <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
 

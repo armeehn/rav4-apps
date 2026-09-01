@@ -431,7 +431,7 @@ public class MainActivity extends Activity
 
                 title = new TextView(MainActivity.this);
                 title.setTextSize(17);
-                title.setTypeface(android.graphics.Typeface.create("sans-serif-medium", 0));
+                title.setTypeface(face(true));
                 title.setSingleLine(true);
                 title.setEllipsize(android.text.TextUtils.TruncateAt.END);
                 col.addView(title, new LinearLayout.LayoutParams(
@@ -455,20 +455,19 @@ public class MainActivity extends Activity
             artist.setText(t.artist);
             boolean active = position == current;
 
-            // rounded avatar oval; accent when active, surface2 otherwise
-            GradientDrawable oval = new GradientDrawable();
-            oval.setShape(GradientDrawable.OVAL);
-            oval.setColor(active ? cAccentDim : cSurface2);
-            avatar.setBackground(oval);
+            // avatar badge: a circle, or a hard-edged square when the theme asks for it
+            GradientDrawable badge = new GradientDrawable();
+            if (!Palette.hardEdge(MainActivity.this)) badge.setShape(GradientDrawable.OVAL);
+            badge.setColor(active ? cAccentDim : cSurface2);
+            avatar.setBackground(badge);
             avatar.setColorFilter(active ? cAccent : cText2);
 
             title.setTextColor(active ? cAccent : cText);
 
-            // rounded highlight background for the active row
+            // dim-accent highlight for the active row, cornered per the active theme
             if (active) {
                 GradientDrawable bg = new GradientDrawable();
-                bg.setShape(GradientDrawable.RECTANGLE);
-                bg.setCornerRadius(dp(16));
+                bg.setCornerRadius(dp(16) * Palette.cornerScale(MainActivity.this));
                 bg.setColor(cAccentDim);
                 row.setBackground(bg);
             } else {
@@ -480,5 +479,10 @@ public class MainActivity extends Activity
 
     private int dp(int v) {
         return (int) (v * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    /** The face the active theme asks for (brand mono under Riposte, sans otherwise). */
+    private android.graphics.Typeface face(boolean bold) {
+        return Palette.typeface(this, bold);
     }
 }

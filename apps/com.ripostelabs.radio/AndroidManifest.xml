@@ -6,8 +6,8 @@
      Standalone normal app: no sharedUserId, no platform signing, no system perms. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.ripostelabs.radio"
-    android:versionCode="2"
-    android:versionName="2.0-riposte">
+    android:versionCode="3"
+    android:versionName="2.1-riposte">
 
     <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
 
