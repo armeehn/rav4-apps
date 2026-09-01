@@ -1,0 +1,29 @@
+rav4-apps
+Copyright 2026 Sasha Zero <sasha@ripostelabs.xyz>
+
+This product includes software developed at Riposte Laboratories.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
+
+--------------------------------------------------------------------------------
+THIRD-PARTY / VENDOR NOTES
+--------------------------------------------------------------------------------
+
+The apps here are clean-room rewrites. They are written against the public
+Android framework only and vendor no third-party code.
+
+Some app directories keep an OEM-derived Java package name (for example
+com.szchoiceway.photoreader inside com.ripostelabs.photos) as an artifact of the
+package each rewrite replaces. The installed application IDs are all
+com.ripostelabs.*; no vendor package name is claimed by any manifest.
+
+Extracted OEM display strings were used as a reference so that typo fixes read as
+direct diffs. No vendor code, resources, firmware or decompiled sources are
+redistributed in this repository; apks/ and decompiled/ are git-ignored working
+directories populated from the user's own device.
+
+"Choiceway", "AiNavi", "Toyota", "RAV4", "Qualcomm" and "Magisk" are trademarks of
+their respective owners. This project is not affiliated with, endorsed by, or
+supported by any of them.

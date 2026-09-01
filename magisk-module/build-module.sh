@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # build-module.sh — zip the module tree into ../rav4apps-module.zip.
-# Uses zip(1) when present, else python3 (server x has no zip binary).
+# Uses zip(1) when present, else python3 (some hosts have no zip binary).
 # Excludes only the repo tooling (this script, pack-app.sh, README.md) —
 # real Magisk scripts like customize.sh/service.sh are kept.
 set -euo pipefail

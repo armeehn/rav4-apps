@@ -89,7 +89,7 @@
 /system/priv-app/CalendarProvider/CalendarProvider.apk=com.android.providers.calendar
 /system/app/BluetoothMidiService/BluetoothMidiService.apk=com.android.bluetoothmidiservice
 /system/priv-app/DocumentsUI/DocumentsUI.apk=com.android.documentsui
-/data/app/~~1ueoaSN-wBm8VsvjRZ8PfQ==/com.reveng.carlauncher-9q-XSfXPfkvPxFUmWsEeyg==/base.apk=com.reveng.carlauncher
+/data/app/~~1ueoaSN-wBm8VsvjRZ8PfQ==/com.ripostelabs.carlauncher-9q-XSfXPfkvPxFUmWsEeyg==/base.apk=com.ripostelabs.carlauncher
 /system_ext/app/WAPPushManager/WAPPushManager.apk=com.android.smspush
 /product/app/canbusdebug/canbusdebug.apk=com.szchoiceway.canbusdebug
 /system_ext/app/seccamsample/seccamsample.apk=com.qualcomm.qti.seccamsample
@@ -211,7 +211,7 @@
 /apex/com.android.permission/priv-app/PermissionController@TKQ1.220807.001/PermissionController.apk=com.android.permissioncontroller
 /apex/com.android.wifi/app/WifiDialog@TKQ1.220807.001/WifiDialog.apk=com.android.wifi.dialog
 /system/app/Traceur/Traceur.apk=com.android.traceur
-/data/app/~~R0gzuzk_tgRhvFML9WchdA==/com.reveng.carlauncher.debug-RTfaq5lXWl7azhpo5u7a-Q==/base.apk=com.reveng.carlauncher.debug
+/data/app/~~R0gzuzk_tgRhvFML9WchdA==/com.ripostelabs.carlauncher.debug-RTfaq5lXWl7azhpo5u7a-Q==/base.apk=com.ripostelabs.carlauncher.debug
 /product/app/XGesturePlayer/XGesturePlayer.apk=com.szchoiceway.gesture
 /system/framework/framework-res.apk=android
 /product/app/PowerOffAlarm/PowerOffAlarm.apk=com.qualcomm.qti.poweroffalarm

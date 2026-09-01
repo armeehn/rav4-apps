@@ -23,7 +23,7 @@ so a same-package stub breaks home inflation.
 ### 0.3 — the standalone pivot, 26 apps
 The overlay route is dead for most OEM packages: PackageManager refuses a `sharedUserId` member
 whose signature differs from the rest, and the platform key is confirmed unobtainable. So the
-rewrites became **new packages** (`com.reveng.*`) that install as ordinary apps and are launched
+rewrites became **new packages** (`com.ripostelabs.*`) that install as ordinary apps and are launched
 from the launcher instead of replacing anything. Twenty-six of them build to signed APKs.
 
 ### 0.4 — one design system
@@ -33,8 +33,8 @@ product rather than twenty-six weekend projects.
 ### 0.5 — the launcher's colours, not ours
 The suite now paints the palette the **launcher** is actually showing.
 
-`apps/_design/src/com/reveng/design/Palette.java` reads the launcher's read-only provider
-(`content://com.reveng.carlauncher.theme/active`, added in CarLauncher 0.5) and maps it onto the
+`apps/_design/src/com/ripostelabs/design/Palette.java` reads the launcher's read-only provider
+(`content://com.ripostelabs.carlauncher.theme/active`, added in CarLauncher 0.5) and maps it onto the
 design system's role names. `template/build.sh` compiles `_design/src` into every app, so the
 client is shared rather than copied.
 
@@ -63,7 +63,7 @@ Verified on the emulated head unit (LXC 124, 1920x720 @240dpi), which is what ca
 | launcher installed, before the `<queries>` fix | `#5B9DFF` — silently unthemed |
 | launcher installed, after | `#2F81F7` — the launcher's Midnight primary |
 
-`content query --uri content://com.reveng.carlauncher.theme/active` also returns the full row to
+`content query --uri content://com.ripostelabs.carlauncher.theme/active` also returns the full row to
 a different uid, so the provider is genuinely exported and R8 did not strip it.
 
 ## Landed (continued)
@@ -137,7 +137,7 @@ previous reach the app; each maps to exactly what the on-screen button does.
 ### 0.7 — proven on the panel
 With a tagged test track on the emulated head unit:
 
-- `dumpsys media_session` → `Media button session is com.reveng.music/music`, `state=3`
+- `dumpsys media_session` → `Media button session is com.ripostelabs.music/music`, `state=3`
   (playing), `actions=567` — so the wheel keys are routed to our app.
 - The launcher's now-playing card showed **Test Tone / Riposte Labs**, source chip "Music",
   live position `0:14 / 0:30`, with transport controls.
