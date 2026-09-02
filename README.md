@@ -68,6 +68,13 @@ adb install-multiple apps/com.ripostelabs.*/app-debug.apk
 They appear in the launcher's app drawer alongside everything else. The Car
 Launcher groups them together and its Setup Doctor reports which are missing.
 
+> **If the unit ever ran the pre-rename `com.reveng.*` build, uninstall those
+> packages.** Installing the rewrite does not replace them: a renamed package is a
+> new app, so both stay installed, with the same label and the same icon. The old
+> one queries a theme authority the launcher no longer publishes and keeps its
+> built-in look under every theme (see below). Check with
+> `adb shell pm list packages com.reveng.` — the answer must be empty.
+
 > Every app is signed with the repo's throwaway `debug.keystore`, which is
 > git-ignored and minted per build host. APKs from two different machines will not
 > install over each other — uninstall first, or build the whole set in one place.
