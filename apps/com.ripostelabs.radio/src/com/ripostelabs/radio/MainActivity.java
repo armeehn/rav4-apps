@@ -9,6 +9,7 @@ import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -46,6 +47,8 @@ public class MainActivity extends Activity
     private static final int FM_MIN = 8750, FM_MAX = 10790, FM_STEP = 20;
     private static final int AM_MIN = 530, AM_MAX = 1710, AM_STEP = 10;
     private static final int PRESET_SLOTS = 6;
+    /** How long a band request may lead the MCU before the tabs follow the hardware again. */
+    private static final long BAND_SWITCH_GRACE_MS = 2000;
 
     private Tuner tuner;
     private int tab = TAB_FM;
@@ -55,6 +58,8 @@ public class MainActivity extends Activity
     /** v0.8: the driver paused the tuner (wheel/card); distinct from losing the mode. */
     private boolean tunerPaused = false;
     private boolean dragging = false;
+    /** Uptime of the last KEY_BAND_* we sent, 0 when none is in flight. */
+    private long bandSwitchAt = 0;
     private SharedPreferences prefs;
 
     // Tuner views
@@ -281,7 +286,10 @@ public class MainActivity extends Activity
                 // Nudge the MCU onto the requested band; refresh follows via events.
                 boolean wantFm = tab == TAB_FM;
                 boolean haveFm = curBand <= 2;
-                if (wantFm != haveFm) tuner.sendKey(wantFm ? Tuner.KEY_BAND_FM : Tuner.KEY_BAND_AM);
+                if (wantFm != haveFm) {
+                    bandSwitchAt = SystemClock.uptimeMillis();
+                    tuner.sendKey(wantFm ? Tuner.KEY_BAND_FM : Tuner.KEY_BAND_AM);
+                }
             }
             refreshTuner();
         }
@@ -339,9 +347,17 @@ public class MainActivity extends Activity
         boolean fmNow = curBand <= 2;
 
         // Follow the hardware band: if the MCU is on the other band than the
-        // selected tab (e.g. SWC band button), switch the tab to match.
-        if (tab == TAB_FM && !fmNow) { tab = TAB_AM; styleTab(tabFm, false); styleTab(tabAm, true); }
-        else if (tab == TAB_AM && fmNow) { tab = TAB_FM; styleTab(tabAm, false); styleTab(tabFm, true); }
+        // selected tab (e.g. SWC band button), switch the tab to match. Not while
+        // our own KEY_BAND_* is in flight, though: the getter reports the old band
+        // for a beat after the key, and following it flipped the tab straight back,
+        // so tapping AM looked like it did nothing.
+        if ((tab == TAB_FM) == fmNow) {
+            bandSwitchAt = 0;
+        }
+        if (!bandSwitchPending()) {
+            if (tab == TAB_FM && !fmNow) { tab = TAB_AM; styleTab(tabFm, false); styleTab(tabAm, true); }
+            else if (tab == TAB_AM && fmNow) { tab = TAB_FM; styleTab(tabAm, false); styleTab(tabFm, true); }
+        }
 
         if (freq > 0) curFreq = freq;
         bandLabel.setText(fmNow ? "FM" + (curBand + 1) : "AM");
@@ -372,6 +388,12 @@ public class MainActivity extends Activity
         }
         refreshPresets();
         publishTunerSession();
+    }
+
+    /** True while a band key we sent may still be ahead of what getBand() reports. */
+    private boolean bandSwitchPending() {
+        return bandSwitchAt != 0
+                && SystemClock.uptimeMillis() - bandSwitchAt < BAND_SWITCH_GRACE_MS;
     }
 
     private int sliderToFreq(int progress) {
