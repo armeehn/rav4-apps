@@ -115,6 +115,19 @@
                 android:text="@string/unit_mhz" />
         </LinearLayout>
 
+        <!-- RDS station name (PS); gone until the tuner reports one -->
+        <TextView
+            android:id="@+id/station_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:singleLine="true"
+            android:ellipsize="end"
+            style="@style/H2"
+            android:textColor="@color/text2"
+            android:visibility="gone"
+            android:text="" />
+
         <!-- Tuning slider -->
         <LinearLayout
             android:layout_width="match_parent"

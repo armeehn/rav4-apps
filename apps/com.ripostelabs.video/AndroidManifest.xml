@@ -15,6 +15,9 @@
          silently keeps its built-in palette. Declaring the authority is the whole grant. -->
     <queries>
         <provider android:authorities="com.ripostelabs.carlauncher.theme" />
+        <!-- The gateway's SysVar store, read by BrakeGate for Sys_CurBreakSate. Same
+             rule: undeclared, the query returns null and the gate silently never closes. -->
+        <provider android:authorities="com.szchoiceway.eventcenter.SysVarProvider" />
     </queries>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />

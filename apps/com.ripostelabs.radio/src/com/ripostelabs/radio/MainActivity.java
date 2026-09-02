@@ -66,6 +66,7 @@ public class MainActivity extends Activity
     private View tunerPane, netPane;
     private TextView tabFm, tabAm, tabNet;
     private TextView freqDisplay, freqUnit, bandLabel, chipStatus, freqMin, freqMax;
+    private TextView stationName;
     private SeekBar slider;
     private final ArrayList<TextView> presetViews = new ArrayList<>();
 
@@ -132,6 +133,7 @@ public class MainActivity extends Activity
         tabNet = findViewById(R.id.tab_net);
         freqDisplay = findViewById(R.id.freq_display);
         freqUnit = findViewById(R.id.freq_unit);
+        stationName = findViewById(R.id.station_name);
         bandLabel = findViewById(R.id.band_label);
         chipStatus = findViewById(R.id.chip_status);
         freqMin = findViewById(R.id.freq_min);
@@ -369,6 +371,11 @@ public class MainActivity extends Activity
             slider.setMax((max - min) / step);
             slider.setProgress(Math.max(0, Math.min(slider.getMax(), (curFreq - min) / step)));
         }
+
+        // RDS PS name arrives as radio event 6; re-polled here like everything else.
+        String ps = fmNow ? tuner.getStationName().trim() : "";
+        stationName.setText(ps);
+        stationName.setVisibility(TextUtils.isEmpty(ps) ? View.GONE : View.VISIBLE);
 
         if (!modeLost && !tunerPaused) {
             StringBuilder sb = new StringBuilder();

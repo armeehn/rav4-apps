@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.MediaController;
+import android.widget.TextView;
 import android.widget.VideoView;
 
 import java.util.ArrayList;
@@ -31,6 +32,9 @@ public class PlayerActivity extends Activity {
      * does not duck for a navigation prompt.
      */
     private MediaCitizen citizen;
+    /** Handbrake gate: covers the picture, never the sound. See {@link BrakeGate}. */
+    private BrakeGate brakeGate;
+    private TextView brakePanel;
     private int index = 0;
     private int resumePos = 0;
     /** True only while a duck — not the driver — is what stopped playback. */
@@ -49,6 +53,12 @@ public class PlayerActivity extends Activity {
 
         video = findViewById(R.id.video);
         findViewById(R.id.back).setOnClickListener(v -> finish());
+
+        brakePanel = findViewById(R.id.brake_panel);
+        brakePanel.setBackgroundColor(Palette.color(this, R.color.bg));
+        brakePanel.setTextColor(Palette.color(this, R.color.text2));
+        brakeGate = new BrakeGate(this, gated ->
+                brakePanel.setVisibility(gated ? View.VISIBLE : View.GONE));
 
         String[] arr = getIntent().getStringArrayExtra("uris");
         if (arr != null) {
@@ -177,6 +187,22 @@ public class PlayerActivity extends Activity {
         int pos = 0;
         try { pos = video.getCurrentPosition(); } catch (Exception ignored) {}
         citizen.setState(video.isPlaying(), pos);
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (brakeGate != null) {
+            brakeGate.start();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (brakeGate != null) {
+            brakeGate.stop();
+        }
     }
 
     @Override
