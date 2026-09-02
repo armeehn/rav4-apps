@@ -52,6 +52,9 @@ final class Tuner {
     private static final int TR_GET_RADIO_FREQ = 12;
     private static final int TR_GET_RADIO_BAND = 14;
     private static final int TR_GET_RDS_STATE = 16;
+    // Named PTY in the stub, but it returns mRadioPSName: the RDS PS station name
+    // from the MCU PS frame (EventService.java:2836-2842, getter :7510-7512).
+    private static final int TR_GET_RADIO_PTY_NAME = 19;
     private static final int TR_GET_ST_MONO_STATE = 22;
     private static final int TR_GET_DX_LOC_STATE = 23;
     private static final int TR_GET_STEREO_ICON = 26;
@@ -75,8 +78,20 @@ final class Tuner {
     static final int KEY_AUTO_STORE = 18;   // AMS: scan band, store presets
     static final int KEY_ST_MONO = 19;
     static final int KEY_DX_LOC = 20;
+    // RDS toggles (RadioUIController.java:647 btnAF, :690 btnTA). Constants only:
+    // the transport row has no spare slot, so nothing sends them yet.
+    static final int KEY_AF = 21;
+    static final int KEY_TA = 23;
     static final int KEY_BAND_FM = 30;
     static final int KEY_BAND_AM = 31;
+
+    // Radio-callback event ids (EventService.notifyRadioEvt): 0 = status bits,
+    // 3 = frequency in arg2, 6 = PS station name in str. Every one of them lands
+    // in listener.onRadioEvent(), which re-polls the getters (getStationName()
+    // included) instead of parsing the payload, so no dispatch on these here.
+    private static final int EVT_RADIO_STATUS = 0;
+    private static final int EVT_RADIO_FREQ = 3;
+    private static final int EVT_RADIO_PS_NAME = 6;
 
     // Mode-callback event ids (vendor MainActivity handler).
     private static final int EVT_RECLAIM = 254;
@@ -222,6 +237,8 @@ final class Tuner {
     boolean getRdsState() { return transactBool(TR_GET_RDS_STATE); }
     boolean getStMono() { return transactBool(TR_GET_ST_MONO_STATE); }
     boolean getDxLoc() { return transactBool(TR_GET_DX_LOC_STATE); }
+    /** RDS PS station name; empty until the MCU sends a PS frame. */
+    String getStationName() { return transactString(TR_GET_RADIO_PTY_NAME); }
 
     // ---- Binder plumbing ---------------------------------------------------
 
@@ -264,5 +281,24 @@ final class Tuner {
 
     private boolean transactBool(int code) {
         return transactInt(code) == 1;
+    }
+
+    private String transactString(int code) {
+        IBinder s = service;
+        if (s == null) return "";
+        Parcel data = Parcel.obtain();
+        Parcel reply = Parcel.obtain();
+        try {
+            data.writeInterfaceToken(DESCRIPTOR);
+            s.transact(code, data, reply, 0);
+            reply.readException();
+            String str = reply.readString();
+            return str == null ? "" : str;
+        } catch (Exception e) {
+            return "";
+        } finally {
+            reply.recycle();
+            data.recycle();
+        }
     }
 }

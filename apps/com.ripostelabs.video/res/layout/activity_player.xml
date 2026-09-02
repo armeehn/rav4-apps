@@ -11,6 +11,22 @@
         android:layout_height="match_parent"
         android:layout_gravity="center" />
 
+    <!-- Handbrake gate (see BrakeGate). Opaque cover over the surface while the MCU
+         says the brake is off; audio keeps playing underneath. Clickable so a tap
+         does not reach the VideoView's controller toggle. -->
+    <TextView
+        android:id="@+id/brake_panel"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:clickable="true"
+        android:textSize="28sp"
+        android:fontFamily="sans-serif-medium"
+        android:textColor="@color/text2"
+        android:background="@color/bg"
+        android:visibility="gone"
+        android:text="@string/brake_required" />
+
     <!-- Top scrim for the back affordance -->
     <View
         android:id="@+id/top_scrim"
