@@ -6,4 +6,5 @@
     <string name="empty_hint">Videos on this device will appear here</string>
     <string name="need_permission">Storage permission is needed to show videos</string>
     <string name="grant">Grant access</string>
+    <string name="brake_required">Parking brake required</string>
 </resources>
