@@ -1,0 +1,2 @@
+package:com.ivicar.avm
+package:com.mmbox.xbrowser
