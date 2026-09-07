@@ -1,0 +1,114 @@
+  com.szchoiceway.logcatupload/androidx.startup.InitializationProvider:
+    Provider{8b4a519 com.szchoiceway.logcatupload/androidx.startup.InitializationProvider}
+  com.szchoiceway.settings/com.core.ex.provider.CoreContentProvider:
+    Provider{b59674b com.szchoiceway.settings/com.core.ex.provider.CoreContentProvider}
+  com.szchoiceway.customerui/com.core.ex.provider.CoreContentProvider:
+    Provider{b76094d com.szchoiceway.customerui/com.core.ex.provider.CoreContentProvider}
+  com.szchoiceway.instructions/androidx.core.content.FileProvider:
+    Provider{fd5f65f com.szchoiceway.instructions/androidx.core.content.FileProvider}
+  com.szchoiceway.multicolor.light/com.core.ex.provider.CoreContentProvider:
+    Provider{ba879e5 com.szchoiceway.multicolor.light/com.core.ex.provider.CoreContentProvider}
+  com.szchoiceway.providers.settings/com.szchoiceway.eventcenter.SysVarProvider:
+    Provider{8d81ac2 com.szchoiceway.providers.settings/com.szchoiceway.eventcenter.SysVarProvider}
+  com.android.atslcarconsole/com.core.ex.provider.CoreContentProvider:
+    Provider{9505a56 com.android.atslcarconsole/com.core.ex.provider.CoreContentProvider}
+  com.szchoiceway.update/androidx.startup.InitializationProvider:
+    Provider{6dc70a1 com.szchoiceway.update/androidx.startup.InitializationProvider}
+  com.zjinnova.zlink/com.tencent.mid.api.MidProvider:
+    Provider{58b7759 com.zjinnova.zlink/com.tencent.mid.api.MidProvider}
+  com.szchoiceway.ambient.light/com.core.ex.provider.CoreContentProvider:
+    Provider{24ef43e com.szchoiceway.ambient.light/com.core.ex.provider.CoreContentProvider}
+  com.zjinnova.zlink/androidx.startup.InitializationProvider:
+    Provider{2951f1e com.zjinnova.zlink/androidx.startup.InitializationProvider}
+  com.szchoiceway.zxw_dashboard/androidx.startup.InitializationProvider:
+    Provider{3118db1 com.szchoiceway.zxw_dashboard/androidx.startup.InitializationProvider}
+  com.szchoiceway.zxwmedia/.provider.FileProvider:
+    Provider{cbbd37a com.szchoiceway.zxwmedia/.provider.FileProvider}
+  com.zjinnova.zlink/com.zjinnova.android.zlink.features.init.InitContentProvider:
+    Provider{82d93ff com.zjinnova.zlink/com.zjinnova.android.zlink.features.init.InitContentProvider}
+  com.szchoiceway.instructions/androidx.startup.InitializationProvider:
+    Provider{ba508ac com.szchoiceway.instructions/androidx.startup.InitializationProvider}
+  com.szchoiceway.btsuite/.CallListProvider:
+    Provider{a9727c6 com.szchoiceway.btsuite/.CallListProvider}
+  com.szchoiceway.multicolor.light/androidx.startup.InitializationProvider:
+    Provider{7fddcba com.szchoiceway.multicolor.light/androidx.startup.InitializationProvider}
+  com.zjinnova.zlink/androidx.core.content.FileProvider:
+    Provider{4b9e5cc com.zjinnova.zlink/androidx.core.content.FileProvider}
+  com.szchoiceway.testtools/androidx.startup.InitializationProvider:
+    Provider{f70b872 com.szchoiceway.testtools/androidx.startup.InitializationProvider}
+  com.szchoiceway.gps/com.core.ex.provider.CoreContentProvider:
+    Provider{20f6b14 com.szchoiceway.gps/com.core.ex.provider.CoreContentProvider}
+  com.szchoiceway.learn.key/com.core.ex.provider.CoreContentProvider:
+    Provider{c2b4362 com.szchoiceway.learn.key/com.core.ex.provider.CoreContentProvider}
+  com.szchoiceway.ambient.light/androidx.startup.InitializationProvider:
+    Provider{ffd129f com.szchoiceway.ambient.light/androidx.startup.InitializationProvider}
+  com.szchoiceway.photoreader/androidx.startup.InitializationProvider:
+    Provider{91d715b com.szchoiceway.photoreader/androidx.startup.InitializationProvider}
+  [com.szchoiceway.instructions.androidx-startup]:
+    Provider{ba508ac com.szchoiceway.instructions/androidx.startup.InitializationProvider}
+      applicationInfo=ApplicationInfo{c7edc19 com.szchoiceway.instructions}
+  [com.zjinnova.zlink.TENCENT.MID.V3]:
+    Provider{58b7759 com.zjinnova.zlink/com.tencent.mid.api.MidProvider}
+      applicationInfo=ApplicationInfo{8fa90f2 com.zjinnova.zlink}
+    Provider{fd5f65f com.szchoiceway.instructions/androidx.core.content.FileProvider}
+      applicationInfo=ApplicationInfo{8c85af9 com.szchoiceway.instructions}
+  [com.szchoiceway.multicolor.light.CoreContentProvider]:
+    Provider{ba879e5 com.szchoiceway.multicolor.light/com.core.ex.provider.CoreContentProvider}
+      applicationInfo=ApplicationInfo{e9cca3e com.szchoiceway.multicolor.light}
+  [com.szchoiceway.logcatupload.androidx-startup]:
+    Provider{8b4a519 com.szchoiceway.logcatupload/androidx.startup.InitializationProvider}
+      applicationInfo=ApplicationInfo{aaadb5 com.szchoiceway.logcatupload}
+  [com.szchoiceway.zxwmedia.provider.FileProvider]:
+    Provider{cbbd37a com.szchoiceway.zxwmedia/.provider.FileProvider}
+      applicationInfo=ApplicationInfo{2cb121c com.szchoiceway.zxwmedia}
+  [com.zjinnova.zlink.init.provider]:
+    Provider{82d93ff com.zjinnova.zlink/com.zjinnova.android.zlink.features.init.InitContentProvider}
+      applicationInfo=ApplicationInfo{fc35bfa com.zjinnova.zlink}
+  [com.android.atslcarconsole.CoreContentProvider]:
+    Provider{9505a56 com.android.atslcarconsole/com.core.ex.provider.CoreContentProvider}
+      applicationInfo=ApplicationInfo{43d88b4 com.android.atslcarconsole}
+  [com.szchoiceway.eventcenter.SysVarProvider]:
+    Provider{8d81ac2 com.szchoiceway.providers.settings/com.szchoiceway.eventcenter.SysVarProvider}
+      applicationInfo=ApplicationInfo{d9adb11 com.szchoiceway.providers.settings}
+  [com.szchoiceway.settings.CoreContentProvider]:
+    Provider{b59674b com.szchoiceway.settings/com.core.ex.provider.CoreContentProvider}
+      applicationInfo=ApplicationInfo{9d4a476 com.szchoiceway.settings}
+  [com.szchoiceway.customerui.CoreContentProvider]:
+    Provider{b76094d com.szchoiceway.customerui/com.core.ex.provider.CoreContentProvider}
+      applicationInfo=ApplicationInfo{2ea2a77 com.szchoiceway.customerui}
+  [com.szchoiceway.btsuite.CallListProvider]:
+    Provider{a9727c6 com.szchoiceway.btsuite/.CallListProvider}
+      applicationInfo=ApplicationInfo{c1174d com.szchoiceway.btsuite}
+  [com.szchoiceway.testtools.androidx-startup]:
+    Provider{f70b872 com.szchoiceway.testtools/androidx.startup.InitializationProvider}
+      applicationInfo=ApplicationInfo{8cb5668 com.szchoiceway.testtools}
+  [com.szchoiceway.ambient.light.CoreContentProvider]:
+    Provider{24ef43e com.szchoiceway.ambient.light/com.core.ex.provider.CoreContentProvider}
+      applicationInfo=ApplicationInfo{54e28b9 com.szchoiceway.ambient.light}
+  [com.szchoiceway.zxw_dashboard.androidx-startup]:
+    Provider{3118db1 com.szchoiceway.zxw_dashboard/androidx.startup.InitializationProvider}
+      applicationInfo=ApplicationInfo{b99556b com.szchoiceway.zxw_dashboard}
+  [com.szchoiceway.gps.CoreContentProvider]:
+    Provider{20f6b14 com.szchoiceway.gps/com.core.ex.provider.CoreContentProvider}
+      applicationInfo=ApplicationInfo{90553f8 com.szchoiceway.gps}
+  [com.zjinnova.zlink.fileProvider]:
+    Provider{4b9e5cc com.zjinnova.zlink/androidx.core.content.FileProvider}
+      applicationInfo=ApplicationInfo{d9e70f com.zjinnova.zlink}
+  [com.szchoiceway.ambient.light.androidx-startup]:
+    Provider{ffd129f com.szchoiceway.ambient.light/androidx.startup.InitializationProvider}
+      applicationInfo=ApplicationInfo{916897a com.szchoiceway.ambient.light}
+  [com.szchoiceway.learn.key.CoreContentProvider]:
+    Provider{c2b4362 com.szchoiceway.learn.key/com.core.ex.provider.CoreContentProvider}
+      applicationInfo=ApplicationInfo{1abb8b8 com.szchoiceway.learn.key}
+  [com.szchoiceway.multicolor.light.androidx-startup]:
+    Provider{7fddcba com.szchoiceway.multicolor.light/androidx.startup.InitializationProvider}
+      applicationInfo=ApplicationInfo{ab913d com.szchoiceway.multicolor.light}
+  [com.zjinnova.zlink.androidx-startup]:
+    Provider{2951f1e com.zjinnova.zlink/androidx.startup.InitializationProvider}
+      applicationInfo=ApplicationInfo{2bf002c com.zjinnova.zlink}
+  [com.szchoiceway.update.androidx-startup]:
+    Provider{6dc70a1 com.szchoiceway.update/androidx.startup.InitializationProvider}
+      applicationInfo=ApplicationInfo{e25a08a com.szchoiceway.update}
+  [com.szchoiceway.photoreader.androidx-startup]:
+    Provider{91d715b com.szchoiceway.photoreader/androidx.startup.InitializationProvider}
+      applicationInfo=ApplicationInfo{bbff5bf com.szchoiceway.photoreader}
