@@ -16,6 +16,7 @@ import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import com.ripostelabs.design.AlarmAudio;
 import com.ripostelabs.design.Palette;
 
 /** Full-screen alarm ring: alarm-stream Ringtone + vibration, Dismiss / Snooze. */
@@ -24,6 +25,8 @@ public class RingActivity extends Activity {
     private static final int SNOOZE_MIN = 5;
 
     private Ringtone ringtone;
+    /** Held while ringing so the radio quietens instead of playing over the alarm. */
+    private AlarmAudio audio;
     private Vibrator vibrator;
     private final Handler ui = new Handler(Looper.getMainLooper());
     private int alarmId;
@@ -114,6 +117,11 @@ public class RingActivity extends Activity {
     }
 
     private void startRinging() {
+        // Before the first note, not after: focus taken late means the radio and the alarm
+        // overlap for exactly as long as it takes to ask.
+        audio = AlarmAudio.of(this);
+        audio.take();
+
         try {
             Uri uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
             if (uri == null) uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE);
@@ -139,6 +147,12 @@ public class RingActivity extends Activity {
         ui.removeCallbacksAndMessages(null);
         try { if (ringtone != null && ringtone.isPlaying()) ringtone.stop(); } catch (Exception ignored) {}
         try { if (vibrator != null) vibrator.cancel(); } catch (Exception ignored) {}
+        // Dismiss, snooze and onDestroy all land here, and any of them can run twice. Releasing
+        // is safe either way; not releasing leaves the radio quiet for good.
+        if (audio != null) {
+            audio.release();
+            audio = null;
+        }
     }
 
     private void dismiss() {
