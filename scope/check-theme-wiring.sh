@@ -75,5 +75,40 @@ for d in apps/com.ripostelabs.*; do
     }
 done
 
-[ "$fail" -eq 0 ] && echo "OK: theme wiring and audio citizenship both intact"
+# Every app must declare the same API levels, and the scaffolder must agree with them.
+#
+# They did not. All 26 apps shipped minSdk 24, the template scaffolded 28, and build.sh passed
+# --min-sdk-version 28 under a comment claiming it pinned the level. It does not: an explicit
+# <uses-sdk> overrides the flag, so the build asserted one number and produced another, and any
+# app made from the template disagreed with the suite from the moment it was created.
+#
+# Read from the template rather than hardcoded here, so raising the level is one edit and this
+# check follows it instead of having to be found and updated too.
+sdk_of() { sed -n 's/.*android:minSdkVersion="\([0-9]*\)".*/\1/p' "$1" | head -1; }
+target_of() { sed -n 's/.*android:targetSdkVersion="\([0-9]*\)".*/\1/p' "$1" | head -1; }
+
+want_min="$(sdk_of template/AndroidManifest.xml)"
+want_target="$(target_of template/AndroidManifest.xml)"
+
+for d in apps/com.ripostelabs.*; do
+    pkg="$(basename "$d")"
+    m="$d/AndroidManifest.xml"
+    [ -f "$m" ] || continue
+
+    got_min="$(sdk_of "$m")"
+    got_target="$(target_of "$m")"
+
+    if [ "$got_min" != "$want_min" ] || [ "$got_target" != "$want_target" ]; then
+        echo "FAIL $pkg: API levels $got_min/$got_target, template says $want_min/$want_target"
+        fail=1
+    fi
+done
+
+# And the build must not claim a level the manifests contradict.
+if ! grep -q -- "--min-sdk-version $want_min " template/build.sh; then
+    echo "FAIL template/build.sh: --min-sdk-version disagrees with the manifests ($want_min)"
+    fail=1
+fi
+
+[ "$fail" -eq 0 ] && echo "OK: theme wiring, audio citizenship and API levels all intact"
 exit "$fail"

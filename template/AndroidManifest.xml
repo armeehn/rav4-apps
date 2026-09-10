@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.rav4apps.template">
-    <!-- Match the head unit: Android 13 (API 33). minSdk 28 mirrors the OEM apps. -->
-    <uses-sdk android:minSdkVersion="28" android:targetSdkVersion="33"/>
+    <!-- Match the head unit: Android 13 (API 33). minSdk 24 is what all 26 apps actually ship;
+         this template said 28, so every app it scaffolded disagreed with the suite from birth. -->
+    <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33"/>
     <!-- The launcher's theme provider. Without this line an API 30+ app cannot see it at
          all and silently keeps its own colours (see apps/_design Palette). -->
     <queries>
