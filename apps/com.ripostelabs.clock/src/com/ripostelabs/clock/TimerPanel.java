@@ -15,6 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.util.Locale;
+import com.ripostelabs.design.AlarmAudio;
 import com.ripostelabs.design.Palette;
 
 /** Countdown timer with presets, start/pause/reset, and an alarm sound on finish. */
@@ -27,6 +28,8 @@ class TimerPanel extends LinearLayout {
     private boolean running = false;
     private boolean finished = false;
     private Ringtone ringtone;
+    /** Held while the finish sound plays so the radio quietens instead of playing over it. */
+    private AlarmAudio audio;
 
     private TextView big, status;
     private ImageButton startBtn;
@@ -192,6 +195,10 @@ class TimerPanel extends LinearLayout {
     }
 
     private void playSound() {
+        // Before the first note. Asking afterwards leaves the timer and the radio overlapping.
+        audio = AlarmAudio.of(getContext());
+        audio.take();
+
         try {
             Uri uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM);
             if (uri == null) uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
@@ -204,6 +211,12 @@ class TimerPanel extends LinearLayout {
 
     private void stopSound() {
         try { if (ringtone != null && ringtone.isPlaying()) ringtone.stop(); } catch (Exception ignored) {}
+        // Reached by the 30 s auto-stop and by the user resetting, so it can run twice or with
+        // nothing playing. Releasing is safe either way; skipping it leaves the radio quiet.
+        if (audio != null) {
+            audio.release();
+            audio = null;
+        }
     }
 
     static String fmt(long ms) {

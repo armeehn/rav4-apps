@@ -59,11 +59,18 @@ for d in apps/com.ripostelabs.*; do
     pkg="$(basename "$d")"
     # WebView is in this list because a page's soundtrack is media too, and the browser is
     # exactly the app that shipped without focus by not looking like a media app.
-    grep -rqE "MediaPlayer|MediaRecorder|AudioRecord|VideoView|WebView" "$d/src" 2>/dev/null || continue
+    #
+    # Ringtone was missing from this list until 2026-09-10, and the clock had been ringing its
+    # alarm and its timer over the radio the whole time. The check was green because the class it
+    # used was not named here. A pattern list is only as good as its last omission, so anything
+    # that makes noise belongs in it whether or not it looks like a player.
+    grep -rqE "MediaPlayer|MediaRecorder|AudioRecord|VideoView|WebView|Ringtone" "$d/src" 2>/dev/null || continue
     # WebAudio counts: it is the WebView-shaped front of MediaCitizen, in _design for the
-    # two apps that put arbitrary pages on screen.
-    grep -rqE "MediaCitizen|WebAudio" "$d/src" 2>/dev/null || {
-        echo "FAIL $pkg: uses audio but never takes audio focus (MediaCitizen)"
+    # two apps that put arbitrary pages on screen. AlarmAudio counts too, and is deliberately
+    # NOT MediaCitizen: an alarm takes focus but must not publish a MediaSession, or it lands on
+    # the launcher's now-playing card and the wheel's skip key addresses the alarm.
+    grep -rqE "MediaCitizen|WebAudio|AlarmAudio" "$d/src" 2>/dev/null || {
+        echo "FAIL $pkg: uses audio but never takes audio focus (MediaCitizen/AlarmAudio)"
         fail=1
     }
 done
