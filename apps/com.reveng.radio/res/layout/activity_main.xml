@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg">
+
+    <!-- Header: title + band tabs + status chips -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingLeft="24dp"
+        android:paddingRight="24dp"
+        android:paddingTop="14dp"
+        android:paddingBottom="10dp">
+
+        <ImageView
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginRight="14dp"
+            android:src="@drawable/ic_radio"
+            android:tint="@color/accent" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/H1"
+            android:text="@string/app_name" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/chip_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="20dp"
+            style="@style/Overline"
+            android:text="" />
+
+        <LinearLayout
+            android:id="@+id/band_tabs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:background="@drawable/bg_tabs">
+
+            <TextView
+                android:id="@+id/tab_fm"
+                style="@style/Tab"
+                android:text="@string/tab_fm" />
+
+            <TextView
+                android:id="@+id/tab_am"
+                style="@style/Tab"
+                android:text="@string/tab_am" />
+
+            <TextView
+                android:id="@+id/tab_net"
+                style="@style/Tab"
+                android:text="@string/tab_net" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ================= Tuner pane (FM / AM) ================= -->
+    <LinearLayout
+        android:id="@+id/tuner_pane"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingLeft="32dp"
+        android:paddingRight="32dp">
+
+        <!-- Frequency display -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center|bottom"
+            android:layout_marginTop="2dp">
+
+            <TextView
+                android:id="@+id/band_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="24dp"
+                android:layout_marginBottom="20dp"
+                style="@style/H2"
+                android:textColor="@color/accent"
+                android:text="FM1" />
+
+            <TextView
+                android:id="@+id/freq_display"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text"
+                android:textSize="104sp"
+                android:fontFamily="sans-serif-thin"
+                android:includeFontPadding="false"
+                android:text="87.50" />
+
+            <TextView
+                android:id="@+id/freq_unit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="14dp"
+                android:layout_marginBottom="20dp"
+                style="@style/H2"
+                android:textColor="@color/text2"
+                android:text="@string/unit_mhz" />
+        </LinearLayout>
+
+        <!-- Tuning slider -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="4dp">
+
+            <TextView
+                android:id="@+id/freq_min"
+                android:layout_width="56dp"
+                android:layout_height="wrap_content"
+                android:gravity="right"
+                style="@style/Caption"
+                android:text="87.5" />
+
+            <SeekBar
+                android:id="@+id/freq_slider"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginLeft="12dp"
+                android:layout_marginRight="12dp"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp" />
+
+            <TextView
+                android:id="@+id/freq_max"
+                android:layout_width="56dp"
+                android:layout_height="wrap_content"
+                style="@style/Caption"
+                android:text="107.9" />
+        </LinearLayout>
+
+        <!-- Transport controls -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="10dp">
+
+            <TextView
+                android:id="@+id/btn_seek_down"
+                style="@style/Ctl"
+                android:text="@string/seek_down" />
+
+            <TextView
+                android:id="@+id/btn_step_down"
+                style="@style/Ctl"
+                android:text="@string/step_down" />
+
+            <TextView
+                android:id="@+id/btn_scan"
+                style="@style/Ctl"
+                android:text="@string/scan" />
+
+            <TextView
+                android:id="@+id/btn_st_mono"
+                style="@style/Ctl"
+                android:text="@string/st_mono" />
+
+            <TextView
+                android:id="@+id/btn_dx_loc"
+                style="@style/Ctl"
+                android:text="@string/dx_loc" />
+
+            <TextView
+                android:id="@+id/btn_step_up"
+                style="@style/Ctl"
+                android:text="@string/step_up" />
+
+            <TextView
+                android:id="@+id/btn_seek_up"
+                style="@style/Ctl"
+                android:text="@string/seek_up" />
+        </LinearLayout>
+
+        <!-- Presets -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:layout_marginBottom="6dp"
+            style="@style/Overline"
+            android:text="@string/presets_hint" />
+
+        <LinearLayout
+            android:id="@+id/preset_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal" />
+    </LinearLayout>
+
+    <!-- ================= Streaming pane (NET) ================= -->
+    <LinearLayout
+        android:id="@+id/net_pane"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <ListView
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:divider="@null"
+            android:dividerHeight="0dp"
+            android:scrollbarStyle="outsideOverlay"
+            android:clipToPadding="false"
+            android:paddingLeft="12dp"
+            android:paddingRight="12dp"
+            android:paddingBottom="8dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp"
+            android:layout_marginBottom="16dp"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/bg_card_grad"
+            android:paddingLeft="20dp"
+            android:paddingRight="16dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
+
+            <ImageView
+                android:id="@+id/now_avatar"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_marginRight="16dp"
+                android:src="@drawable/ic_radio"
+                android:scaleType="fitCenter"
+                android:padding="13dp"
+                android:tint="@color/text2" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginRight="16dp">
+
+                <TextView
+                    android:id="@+id/now_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    style="@style/H2"
+                    android:text="@string/nothing_playing" />
+
+                <TextView
+                    android:id="@+id/now_status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    style="@style/Caption"
+                    android:text="@string/tap_to_play" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btn_play"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:background="@drawable/btn_fab"
+                android:src="@drawable/ic_play"
+                android:tint="#FFFFFFFF"
+                android:scaleType="fitCenter"
+                android:padding="18dp"
+                android:contentDescription="@string/play" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
