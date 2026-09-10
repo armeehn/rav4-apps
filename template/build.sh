@@ -38,10 +38,13 @@ OUT="$PROJ/build"; rm -rf "$OUT"; mkdir -p "$OUT/compiled" "$OUT/gen" "$OUT/clas
 #    No error-swallowing: a failed compile/link must abort the build (set -e),
 #    not slip through and produce a broken/mis-targeted APK.
 find "$PROJ/res" -type f | while read -r f; do "$AAPT2" compile "$f" -o "$OUT/compiled"; done
-# --min/--target-sdk-version pin the APK to the car's API level (28..33);
-# without them aapt2 stamps targetSdk 1, which changes runtime behaviour.
+# These are DEFAULTS, not pins. An explicit <uses-sdk> in the manifest overrides them, and every
+# app here has one, so the manifest is what the APK actually gets. This comment used to claim the
+# flags pinned the level at 28; a built APK reports sdkVersion 24, which is what the manifests
+# say. The numbers now match the manifests so the build stops asserting a level it does not
+# produce. Dropping the flags entirely is not the fix: without them aapt2 stamps targetSdk 1.
 "$AAPT2" link -o "$OUT/base.apk" -I "$PLATFORM" \
-  --min-sdk-version 28 --target-sdk-version 33 \
+  --min-sdk-version 24 --target-sdk-version 33 \
   --manifest "$PROJ/AndroidManifest.xml" --java "$OUT/gen" \
   $(find "$OUT/compiled" -name '*.flat' -printf '%p ') >/dev/null
 # 2. compile java (app sources + the shared design sources + generated R.java).
