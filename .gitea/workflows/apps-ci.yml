@@ -54,3 +54,10 @@ jobs:
       # build time, and leaves the app silently unthemed on the panel.
       - name: Theme wiring
         run: scope/check-theme-wiring.sh
+
+      # Unit tests for the logic that does not need Android. Runs after the build because a
+      # compile failure there is the more useful error to see first.
+      - name: Unit tests
+        run: |
+          export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
+          scope/run-tests.sh
