@@ -99,6 +99,11 @@ GLYPHS = {
         ("f", "M3,21 L4,17 L7,20 z"),
         ("f", "M16,5 L18,3 L21,6 L19,8 z"),
     ],
+    # a phone (tall outline, solid earpiece) beside the wide screen it projects onto
+    "projection": [
+        ("s", "M2,4 h7 v16 h-7 z"), ("f", "M4,6 h3 v2 h-3 z"),
+        ("s", "M12,7 h10 v10 h-10 z"), ("s", "M9,12 h3"),
+    ],
     # frame, mountains, square sun
     "photos": [
         ("s", "M3,3 h18 v18 h-18 z"),
@@ -144,7 +149,7 @@ PLATES = {
     "contacts": "#E64980", "converter": "#0CA678", "currency": "#2F9E44",
     "deviceinfo": "#5F3DC4", "files": "#E5A50A", "gps": "#1C7ED6",
     "installer": "#37B24D", "lamp": "#F59F00", "level": "#82C91E", "music": "#D6336C",
-    "news": "#4C6EF5", "notes": "#F08C00", "photos": "#9C36B5",
+    "news": "#4C6EF5", "notes": "#F08C00", "projection": "#2E8B57", "photos": "#9C36B5",
     "radio": "#7048E8", "recorder": "#E03131", "sketch": "#F76707",
     "soundmeter": "#12B886", "speedometer": "#FA5252", "tasks": "#0B7285",
     "video": "#862E9C", "weather": "#228BE6",
