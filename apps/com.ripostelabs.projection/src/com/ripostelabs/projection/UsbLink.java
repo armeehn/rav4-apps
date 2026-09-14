@@ -11,7 +11,6 @@ import android.util.Log;
 import com.ripostelabs.projection.aa.Aoa;
 import com.ripostelabs.projection.aa.Session;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 
@@ -24,7 +23,7 @@ import java.util.Map;
  *                                                     --open()--> bulk IN / bulk OUT
  * </pre>
  */
-final class UsbLink implements Session.Link, Closeable {
+final class UsbLink implements Projector.Pipe {
 
     private static final String TAG = "Projection";
     private static final int USB_CLASS_HUB = 9;
@@ -146,7 +145,8 @@ final class UsbLink implements Session.Link, Closeable {
     }
 
     /** One bulk read; -1 on timeout, which the reader loop simply retries. */
-    int read(byte[] buf) {
+    @Override
+    public int read(byte[] buf) {
         return connection.bulkTransfer(in, buf, Math.min(buf.length, MAX_TRANSFER), READ_TIMEOUT_MS);
     }
 

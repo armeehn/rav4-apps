@@ -30,6 +30,18 @@
             android:textColor="@color/text2"
             android:textSize="14sp" />
 
+        <ToggleButton
+            android:id="@+id/wireless"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:background="@drawable/btn_ghost"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp"
+            android:textOff="@string/wireless_off"
+            android:textOn="@string/wireless_on"
+            android:textColor="@color/text" />
+
         <Button
             android:id="@+id/connect"
             android:layout_width="wrap_content"
