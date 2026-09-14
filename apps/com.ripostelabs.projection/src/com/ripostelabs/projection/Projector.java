@@ -13,7 +13,9 @@ import com.ripostelabs.projection.aa.Ids;
 import com.ripostelabs.projection.aa.Messages;
 import com.ripostelabs.projection.aa.Session;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.net.Socket;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -23,9 +25,9 @@ import java.util.concurrent.TimeUnit;
  * timer, the decoder, the audio tracks and the app's one {@link MediaCitizen}.
  *
  * <pre>
- *   UsbLink.read() --> Session.onBytes() --> Sink callbacks --> VideoSink / AudioSink
- *        ^                                        |
- *        +---------- Session.Link.write() <-------+   (acks, touches, pings)
+ *   Pipe.read() ----> Session.onBytes() --> Sink callbacks --> VideoSink / AudioSink
+ *   (UsbLink or   ^                              |
+ *    TcpTransport)+---- Session.Link.write() <---+   (acks, touches, pings)
  * </pre>
  *
  * <p>Everything from the phone runs on the reader thread; the activity is told on the main
@@ -40,6 +42,15 @@ final class Projector implements Session.Sink {
         void onVideoSize(int width, int height);
 
         void onEnded(String why);
+    }
+
+    /** The byte pipe to the phone: USB bulk endpoints (stage 1) or a TCP socket (stage 2). */
+    interface Pipe extends Session.Link, Closeable {
+        /** Bytes read, or -1 on a timeout with nothing to deliver. */
+        int read(byte[] buf) throws IOException;
+
+        @Override
+        void close();
     }
 
     private static final String TAG = "Projection";
@@ -66,7 +77,7 @@ final class Projector implements Session.Sink {
     private final VideoSink video = new VideoSink();
     private final AudioSink[] audio = new AudioSink[256];
 
-    private UsbLink link;
+    private Pipe link;
     private Session session;
     private Thread reader;
     private ScheduledExecutorService pinger;
@@ -106,13 +117,31 @@ final class Projector implements Session.Sink {
     /** Opens an accessory-mode phone and starts the session. */
     void start(UsbManager manager, UsbDevice device) {
         stop("restart");
+        Pipe pipe;
         try {
-            link = UsbLink.open(manager, device);
+            pipe = UsbLink.open(manager, device);
         } catch (IOException e) {
             status("usb: " + e.getMessage());
             return;
         }
+        begin(pipe, "projection-usb");
+    }
 
+    /** A phone that came in over the wireless bootstrap and dialled the TCP port. */
+    void start(Socket socket) {
+        stop("restart");
+        Pipe pipe;
+        try {
+            pipe = TcpTransport.wrap(socket);
+        } catch (IOException e) {
+            status("tcp: " + e.getMessage());
+            return;
+        }
+        begin(pipe, "projection-tcp");
+    }
+
+    private void begin(Pipe pipe, String threadName) {
+        link = pipe;
         citizen = MediaCitizen.attach(context, "projection", new Transport());
         session = new Session(link, this, config());
         running = true;
@@ -122,7 +151,7 @@ final class Projector implements Session.Sink {
             public void run() {
                 readLoop();
             }
-        }, "projection-usb");
+        }, threadName);
         reader.start();
 
         pinger = Executors.newSingleThreadScheduledExecutor();

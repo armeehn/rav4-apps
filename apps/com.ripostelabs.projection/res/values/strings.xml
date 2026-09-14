@@ -3,4 +3,6 @@
     <string name="app_name">Projection</string>
     <string name="waiting">Plug a phone into the USB port</string>
     <string name="connect">Connect</string>
+    <string name="wireless_off">Wireless</string>
+    <string name="wireless_on">Wireless on</string>
 </resources>

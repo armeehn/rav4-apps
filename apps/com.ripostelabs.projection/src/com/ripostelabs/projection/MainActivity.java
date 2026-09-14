@@ -19,10 +19,14 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import com.ripostelabs.design.Palette;
 import com.ripostelabs.projection.aa.Aoa;
 import com.ripostelabs.projection.aa.Messages;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Wired Android Auto receiver, stage 1. The screen is one surface the phone draws on and a
@@ -32,12 +36,16 @@ import com.ripostelabs.projection.aa.Messages;
  * <p>Two ways in: the system launches us on USB_DEVICE_ATTACHED for a Google accessory-mode
  * device (see res/xml/device_filter.xml), or the driver opens the app and taps Connect, which
  * takes any non-hub USB device, asks permission, and switches it into accessory mode.
+ *
+ * <p>Stage 2 adds the Wireless toggle: it asks for the Bluetooth and hotspot runtime permissions
+ * once, then {@link Wireless} raises the AP and waits for a phone over RFCOMM and TCP.
  */
 public class MainActivity extends Activity implements Projector.Screen {
 
     private static final String TAG = "Projection";
     private static final String ACTION_USB_PERMISSION = "com.ripostelabs.projection.USB_PERMISSION";
     private static final int MAX_POINTERS = 10;
+    private static final int REQ_WIRELESS_PERMISSIONS = 1;
 
     private UsbManager usb;
     private Projector projector;
@@ -45,6 +53,8 @@ public class MainActivity extends Activity implements Projector.Screen {
     private SurfaceView video;
     private TextView status;
     private View connect;
+    private ToggleButton wireless;
+    private Wireless wirelessLink;
     private boolean receiverRegistered;
 
     /** True once the phone has started a video stream, which is when touches mean something. */
@@ -91,9 +101,11 @@ public class MainActivity extends Activity implements Projector.Screen {
         video = findViewById(R.id.video);
         status = findViewById(R.id.status);
         connect = findViewById(R.id.connect);
+        wireless = findViewById(R.id.wireless);
 
         usb = (UsbManager) getSystemService(Context.USB_SERVICE);
         projector = new Projector(this, this);
+        wirelessLink = new Wireless(this, projector, this);
 
         video.getHolder().addCallback(new SurfaceHolder.Callback() {
             @Override
@@ -122,6 +134,12 @@ public class MainActivity extends Activity implements Projector.Screen {
                 scan();
             }
         });
+        wireless.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleWireless();
+            }
+        });
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED);
@@ -145,11 +163,53 @@ public class MainActivity extends Activity implements Projector.Screen {
 
     @Override
     protected void onDestroy() {
+        wirelessLink.close();
         projector.stop("activity destroyed");
         if (receiverRegistered) {
             unregisterReceiver(usbEvents);
         }
         super.onDestroy();
+    }
+
+    /** The Wireless toggle: permissions first, then the whole stage 2 chain. */
+    private void toggleWireless() {
+        if (!wireless.isChecked()) {
+            wirelessLink.disable("switched off");
+            return;
+        }
+        String[] wanted = missingWirelessPermissions();
+        if (wanted.length > 0) {
+            onStatus("wireless: asking for " + wanted.length + " permission(s)");
+            requestPermissions(wanted, REQ_WIRELESS_PERMISSIONS);
+            return;
+        }
+        wirelessLink.enable();
+    }
+
+    private String[] missingWirelessPermissions() {
+        List<String> missing = new ArrayList<>();
+        for (String[] set : new String[][] {BtRfcomm.runtimePermissions(), SoftAp.runtimePermissions()}) {
+            for (String p : set) {
+                if (checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) {
+                    missing.add(p);
+                }
+            }
+        }
+        return missing.toArray(new String[0]);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(request, permissions, results);
+        if (request != REQ_WIRELESS_PERMISSIONS) {
+            return;
+        }
+        if (missingWirelessPermissions().length > 0) {
+            wireless.setChecked(false);
+            onStatus("wireless: permission denied");
+            return;
+        }
+        wirelessLink.enable();
     }
 
     /** Launched by the system for an attached device, or by the driver from the launcher. */
@@ -257,6 +317,9 @@ public class MainActivity extends Activity implements Projector.Screen {
     @Override
     public void onStatus(String line) {
         status.setText(line);
+        if (wireless.isChecked() && !wirelessLink.isOn()) {
+            wireless.setChecked(false);
+        }
     }
 
     /**

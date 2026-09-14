@@ -1,17 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Clean-room replacement for the OEM Zlink projection app, stage 1: a wired Android Auto
-     receiver. Standalone normal app: new package, no sharedUserId, no system permissions.
+<!-- Clean-room replacement for the OEM Zlink projection app. Stage 1: a wired Android Auto
+     receiver. Stage 2: the wireless bootstrap (Bluetooth RFCOMM, then a local-only hotspot and
+     a TCP socket). Standalone normal app: new package, no sharedUserId, no system permissions.
      Pure android.* framework; the protocol is hand-written Java under src/.../aa. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.ripostelabs.projection"
-    android:versionCode="1"
-    android:versionName="0.1-stage1">
+    android:versionCode="2"
+    android:versionName="0.2-stage2">
 
     <uses-sdk android:minSdkVersion="24" android:targetSdkVersion="33" />
 
     <!-- Not required: the emulator farm has no USB host and must still install the APK for a
          launch smoke. The activity says so on screen instead. -->
     <uses-feature android:name="android.hardware.usb.host" android:required="false" />
+
+    <!-- Stage 2. Bluetooth: the RFCOMM server needs BLUETOOTH_CONNECT on API 31+ (the legacy
+         pair below covers API 30 and under); ADVERTISE is for making the unit discoverable.
+         Hotspot: startLocalOnlyHotspot checks CHANGE_WIFI_STATE plus NEARBY_WIFI_DEVICES on
+         API 33 (FINE_LOCATION before that). The TCP server needs INTERNET. None of these is a
+         system permission; the tethering path in SoftAp (flag off) would need
+         TETHER_PRIVILEGED, i.e. the priv-app build on Riposte OS 0.2. -->
+    <uses-permission android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
 
     <!-- The launcher's theme provider (see com.ripostelabs.design.Palette). Without this an app
          targeting API 30+ cannot see the provider at all: the query returns null and the app
