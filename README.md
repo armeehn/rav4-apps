@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![CI](https://github.com/armeehn/rav4-apps/actions/workflows/ci.yml/badge.svg)](https://github.com/armeehn/rav4-apps/actions/workflows/ci.yml)
 
-Twenty-six clean-room replacements for the built-in apps on a Choiceway / AiNavi
+Twenty-seven clean-room replacements for the built-in apps on a Choiceway / AiNavi
 **GT6-EAU** Android 13 head unit — the clock, calculator, files, notes, radio,
 music and so on. They are plain Android apps, built without Gradle, and they pick
 up their colours from the [Car Launcher](https://github.com/armeehn/device-reveng)
