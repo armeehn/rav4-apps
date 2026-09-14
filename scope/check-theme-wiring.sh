@@ -12,6 +12,7 @@ PALETTE="com/ripostelabs/design/Palette"
 fail=0
 
 for d in apps/com.ripostelabs.*; do
+    [ -f "$d/AndroidManifest.xml" ] || continue   # a build artefact left by another branch, not an app
     pkg="$(basename "$d")"
 
     if ! grep -q "$AUTHORITY" "$d/AndroidManifest.xml"; then
@@ -56,6 +57,7 @@ done
 # now-playing card, and the steering-wheel media keys do nothing. None of that fails a build,
 # and none of it is visible on a desk.
 for d in apps/com.ripostelabs.*; do
+    [ -f "$d/AndroidManifest.xml" ] || continue   # a build artefact left by another branch, not an app
     pkg="$(basename "$d")"
     # WebView is in this list because a page's soundtrack is media too, and the browser is
     # exactly the app that shipped without focus by not looking like a media app.
@@ -91,6 +93,7 @@ want_min="$(sdk_of template/AndroidManifest.xml)"
 want_target="$(target_of template/AndroidManifest.xml)"
 
 for d in apps/com.ripostelabs.*; do
+    [ -f "$d/AndroidManifest.xml" ] || continue   # a build artefact left by another branch, not an app
     pkg="$(basename "$d")"
     m="$d/AndroidManifest.xml"
     [ -f "$m" ] || continue
