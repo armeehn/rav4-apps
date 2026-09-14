@@ -1,4 +1,4 @@
-# Builds all 26 standalone apps and proves each one can still read the launcher palette.
+# Builds all 27 standalone apps and proves each one can still read the launcher palette.
 #
 # There is no Gradle here on purpose (see ROADMAP 0.1): every app is a handful of
 # framework-only Java files, and template/build.sh takes ~2.5 s per app, so the whole

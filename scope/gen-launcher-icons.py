@@ -83,6 +83,8 @@ GLYPHS = {
     "installer": [("s", "M12,2 v11"), ("f", "M6,12 L18,12 L12,18 z"), ("s", "M3,17 v4 h18 v-4")],
     # spirit level: vial outline, solid bubble, two index marks
     "level": [("s", "M2,8 h20 v8 h-20 z"), ("f", "M10,10 h4 v4 h-4 z"), ("t", "M8,4 v4 M16,4 v4")],
+    # a bulb: octagonal envelope, solid cap
+    "lamp": [("s", "M9,3 h6 l4,4 v5 l-4,4 h-6 l-4,-4 v-5 z"), ("f", "M9,18 h6 v3 h-6 z")],
     # note: solid head, stem, flag
     "music": [("f", "M10,15 h7 v6 h-7 z"), ("s", "M15.5,3 v18"), ("f", "M14,3 L21,6 L21,10 L14,7 z")],
     # front page: outline, lead photo, headline lines
@@ -141,7 +143,7 @@ PLATES = {
     "calendar": "#E8590C", "clock": "#3B5BDB", "compass": "#C0392B",
     "contacts": "#E64980", "converter": "#0CA678", "currency": "#2F9E44",
     "deviceinfo": "#5F3DC4", "files": "#E5A50A", "gps": "#1C7ED6",
-    "installer": "#37B24D", "level": "#82C91E", "music": "#D6336C",
+    "installer": "#37B24D", "lamp": "#F59F00", "level": "#82C91E", "music": "#D6336C",
     "news": "#4C6EF5", "notes": "#F08C00", "photos": "#9C36B5",
     "radio": "#7048E8", "recorder": "#E03131", "sketch": "#F76707",
     "soundmeter": "#12B886", "speedometer": "#FA5252", "tasks": "#0B7285",
