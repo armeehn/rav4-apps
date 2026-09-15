@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.RippleDrawable;
+import android.graphics.drawable.VectorDrawable;
 import android.os.Looper;
 import android.util.TypedValue;
 import android.view.View;
@@ -476,11 +477,99 @@ public final class Palette {
         if (v instanceof ImageView) {
             ImageView i = (ImageView) v;
             ColorStateList tint = i.getImageTintList();
-            int themed = tint == null ? 0 : themedFor(tint.getDefaultColor(), map);
+            if (tint == null) {
+                inkGlyph(i, map);
+                return;
+            }
+            int themed = themedFor(tint.getDefaultColor(), map);
             if (themed != 0) {
                 i.setImageTintList(ColorStateList.valueOf(themed));
             }
         }
+    }
+
+    /**
+     * v0.11 — an untinted vector glyph takes the ink of the surface it sits on.
+     *
+     * <p>Every vector in the suite is drawn white, which a dark pack never notices and a
+     * light one turns invisible: white toolbar icons on a bone header. The fix is by role,
+     * not per file: the nearest opaque ancestor fill decides ({@link IconRole}). A pack
+     * surface gets the palette's {@code text} ink; an accent button, a photo or a gauge
+     * keeps its white glyph. Bitmaps are never touched.
+     *
+     * <p>Only when the palette moved the ink: with the default {@code text} colour the
+     * white glyphs are already right, and skipping keeps the no-launcher and default-theme
+     * screens pixel-identical.
+     */
+    private static void inkGlyph(ImageView i, int[][] map) {
+        if (!(i.getDrawable() instanceof VectorDrawable)) {
+            return;
+        }
+        Context ctx = i.getContext();
+        int textId = roleId(ctx, "text");
+        int ink = textId == 0 ? 0 : themedFor(ctx.getColor(textId), map);
+        if (ink == 0) {
+            return;
+        }
+        if (IconRole.decide(groundsOf(i), surfacesNow(ctx)) != IconRole.Paint.INK) {
+            return;
+        }
+        i.setImageTintList(ColorStateList.valueOf(ink));
+    }
+
+    /** Background fills from {@code v} up to the window, nearest first; 0 where none. */
+    private static int[] groundsOf(View v) {
+        java.util.List<Integer> out = new java.util.ArrayList<>();
+        for (View p = v; p != null; p = parentOf(p)) {
+            out.add(fillOf(p.getBackground()));
+        }
+        int[] grounds = new int[out.size()];
+        for (int k = 0; k < grounds.length; k++) {
+            grounds[k] = out.get(k);
+        }
+        return grounds;
+    }
+
+    private static View parentOf(View v) {
+        return v.getParent() instanceof View ? (View) v.getParent() : null;
+    }
+
+    /**
+     * The solid colour a background paints, or 0 when it paints none (a stroke-only field, a
+     * mask-only ripple). A ripple's mask layer is skipped: it clips the highlight and is
+     * never seen.
+     */
+    private static int fillOf(Drawable d) {
+        if (d instanceof ColorDrawable) {
+            return ((ColorDrawable) d).getColor();
+        }
+        if (d instanceof GradientDrawable) {
+            ColorStateList solid = ((GradientDrawable) d).getColor();
+            return solid == null ? 0 : solid.getDefaultColor();
+        }
+        if (d instanceof LayerDrawable) {
+            LayerDrawable layers = (LayerDrawable) d;
+            for (int k = 0; k < layers.getNumberOfLayers(); k++) {
+                if (layers.getId(k) == android.R.id.mask) {
+                    continue;
+                }
+                int fill = fillOf(layers.getDrawable(k));
+                if (!IconRole.isClear(fill)) {
+                    return fill;
+                }
+            }
+        }
+        return 0;
+    }
+
+    /** The pack's ground fills as the walk has painted them. */
+    private static int[] surfacesNow(Context ctx) {
+        String[] roles = {"bg", "bg2", "surface", "surface2"};
+        int[] out = new int[roles.length];
+        for (int k = 0; k < roles.length; k++) {
+            out[k] = colorByName(ctx, roles[k]);
+        }
+        return out;
     }
 
     /**
