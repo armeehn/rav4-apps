@@ -23,7 +23,8 @@ JAVA="${JAVA:-java}"
 fail=0
 ran=0
 
-for d in apps/com.ripostelabs.*; do
+# apps/_design first: the shared pack every app compiles in has its own test/ too.
+for d in apps/_design apps/com.ripostelabs.*; do
     [ -d "$d/test" ] || continue
     pkg="$(basename "$d")"
 

@@ -17,6 +17,8 @@ import android.os.Looper;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 /**
@@ -379,16 +381,48 @@ public final class Palette {
             activity.getWindow().setBackgroundDrawable(new ColorDrawable(bg));
         }
 
-        // Posted, not immediate: these screens build their view tree during onCreate, so a
-        // walk that ran at the call site would only see whatever existed by that line. This
-        // way the call can sit anywhere in onCreate and still see the finished tree.
-        root.post(new Runnable() {
+        // Not walked here: these screens build their view tree during onCreate, so a walk
+        // at the call site would only see whatever existed by that line. The layout hook
+        // sees the finished tree, and everything built after it (v0.10).
+        applyDeferred(activity);
+        watch(activity);
+    }
+
+    /**
+     * v0.10 — paint the views built after {@code onCreate} too.
+     *
+     * <p>A walk at the end of onCreate sees only what exists then. Forecast cards built after
+     * a fetch, adapter rows, a panel swapped in on a tab change all arrive later with the
+     * design-pack defaults still on them, and on a themed launcher that is a dark card inside a
+     * light screen. This hooks the window's layout pass instead: each time the tree is laid
+     * out, whatever the ledger has not seen is painted <em>before that layout is drawn</em>,
+     * so a late view never shows its fallback colours, not even for one frame.
+     *
+     * <p>Each view is painted once ({@link PaintLedger}): the walk scales corner radii in
+     * place, so a second pass over the same view would compound it. The pass over an
+     * already-painted tree is a ledger lookup per view and nothing else.
+     *
+     * <p>A dialog draws in its own window and is not reached from here. Do not walk one: an
+     * AlertDialog is system widgets whose text colours coincide with the pack's, and the walk
+     * re-faces and re-tints them into a half-themed picker (tried on the clock's alarm
+     * dialog). A dialog theme is the fix for dialogs, not this.
+     *
+     * <p>Called for you by {@link #apply(Activity)}.
+     */
+    public static void applyDeferred(Activity activity) {
+        if (activity == null) {
+            return;
+        }
+        final View root = activity.getWindow().getDecorView();
+        // The decor view's observer exists before the window is attached; the framework
+        // merges it into the live one on attach, so hooking here is enough.
+        root.getViewTreeObserver().addOnGlobalLayoutListener(
+                new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
-            public void run() {
+            public void onGlobalLayout() {
                 apply(root);
             }
         });
-        watch(activity);
     }
 
     /** Re-colour one view subtree. See {@link #apply(Activity)} for the rule. */
@@ -407,7 +441,24 @@ public final class Palette {
         walk(root, map);
     }
 
+    /** Views painted so far. The walk is not idempotent, so each view is painted once. */
+    private static final PaintLedger PAINTED_VIEWS = new PaintLedger();
+
     private static void walk(View v, int[][] map) {
+        if (PAINTED_VIEWS.firstVisit(v)) {
+            paint(v, map);
+        }
+
+        // Always descend: a painted parent can have gained new children since.
+        if (v instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) {
+                walk(g.getChildAt(i), map);
+            }
+        }
+    }
+
+    private static void paint(View v, int[][] map) {
         retintBackground(v, map);
 
         if (v instanceof TextView) {
@@ -421,10 +472,13 @@ public final class Palette {
             }
         }
 
-        if (v instanceof ViewGroup) {
-            ViewGroup g = (ViewGroup) v;
-            for (int i = 0; i < g.getChildCount(); i++) {
-                walk(g.getChildAt(i), map);
+        // An icon's android:tint is a colour written in XML like any other (v0.10).
+        if (v instanceof ImageView) {
+            ImageView i = (ImageView) v;
+            ColorStateList tint = i.getImageTintList();
+            int themed = tint == null ? 0 : themedFor(tint.getDefaultColor(), map);
+            if (themed != 0) {
+                i.setImageTintList(ColorStateList.valueOf(themed));
             }
         }
     }
