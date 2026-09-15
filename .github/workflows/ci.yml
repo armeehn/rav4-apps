@@ -1,7 +1,7 @@
 # GitHub-side CI for outside contributors.
 #
 # Mirrors .gitea/workflows/apps-ci.yml, which runs on the self-hosted Gitea runner.
-# Both build all 26 apps and run the theme-wiring check; a pull request opened on
+# Both build every app under apps/com.ripostelabs.* and run the theme-wiring check; a pull request opened on
 # GitHub would otherwise get no signal at all.
 name: CI
 

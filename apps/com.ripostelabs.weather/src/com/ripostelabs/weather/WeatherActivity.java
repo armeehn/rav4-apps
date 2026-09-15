@@ -242,6 +242,11 @@ public class WeatherActivity extends Activity {
 
             renderDaily(root.optJSONObject("daily"), tUnit);
             renderHourly(root.optJSONObject("hourly"), tUnit);
+
+            // The forecast cards are built after the fetch, long after the onCreate walk
+            // ran, so they would keep the design-pack defaults on a themed launcher.
+            Palette.apply(dailyRow);
+            Palette.apply(hourlyRow);
         } catch (Exception e) {
             statusView.setText("Parse error: " + e.getMessage());
         }

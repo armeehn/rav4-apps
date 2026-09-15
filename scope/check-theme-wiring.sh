@@ -113,5 +113,14 @@ if ! grep -q -- "--min-sdk-version $want_min " template/build.sh; then
     fail=1
 fi
 
+# The README states the app count in prose; hold it to the tree so it cannot drift again
+# (it said 27 with 28 apps on disk, and 26 before that).
+want_apps=$(ls -d apps/com.ripostelabs.* | wc -l)
+said_apps=$(grep -oE '^[0-9]+ clean-room replacements' README.md | grep -oE '^[0-9]+' || true)
+if [ "$said_apps" != "$want_apps" ]; then
+    echo "FAIL README.md: says ${said_apps:-?} apps, apps/ holds $want_apps"
+    fail=1
+fi
+
 [ "$fail" -eq 0 ] && echo "OK: theme wiring, audio citizenship and API levels all intact"
 exit "$fail"
