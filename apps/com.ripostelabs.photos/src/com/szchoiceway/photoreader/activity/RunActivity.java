@@ -51,6 +51,7 @@ public class RunActivity extends Activity {
     private GridView grid;
     private View empty;
     private Button grantBtn;
+    private View emptyHint;
     private TextView count;
     private int cornerPx;
 
@@ -74,6 +75,7 @@ public class RunActivity extends Activity {
         grid = findViewById(R.id.grid);
         empty = findViewById(R.id.empty);
         grantBtn = findViewById(R.id.grant);
+        emptyHint = findViewById(R.id.empty_hint);
         count = findViewById(R.id.count);
 
         cornerPx = (int) TypedValue.applyDimension(
@@ -151,7 +153,10 @@ public class RunActivity extends Activity {
     private void showEmpty(boolean show) {
         empty.setVisibility(show ? View.VISIBLE : View.GONE);
         grid.setVisibility(show ? View.GONE : View.VISIBLE);
-        grantBtn.setVisibility(show && !hasPerm() ? View.VISIBLE : View.GONE);
+        // The hint asks for storage permission; with it granted, an empty grid just means no photos.
+        int needPerm = show && !hasPerm() ? View.VISIBLE : View.GONE;
+        grantBtn.setVisibility(needPerm);
+        emptyHint.setVisibility(needPerm);
         if (show) updateCount();
     }
 
