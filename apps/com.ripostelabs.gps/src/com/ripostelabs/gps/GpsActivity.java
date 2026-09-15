@@ -2,6 +2,7 @@ package com.ripostelabs.gps;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -89,10 +90,18 @@ public class GpsActivity extends Activity {
         ImageButton refreshBtn  = findViewById(R.id.refreshBtn);
         ImageButton settingsBtn = findViewById(R.id.settingsBtn);
         refreshBtn.setOnClickListener(v -> { restartUpdates(); Toast.makeText(this, "Restarting GPS…", Toast.LENGTH_SHORT).show(); });
-        settingsBtn.setOnClickListener(v ->
-                startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)));
+        settingsBtn.setOnClickListener(v -> openLocationSettings());
 
         buildDetailGrid();
+    }
+
+    /** Android's own location screen; a build without one must not crash the app. */
+    private void openLocationSettings() {
+        try {
+            startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, R.string.no_location_settings, Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
