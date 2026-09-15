@@ -144,7 +144,10 @@ Two more rules it enforces:
   solid, a ripple, a style's `textColor` — are resolved at inflate time and cannot
   follow a runtime palette. `Palette.apply` walks the finished view tree and
   replaces only values that are exactly a design-pack default. Skip it and you get
-  a *half*-themed screen, which looks worse than an unthemed one.
+  a *half*-themed screen, which looks worse than an unthemed one. It also hooks the
+  window's layout pass, so views built later (adapter rows, cards after a fetch)
+  are painted before they are first drawn; each view is painted once. Dialogs are
+  their own window and are not walked: they take the system dialog theme.
 - **Anything that plays or records audio must go through
   `com.ripostelabs.design.MediaCitizen`** (audio focus + MediaSession + media
   buttons). Without it an app plays over the radio, will not duck for a navigation
