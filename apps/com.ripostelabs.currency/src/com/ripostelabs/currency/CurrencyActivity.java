@@ -3,7 +3,6 @@ package com.ripostelabs.currency;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
@@ -74,11 +73,9 @@ public class CurrencyActivity extends Activity {
             { "THB", "Thai Baht",            "฿" },
     };
 
-    // Design-system palette (mirrors res/values/colors.xml) for code-built cards.
-    private static final int C_TEXT   = Color.parseColor("#FFF2F5FA");
-    private static final int C_TEXT2  = Color.parseColor("#FFAAB3C2");
-    private static final int C_TEXT3  = Color.parseColor("#FF6B7484");
-    private static final int C_ACCENT = Color.parseColor("#FF5B9DFF");
+    // Pack roles for code-built views, resolved through the launcher's palette in onCreate.
+    // A literal here paints the fallback pack, and a colour filter is invisible to Palette.apply.
+    private int cText, cText3, cAccent;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final Map<String, Double> rates = new HashMap<>();
@@ -95,6 +92,9 @@ public class CurrencyActivity extends Activity {
         super.onCreate(savedInstanceState);
         // v0.5.2: re-paint anything the design-pack resources coloured.
         Palette.apply(this);
+        cText   = Palette.color(this, R.color.text);
+        cText3  = Palette.color(this, R.color.text3);
+        cAccent = Palette.color(this, R.color.accent);
         setContentView(R.layout.activity_main);
 
         amount = findViewById(R.id.amount);
@@ -285,7 +285,7 @@ public class CurrencyActivity extends Activity {
             TextView sym = new TextView(this);
             sym.setText(c[2]);
             sym.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
-            sym.setTextColor(C_ACCENT);
+            sym.setTextColor(cAccent);
             sym.setTypeface(sym.getTypeface(), Typeface.BOLD);
             sym.setGravity(Gravity.CENTER);
             sym.setWidth(dp(40));
@@ -300,12 +300,12 @@ public class CurrencyActivity extends Activity {
             TextView code = new TextView(this);
             code.setText(c[0]);
             code.setTextSize(TypedValue.COMPLEX_UNIT_SP, 17);
-            code.setTextColor(C_TEXT);
+            code.setTextColor(cText);
             code.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
             TextView name = new TextView(this);
             name.setText(c[1]);
             name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-            name.setTextColor(C_TEXT3);
+            name.setTextColor(cText3);
             col.addView(code);
             col.addView(name);
             row.addView(col);
@@ -313,7 +313,7 @@ public class CurrencyActivity extends Activity {
             TextView val = new TextView(this);
             val.setText(v == null || v.isNaN() ? "—" : trim(v));
             val.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-            val.setTextColor(C_TEXT);
+            val.setTextColor(cText);
             val.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
             val.setGravity(Gravity.END);
             row.addView(val);
@@ -370,7 +370,7 @@ public class CurrencyActivity extends Activity {
 
         @Override public View getView(int position, View convertView, ViewGroup parent) {
             TextView tv = (TextView) super.getView(position, convertView, parent);
-            tv.setTextColor(C_TEXT);
+            tv.setTextColor(cText);
             tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
             tv.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
             return tv;
@@ -378,7 +378,7 @@ public class CurrencyActivity extends Activity {
 
         @Override public View getDropDownView(int position, View convertView, ViewGroup parent) {
             TextView tv = (TextView) super.getDropDownView(position, convertView, parent);
-            tv.setTextColor(C_TEXT);
+            tv.setTextColor(cText);
             tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
             tv.setPadding(dp(16), dp(14), dp(16), dp(14));
             return tv;

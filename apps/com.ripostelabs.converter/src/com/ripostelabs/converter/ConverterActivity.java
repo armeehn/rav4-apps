@@ -45,6 +45,9 @@ public class ConverterActivity extends Activity {
     private final Category[] cats = buildCategories();
 
     private int catIndex = 0;
+
+    // Rail text follows the launcher palette; a literal here paints the fallback pack.
+    private int cAccent, cText;
     private EditText input;
     private TextView output, catTitle, catSub;
     private Spinner fromUnit, toUnit;
@@ -113,6 +116,8 @@ public class ConverterActivity extends Activity {
         super.onCreate(savedInstanceState);
         // v0.5.2: re-paint anything the design-pack resources coloured.
         Palette.apply(this);
+        cAccent = Palette.color(this, R.color.accent);
+        cText   = Palette.color(this, R.color.text);
         setContentView(R.layout.activity_main);
 
         input = (EditText) findViewById(R.id.input);
@@ -191,7 +196,7 @@ public class ConverterActivity extends Activity {
             TextView tv = (TextView) catList.getChildAt(i);
             boolean on = (i == idx);
             tv.setBackgroundResource(on ? R.drawable.btn_ghost : R.drawable.btn_ghost);
-            tv.setTextColor(on ? 0xFF5B9DFF : 0xFFF2F5FA);
+            tv.setTextColor(on ? cAccent : cText);
             tv.getPaint().setFakeBoldText(on);
             tv.setAlpha(on ? 1f : 0.72f);
         }
