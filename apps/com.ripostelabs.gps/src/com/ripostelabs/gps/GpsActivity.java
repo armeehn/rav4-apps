@@ -6,7 +6,6 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.location.GnssStatus;
 import android.location.Location;
@@ -57,13 +56,9 @@ public class GpsActivity extends Activity {
 
     private Location lastFix;
 
-    // Palette (mirrors res/values/colors.xml) for code-built views.
-    private static final int C_TEXT   = 0xFFF2F5FA;
-    private static final int C_TEXT2  = 0xFFAAB3C2;
-    private static final int C_TEXT3  = 0xFF6B7484;
-    private static final int C_ACCENT = 0xFF5B9DFF;
-    private static final int C_SURF2  = 0xFF1E2431;
-    private static final int C_STROKE = 0x22FFFFFF;
+    // Pack roles for code-built views, resolved through the launcher's palette in onCreate.
+    // A literal here paints the fallback pack, and a colour filter is invisible to Palette.apply.
+    private int cText, cText3, cAccent, cSurface, cStroke;
 
     // ---------------------------------------------------------------- lifecycle
 
@@ -72,6 +67,10 @@ public class GpsActivity extends Activity {
         super.onCreate(savedInstanceState);
         // v0.5.2: re-paint anything the design-pack resources coloured.
         Palette.apply(this);
+        cText   = Palette.color(this, R.color.text);
+        cText3  = Palette.color(this, R.color.text3);
+        cAccent = Palette.color(this, R.color.accent);
+        cStroke = Palette.color(this, R.color.stroke);
         setContentView(R.layout.activity_main);
 
         statusView    = findViewById(R.id.status);
@@ -286,7 +285,7 @@ public class GpsActivity extends Activity {
         if (sats.isEmpty()) {
             TextView empty = new TextView(this);
             empty.setText("Searching for satellites…");
-            empty.setTextColor(C_TEXT3);
+            empty.setTextColor(cText3);
             empty.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             snrChart.addView(empty);
             return;
@@ -306,7 +305,7 @@ public class GpsActivity extends Activity {
 
         TextView label = new TextView(this);
         label.setText(sat.label);
-        label.setTextColor(sat.used ? C_TEXT : C_TEXT3);
+        label.setTextColor(sat.used ? cText : cText3);
         label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         label.setTypeface(android.graphics.Typeface.MONOSPACE);
         label.setWidth(dp(58));
@@ -323,7 +322,7 @@ public class GpsActivity extends Activity {
         View bar = new View(this);
         GradientDrawable bg = new GradientDrawable();
         bg.setCornerRadius(dp(6));
-        bg.setColor(sat.used ? C_ACCENT : 0xFF3A4557);
+        bg.setColor(sat.used ? cAccent : 0xFF3A4557);
         bar.setBackground(bg);
         bar.setLayoutParams(new LinearLayout.LayoutParams(0, dp(12), Math.max(snr, 0.5f)));
         track.addView(bar);
@@ -335,7 +334,7 @@ public class GpsActivity extends Activity {
 
         TextView val = new TextView(this);
         val.setText(sat.snr > 0 ? String.valueOf(Math.round(sat.snr)) : "--");
-        val.setTextColor(sat.used ? C_TEXT : C_TEXT3);
+        val.setTextColor(sat.used ? cText : cText3);
         val.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         val.setGravity(Gravity.END);
         val.setWidth(dp(34));
@@ -369,13 +368,13 @@ public class GpsActivity extends Activity {
         card.setPadding(dp(14), dp(14), dp(14), dp(14));
         GradientDrawable bg = new GradientDrawable();
         bg.setCornerRadius(dp(18));
-        bg.setColor(0xFF161B24);
-        bg.setStroke(dp(1), C_STROKE);
+        bg.setColor(cSurface);
+        bg.setStroke(dp(1), cStroke);
         card.setBackground(bg);
 
         TextView lbl = new TextView(this);
         lbl.setText(label);
-        lbl.setTextColor(C_TEXT3);
+        lbl.setTextColor(cText3);
         lbl.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         lbl.setLetterSpacing(0.12f);
         lbl.setAllCaps(true);
@@ -383,7 +382,7 @@ public class GpsActivity extends Activity {
 
         TextView val = new TextView(this);
         val.setText(value);
-        val.setTextColor(C_TEXT);
+        val.setTextColor(cText);
         val.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
         val.setTypeface(android.graphics.Typeface.MONOSPACE);
         LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(

@@ -2,7 +2,6 @@ package com.ripostelabs.news;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
@@ -68,11 +67,9 @@ public class NewsActivity extends Activity {
     private int generation = 0;               // bumped on each load to discard stale threads
     private int pending = 0;                  // feeds still in flight for the current generation
 
-    // Palette mirrored from res/values/colors.xml for code-built views.
-    private static final int C_TEXT   = Color.parseColor("#FFF2F5FA");
-    private static final int C_TEXT2  = Color.parseColor("#FFAAB3C2");
-    private static final int C_TEXT3  = Color.parseColor("#FF6B7484");
-    private static final int C_ACCENT = Color.parseColor("#FF5B9DFF");
+    // Pack roles for code-built views, resolved through the launcher's palette in onCreate.
+    // A literal here paints the fallback pack, and a colour filter is invisible to Palette.apply.
+    private int cText, cText2, cText3, cAccent;
 
     /** One headline. */
     static final class Item {
@@ -85,6 +82,10 @@ public class NewsActivity extends Activity {
         super.onCreate(savedInstanceState);
         // v0.5.2: re-paint anything the design-pack resources coloured.
         Palette.apply(this);
+        cText   = Palette.color(this, R.color.text);
+        cText2  = Palette.color(this, R.color.text2);
+        cText3  = Palette.color(this, R.color.text3);
+        cAccent = Palette.color(this, R.color.accent);
         setContentView(R.layout.activity_news);
 
         sourceList = findViewById(R.id.sourceList);
@@ -125,14 +126,14 @@ public class NewsActivity extends Activity {
 
         ImageView icon = new ImageView(this);
         icon.setImageResource(iconRes);
-        icon.setColorFilter(C_ACCENT);
+        icon.setColorFilter(cAccent);
         LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(20), dp(20));
         icon.setLayoutParams(ilp);
         row.addView(icon);
 
         TextView tv = new TextView(this);
         tv.setText(label);
-        tv.setTextColor(C_TEXT);
+        tv.setTextColor(cText);
         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         tv.setMaxLines(1);
         tv.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -249,7 +250,7 @@ public class NewsActivity extends Activity {
         feedStatus.setText(R.string.loading);
         headlineList.removeAllViews();
         LinearLayout box = messageBox();
-        addMessageText(box, getString(R.string.loading), C_TEXT2, 16, true);
+        addMessageText(box, getString(R.string.loading), cText2, 16, true);
         headlineList.addView(box);
     }
 
@@ -274,7 +275,7 @@ public class NewsActivity extends Activity {
         if (items.isEmpty()) {
             if (pending > 0) {
                 LinearLayout box = messageBox();
-                addMessageText(box, getString(R.string.loading), C_TEXT2, 16, true);
+                addMessageText(box, getString(R.string.loading), cText2, 16, true);
                 headlineList.addView(box);
             } else {
                 renderEmptyOrError();
@@ -326,13 +327,13 @@ public class NewsActivity extends Activity {
         LinearLayout box = messageBox();
         String summary = currentErrorSummary();
         if (summary != null) {
-            addMessageText(box, "⚠", C_TEXT3, 40, false);
-            addMessageText(box, summary, C_TEXT, 18, true);
+            addMessageText(box, "⚠", cText3, 40, false);
+            addMessageText(box, summary, cText, 18, true);
             addMessageText(box, "Check the connection and tap refresh to try again.",
-                    C_TEXT3, 14, false);
+                    cText3, 14, false);
         } else {
-            addMessageText(box, getString(R.string.empty), C_TEXT, 18, true);
-            addMessageText(box, getString(R.string.empty_hint), C_TEXT3, 14, false);
+            addMessageText(box, getString(R.string.empty), cText, 18, true);
+            addMessageText(box, getString(R.string.empty_hint), cText3, 14, false);
         }
         headlineList.addView(box);
     }
@@ -384,7 +385,7 @@ public class NewsActivity extends Activity {
         String rel = relativeTime(it.time);
         meta.setText(rel == null ? it.source.toUpperCase(Locale.US)
                 : it.source.toUpperCase(Locale.US) + "   •   " + rel);
-        meta.setTextColor(C_ACCENT);
+        meta.setTextColor(cAccent);
         meta.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         meta.setLetterSpacing(0.08f);
         meta.setTypeface(null, Typeface.BOLD);
@@ -393,7 +394,7 @@ public class NewsActivity extends Activity {
         // title
         TextView title = new TextView(this);
         title.setText(it.title);
-        title.setTextColor(C_TEXT);
+        title.setTextColor(cText);
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 19);
         title.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         title.setMaxLines(2);
@@ -408,7 +409,7 @@ public class NewsActivity extends Activity {
         if (it.snippet != null && !it.snippet.isEmpty()) {
             TextView snip = new TextView(this);
             snip.setText(it.snippet);
-            snip.setTextColor(C_TEXT2);
+            snip.setTextColor(cText2);
             snip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             snip.setMaxLines(2);
             snip.setEllipsize(android.text.TextUtils.TruncateAt.END);

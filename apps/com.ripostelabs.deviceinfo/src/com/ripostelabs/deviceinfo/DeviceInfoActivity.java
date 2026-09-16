@@ -5,7 +5,6 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.BatteryManager;
 import android.os.Build;
@@ -41,12 +40,9 @@ public class DeviceInfoActivity extends Activity {
 
     private static final long REFRESH_MS = 3000L;
 
-    // Design-system palette (mirrors res/values/colors.xml) for code-built views.
-    private static final int C_TEXT   = Color.parseColor("#FFF2F5FA");
-    private static final int C_TEXT2  = Color.parseColor("#FFAAB3C2");
-    private static final int C_TEXT3  = Color.parseColor("#FF6B7484");
-    private static final int C_ACCENT = Color.parseColor("#FF5B9DFF");
-    private static final int C_TRACK  = Color.parseColor("#FF1E2431"); // surface2
+    // Pack roles for code-built views, resolved through the launcher's palette in onCreate.
+    // A literal here paints the fallback pack, and a colour filter is invisible to Palette.apply.
+    private int cText, cText2, cText3, cAccent, cTrack;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
 
@@ -72,6 +68,11 @@ public class DeviceInfoActivity extends Activity {
         super.onCreate(savedInstanceState);
         // v0.5.2: re-paint anything the design-pack resources coloured.
         Palette.apply(this);
+        cText   = Palette.color(this, R.color.text);
+        cText2  = Palette.color(this, R.color.text2);
+        cText3  = Palette.color(this, R.color.text3);
+        cAccent = Palette.color(this, R.color.accent);
+        cTrack  = Palette.color(this, R.color.surface2);
         setContentView(R.layout.activity_main);
         colLeft = findViewById(R.id.colLeft);
         colRight = findViewById(R.id.colRight);
@@ -256,7 +257,7 @@ public class DeviceInfoActivity extends Activity {
         head.setGravity(Gravity.CENTER_VERTICAL);
         android.widget.ImageView icon = new android.widget.ImageView(this);
         icon.setImageResource(iconRes);
-        icon.setColorFilter(C_ACCENT);
+        icon.setColorFilter(cAccent);
         LinearLayout.LayoutParams ip = new LinearLayout.LayoutParams(dp(18), dp(18));
         ip.setMarginEnd(dp(9));
         icon.setLayoutParams(ip);
@@ -264,7 +265,7 @@ public class DeviceInfoActivity extends Activity {
         TextView t = new TextView(this);
         t.setText(title);
         t.setAllCaps(true);
-        t.setTextColor(C_TEXT3);
+        t.setTextColor(cText3);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         t.setLetterSpacing(0.14f);
         t.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
@@ -290,13 +291,13 @@ public class DeviceInfoActivity extends Activity {
 
         TextView k = new TextView(this);
         k.setText(key);
-        k.setTextColor(C_TEXT2);
+        k.setTextColor(cText2);
         k.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         row.addView(k, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         TextView v = new TextView(this);
         v.setText(value);
-        v.setTextColor(C_TEXT);
+        v.setTextColor(cText);
         v.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         v.setGravity(Gravity.END);
         v.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
@@ -312,7 +313,7 @@ public class DeviceInfoActivity extends Activity {
     private void addRowWrap(LinearLayout card, String key, String value) {
         TextView k = new TextView(this);
         k.setText(key);
-        k.setTextColor(C_TEXT2);
+        k.setTextColor(cText2);
         k.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         LinearLayout.LayoutParams kp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -321,7 +322,7 @@ public class DeviceInfoActivity extends Activity {
 
         TextView v = new TextView(this);
         v.setText(value);
-        v.setTextColor(C_TEXT);
+        v.setTextColor(cText);
         v.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         card.addView(v, new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
@@ -332,7 +333,7 @@ public class DeviceInfoActivity extends Activity {
         LinearLayout track = new LinearLayout(this);
         track.setOrientation(LinearLayout.HORIZONTAL);
         GradientDrawable tg = new GradientDrawable();
-        tg.setColor(C_TRACK);
+        tg.setColor(cTrack);
         tg.setCornerRadius(dp(5));
         track.setBackground(tg);
         LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(
@@ -342,7 +343,7 @@ public class DeviceInfoActivity extends Activity {
 
         View fill = new View(this);
         GradientDrawable fg = new GradientDrawable();
-        fg.setColor(C_ACCENT);
+        fg.setColor(cAccent);
         fg.setCornerRadius(dp(5));
         fill.setBackground(fg);
         float f = clamp(fraction);
