@@ -122,7 +122,11 @@ public class MainActivity extends Activity
         bindTunerViews();
         bindNetViews();
         selectTab(TAB_FM);
-        tuner.bind();
+        // No gateway to bind to (Riposte OS 0.2, the emulator): say so at once
+        // instead of "connecting" forever. The internet tab still works.
+        if (!tuner.bind()) {
+            onDisconnected();
+        }
     }
 
     private void bindTunerViews() {
