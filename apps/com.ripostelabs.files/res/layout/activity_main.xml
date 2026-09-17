@@ -147,48 +147,27 @@
             android:paddingTop="4dp"
             android:paddingBottom="12dp" />
 
-        <!-- Empty / permission state -->
+        <!-- Empty / permission state: the shared shape (styles.xml EmptyState*), ids stay ours. -->
         <LinearLayout
             android:id="@+id/empty"
+            style="@style/EmptyState"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:paddingLeft="32dp"
-            android:paddingRight="32dp"
-            android:visibility="gone">
-
+            android:layout_height="match_parent">
             <ImageView
                 android:id="@+id/empty_icon"
-                android:layout_width="88dp"
-                android:layout_height="88dp"
-                android:src="@drawable/ic_folder"
-                android:tint="@color/text3"
-                android:alpha="0.7" />
-
+                style="@style/EmptyStateIcon"
+                android:src="@drawable/ic_folder" />
             <TextView
                 android:id="@+id/empty_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                style="@style/H2"
+                style="@style/EmptyStateTitle"
                 android:text="@string/empty_folder" />
-
             <TextView
                 android:id="@+id/empty_hint"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center"
-                style="@style/Caption"
+                style="@style/EmptyStateHint"
                 android:text="@string/empty_hint" />
-
             <Button
                 android:id="@+id/grant"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
-                android:visibility="gone"
+                style="@style/EmptyStateAction"
                 android:text="@string/grant" />
         </LinearLayout>
     </FrameLayout>
