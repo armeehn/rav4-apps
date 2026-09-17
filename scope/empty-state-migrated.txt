@@ -1,1 +1,2 @@
+com.ripostelabs.music
 com.ripostelabs.recorder
