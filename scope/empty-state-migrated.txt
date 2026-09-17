@@ -1,4 +1,5 @@
 com.ripostelabs.contacts
+com.ripostelabs.files
 com.ripostelabs.music
 com.ripostelabs.photos
 com.ripostelabs.recorder
