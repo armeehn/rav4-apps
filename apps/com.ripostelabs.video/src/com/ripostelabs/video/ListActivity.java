@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ContentUris;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -26,6 +25,8 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.ripostelabs.design.PermissionGate;
+
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,7 +40,8 @@ import com.ripostelabs.design.Palette;
  */
 public class ListActivity extends Activity {
 
-    private static final int REQ_PERM = 1;
+    /** The media-read permission, asked and re-asked through the suite's one gate. */
+    private PermissionGate gate;
 
     /** One row's worth of metadata. */
     static final class Item {
@@ -79,6 +81,10 @@ public class ListActivity extends Activity {
         list = findViewById(R.id.list);
         empty = findViewById(R.id.empty);
         grantBtn = findViewById(R.id.grant);
+        gate = PermissionGate.of(this, new String[]{ perm() }, grantBtn, new PermissionGate.Listener() {
+            @Override public void onGranted() { loadVideos(); }
+            @Override public void onDenied() { showEmpty(true); }
+        });
         count = findViewById(R.id.count);
 
         int max = (int) (Runtime.getRuntime().maxMemory() / 8);
@@ -89,7 +95,6 @@ public class ListActivity extends Activity {
         adapter = new RowAdapter();
         list.setAdapter(adapter);
 
-        grantBtn.setOnClickListener(v -> requestPermissions(new String[]{ perm() }, REQ_PERM));
         list.setOnItemClickListener((AdapterView<?> p, View vw, int pos, long id) -> {
             String[] arr = new String[videos.size()];
             for (int i = 0; i < arr.length; i++) arr[i] = videos.get(i).uri.toString();
@@ -100,8 +105,7 @@ public class ListActivity extends Activity {
             startActivity(v);
         });
 
-        if (hasPerm()) loadVideos();
-        else requestPermissions(new String[]{ perm() }, REQ_PERM);
+        gate.request();   // granted → loadVideos() at once
     }
 
     private String perm() {
@@ -110,17 +114,10 @@ public class ListActivity extends Activity {
                 : Manifest.permission.READ_EXTERNAL_STORAGE;
     }
 
-    private boolean hasPerm() {
-        return checkSelfPermission(perm()) == PackageManager.PERMISSION_GRANTED;
-    }
-
     @Override
     public void onRequestPermissionsResult(int req, String[] p, int[] r) {
-        if (req == REQ_PERM && r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED) {
-            grantBtn.setVisibility(View.GONE);
-            loadVideos();
-        } else {
-            showEmpty(true);
+        if (!gate.onResult(req, p, r)) {
+            super.onRequestPermissionsResult(req, p, r);
         }
     }
 
@@ -168,7 +165,7 @@ public class ListActivity extends Activity {
     private void showEmpty(boolean show) {
         empty.setVisibility(show ? View.VISIBLE : View.GONE);
         list.setVisibility(show ? View.GONE : View.VISIBLE);
-        grantBtn.setVisibility(show && !hasPerm() ? View.VISIBLE : View.GONE);
+        grantBtn.setVisibility(show && !gate.granted() ? View.VISIBLE : View.GONE);
         int n = videos.size();
         count.setText(n == 0 ? "" : (n == 1 ? "1 video" : n + " videos"));
     }
