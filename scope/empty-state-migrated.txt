@@ -1,3 +1,4 @@
+com.ripostelabs.bluetooth
 com.ripostelabs.music
 com.ripostelabs.recorder
 com.ripostelabs.video
