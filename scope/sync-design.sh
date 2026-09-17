@@ -6,7 +6,7 @@
 #   - values/colors.xml, values/styles.xml and res/font/* are copied outright — app-local
 #     additions belong in separate *_app.xml files, never in the shared copies;
 #   - the shape drawables every app needs are copied to all apps (styles.xml references
-#     btn_ghost via the theme's buttonStyle);
+#     btn_ghost from EmptyStateAction; AppTheme itself sets no buttonStyle);
 #   - any other pack drawable an app already carries (icons) is refreshed from the master.
 set -euo pipefail
 cd "$(dirname "$0")/.."
