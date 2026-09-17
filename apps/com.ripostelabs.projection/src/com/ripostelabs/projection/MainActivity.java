@@ -22,10 +22,12 @@ import android.widget.TextView;
 import android.widget.ToggleButton;
 
 import com.ripostelabs.design.Palette;
+import com.ripostelabs.design.PermissionGate;
 import com.ripostelabs.projection.aa.Aoa;
 import com.ripostelabs.projection.aa.Messages;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -45,7 +47,8 @@ public class MainActivity extends Activity implements Projector.Screen {
     private static final String TAG = "Projection";
     private static final String ACTION_USB_PERMISSION = "com.ripostelabs.projection.USB_PERMISSION";
     private static final int MAX_POINTERS = 10;
-    private static final int REQ_WIRELESS_PERMISSIONS = 1;
+    /** Both wireless carriers' runtime permissions, asked through the suite's one gate. */
+    private PermissionGate gate;
 
     private UsbManager usb;
     private Projector projector;
@@ -177,39 +180,37 @@ public class MainActivity extends Activity implements Projector.Screen {
             wirelessLink.disable("switched off");
             return;
         }
-        String[] wanted = missingWirelessPermissions();
-        if (wanted.length > 0) {
-            onStatus("wireless: asking for " + wanted.length + " permission(s)");
-            requestPermissions(wanted, REQ_WIRELESS_PERMISSIONS);
+        if (!gate().granted()) {
+            onStatus("wireless: asking for permissions");
+            gate().request();
             return;
         }
         wirelessLink.enable();
     }
 
-    private String[] missingWirelessPermissions() {
-        List<String> missing = new ArrayList<>();
-        for (String[] set : new String[][] {BtRfcomm.runtimePermissions(), SoftAp.runtimePermissions()}) {
-            for (String p : set) {
-                if (checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) {
-                    missing.add(p);
-                }
+    /** Built on first use: the toggle it reports into exists only after setContentView. */
+    private PermissionGate gate() {
+        if (gate == null) {
+            List<String> wanted = new ArrayList<>();
+            for (String[] set : new String[][] {BtRfcomm.runtimePermissions(), SoftAp.runtimePermissions()}) {
+                wanted.addAll(Arrays.asList(set));
             }
+            gate = PermissionGate.of(this, wanted.toArray(new String[0]), null, new PermissionGate.Listener() {
+                @Override public void onGranted() { wirelessLink.enable(); }
+                @Override public void onDenied() {
+                    wireless.setChecked(false);
+                    onStatus("wireless: permission denied");
+                }
+            });
         }
-        return missing.toArray(new String[0]);
+        return gate;
     }
 
     @Override
     public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
-        super.onRequestPermissionsResult(request, permissions, results);
-        if (request != REQ_WIRELESS_PERMISSIONS) {
-            return;
+        if (!gate().onResult(request, permissions, results)) {
+            super.onRequestPermissionsResult(request, permissions, results);
         }
-        if (missingWirelessPermissions().length > 0) {
-            wireless.setChecked(false);
-            onStatus("wireless: permission denied");
-            return;
-        }
-        wirelessLink.enable();
     }
 
     /** Launched by the system for an attached device, or by the driver from the launcher. */
