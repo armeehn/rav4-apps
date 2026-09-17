@@ -45,9 +45,9 @@ public class WeatherActivity extends Activity {
 
     /** Coarse location, asked through the suite's one gate; the default city is the fallback. */
     private PermissionGate gate;
-    // Fallback location if device location is denied/unavailable: Toyota HQ, Plano TX.
-    private static final double DEF_LAT = 33.0198, DEF_LON = -96.6989;
-    private static final String DEF_NAME = "Plano, TX";
+    // Fallback location if device location is denied/unavailable: where the car lives.
+    private static final double DEF_LAT = 49.8880, DEF_LON = -119.4960;
+    private static final String DEF_NAME = "Kelowna, BC";
 
     private final Handler ui = new Handler(Looper.getMainLooper());
 
