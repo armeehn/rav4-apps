@@ -43,6 +43,7 @@ public class SketchActivity extends Activity {
     private ImageButton eraserBtn;
 
     // Palette swatches keyed to their colour, so we can redraw the selection ring.
+    private static final int MIN_TAP_DP = 48;   // the panel's minimum tap target, as in the launcher
     private final int[] paletteColors = new int[7];
     private final View[] swatches = new View[7];
     private int accentColor, surfaceColor, strokeColor, text2Color;
@@ -99,7 +100,7 @@ public class SketchActivity extends Activity {
 
     private void buildPalette() {
         LinearLayout palette = (LinearLayout) findViewById(R.id.palette);
-        int size = dp(34);
+        int size = dp(MIN_TAP_DP);
         int margin = dp(4);
         for (int i = 0; i < paletteColors.length; i++) {
             final int idx = i;
@@ -150,7 +151,7 @@ public class SketchActivity extends Activity {
             chip.setTextColor(Palette.color(this, R.color.text));
             chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
             chip.setGravity(Gravity.CENTER);
-            int s = dp(40);
+            int s = dp(MIN_TAP_DP);
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(s, s);
             lp.setMargins(dp(3), 0, dp(3), 0);
             chip.setLayoutParams(lp);
