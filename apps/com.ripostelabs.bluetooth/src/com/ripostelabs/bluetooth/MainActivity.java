@@ -12,7 +12,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
@@ -36,6 +35,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import com.ripostelabs.design.Palette;
+import com.ripostelabs.design.PermissionGate;
 
 /**
  * Clean-room standalone Bluetooth manager. Replaces the GT6 OEM
@@ -52,7 +52,8 @@ import com.ripostelabs.design.Palette;
  */
 public class MainActivity extends Activity {
 
-    private static final int REQ_PERM = 1;
+    /** The SDK-dependent Bluetooth permissions, asked through the suite's one gate. */
+    private PermissionGate gate;
     private static final int REQ_ENABLE = 2;
 
     private BluetoothAdapter adapter;
@@ -126,7 +127,19 @@ public class MainActivity extends Activity {
         btnScan.setOnClickListener(v -> onScanPressed());
         btnSettings.setOnClickListener(v -> openBtSettings());
         btnPair.setOnClickListener(v -> openBtSettings());
-        grant.setOnClickListener(v -> requestPerms());
+        gate = PermissionGate.of(this, neededPerms(), grant, new PermissionGate.Listener() {
+            @Override public void onGranted() {
+                acquireProxies();
+                render();
+            }
+            @Override public void onDenied() {
+                // graceful degradation: explain, offer a retry
+                content.setVisibility(View.GONE);
+                empty.setVisibility(View.VISIBLE);
+                emptyText.setText(R.string.app_name);
+                emptyHint.setText(R.string.need_permission);
+            }
+        });
     }
 
     // ---- lifecycle: receivers + proxies -------------------------------------
@@ -212,32 +225,18 @@ public class MainActivity extends Activity {
     }
 
     private boolean hasAllPerms() {
-        for (String p : neededPerms()) {
-            if (checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) return false;
-        }
-        return true;
+        return gate.granted();
     }
 
+    /** Asks for what is missing; with nothing missing the gate calls onGranted at once. */
     private void requestPerms() {
-        String[] p = neededPerms();
-        if (p.length == 0) { render(); return; }
-        requestPermissions(p, REQ_PERM);
+        gate.request();
     }
 
     @Override
     public void onRequestPermissionsResult(int req, String[] p, int[] r) {
-        if (req != REQ_PERM) return;
-        if (hasAllPerms()) {
-            grant.setVisibility(View.GONE);
-            acquireProxies();
-            render();
-        } else {
-            // graceful degradation: explain, offer a retry
-            content.setVisibility(View.GONE);
-            empty.setVisibility(View.VISIBLE);
-            emptyText.setText(R.string.app_name);
-            emptyHint.setText(R.string.need_permission);
-            grant.setVisibility(View.VISIBLE);
+        if (!gate.onResult(req, p, r)) {
+            super.onRequestPermissionsResult(req, p, r);
         }
     }
 
