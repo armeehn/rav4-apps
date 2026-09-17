@@ -6,7 +6,6 @@ import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -38,6 +37,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import com.ripostelabs.design.Palette;
+import com.ripostelabs.design.PermissionGate;
 
 /**
  * Clean-room standalone Calendar app for the Toyota RAV4 GT6 head unit
@@ -51,7 +51,8 @@ public class MainActivity extends Activity {
     private static final int MIN_TAP_DP = 48;   // the panel's minimum tap target, as in the launcher
 
 
-    private static final int REQ_PERM = 1;
+    /** READ_CALENDAR, asked and re-asked through the suite's one gate. */
+    private PermissionGate gate;
     private static final int CELLS = 42; // 6 weeks x 7 days
 
     /** One calendar event instance. */
@@ -79,7 +80,6 @@ public class MainActivity extends Activity {
     private final Calendar today = Calendar.getInstance();     // now
     // Events on the visible grid, keyed by yyyymmdd -> list.
     private final HashMap<Integer, ArrayList<Event>> byDay = new HashMap<>();
-    private boolean granted = false;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private Thread worker;
@@ -112,10 +112,13 @@ public class MainActivity extends Activity {
 
         setContentView(buildRoot());
 
-        granted = checkSelfPermission(Manifest.permission.READ_CALENDAR)
-                == PackageManager.PERMISSION_GRANTED;
-        if (!granted) {
-            requestPermissions(new String[]{Manifest.permission.READ_CALENDAR}, REQ_PERM);
+        gate = PermissionGate.of(this, new String[]{Manifest.permission.READ_CALENDAR}, grantBtn,
+                new PermissionGate.Listener() {
+                    @Override public void onGranted() { reload(); }
+                    @Override public void onDenied() { reload(); }
+                });
+        if (!gate.granted()) {
+            gate.request();
         }
         renderGrid();
         renderAgenda();
@@ -124,9 +127,8 @@ public class MainActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int req, String[] p, int[] r) {
-        if (req == REQ_PERM) {
-            granted = r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED;
-            reload();
+        if (!gate.onResult(req, p, r)) {
+            super.onRequestPermissionsResult(req, p, r);
         }
     }
 
@@ -327,8 +329,6 @@ public class MainActivity extends Activity {
         grantBtn.setGravity(Gravity.CENTER);
         grantBtn.setPadding(dp(24), dp(12), dp(24), dp(12));
         grantBtn.setBackground(pill(cAccent, dp(22)));
-        grantBtn.setOnClickListener(v ->
-                requestPermissions(new String[]{Manifest.permission.READ_CALENDAR}, REQ_PERM));
         LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         glp.topMargin = dp(20);
@@ -483,7 +483,7 @@ public class MainActivity extends Activity {
     private void renderAgenda() {
         agendaDate.setText(agendaTitle(selected));
 
-        if (!granted) {
+        if (!gate.granted()) {
             agendaList.setVisibility(View.GONE);
             agendaCount.setText("");
             showEmpty(true, R.drawable.ic_calendar, R.string.need_permission_title,
@@ -603,7 +603,7 @@ public class MainActivity extends Activity {
 
     private void reload() {
         byDay.clear();
-        if (!granted) {
+        if (!gate.granted()) {
             renderGrid();
             renderAgenda();
             return;
