@@ -1,2 +1,4 @@
 com.ripostelabs.files
+com.ripostelabs.music
 com.ripostelabs.recorder
+com.ripostelabs.video
