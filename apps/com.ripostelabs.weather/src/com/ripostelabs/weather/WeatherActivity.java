@@ -3,7 +3,6 @@ package com.ripostelabs.weather;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationManager;
@@ -35,6 +34,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 import com.ripostelabs.design.Palette;
+import com.ripostelabs.design.PermissionGate;
 
 /**
  * Clean-room standalone Weather app. Pulls current conditions + daily/hourly
@@ -43,7 +43,8 @@ import com.ripostelabs.design.Palette;
  */
 public class WeatherActivity extends Activity {
 
-    private static final int REQ_LOC = 1;
+    /** Coarse location, asked through the suite's one gate; the default city is the fallback. */
+    private PermissionGate gate;
     // Fallback location if device location is denied/unavailable: Toyota HQ, Plano TX.
     private static final double DEF_LAT = 33.0198, DEF_LON = -96.6989;
     private static final String DEF_NAME = "Plano, TX";
@@ -115,9 +116,8 @@ public class WeatherActivity extends Activity {
     // ---------------------------------------------------------------- location
 
     private void useDeviceLocation() {
-        if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{ Manifest.permission.ACCESS_COARSE_LOCATION }, REQ_LOC);
+        if (!gate().granted()) {
+            gate().request();
             return;
         }
         Location loc = lastKnownLocation();
@@ -148,12 +148,24 @@ public class WeatherActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int req, String[] p, int[] r) {
-        if (req == REQ_LOC && r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED) {
-            useDeviceLocation();
-        } else {
-            statusView.setText("Location denied — showing " + DEF_NAME);
-            load(DEF_LAT, DEF_LON, DEF_NAME);
+        if (!gate().onResult(req, p, r)) {
+            super.onRequestPermissionsResult(req, p, r);
         }
+    }
+
+    /** Built on first use: the status view it reports into exists only after setContentView. */
+    private PermissionGate gate() {
+        if (gate == null) {
+            gate = PermissionGate.of(this, new String[]{ Manifest.permission.ACCESS_COARSE_LOCATION }, null,
+                    new PermissionGate.Listener() {
+                        @Override public void onGranted() { useDeviceLocation(); }
+                        @Override public void onDenied() {
+                            statusView.setText("Location denied — showing " + DEF_NAME);
+                            load(DEF_LAT, DEF_LON, DEF_NAME);
+                        }
+                    });
+        }
+        return gate;
     }
 
     // ---------------------------------------------------------------- geocoding
