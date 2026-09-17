@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -19,6 +18,7 @@ import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import com.ripostelabs.design.Palette;
+import com.ripostelabs.design.PermissionGate;
 
 /**
  * Panel-side remote for a "Magic Lantern" BLE LED lamp. Three columns on the 1920x720 screen:
@@ -43,7 +43,8 @@ public class LampActivity extends Activity implements LampLink.Listener {
     private static final String KEY_MUSIC = "music";
     private static final String KEY_GAIN = "gain";
 
-    private static final int REQ_PERMS = 1;
+    /** SCAN + CONNECT on 31+, asked through the suite's one gate; nothing below that. */
+    private PermissionGate gate;
     private static final int REQ_ENABLE = 2;
     private static final int MAX_LISTED = 5;
     private static final int DEFAULT_COLOUR = 0xFF8C00;
@@ -195,31 +196,32 @@ public class LampActivity extends Activity implements LampLink.Listener {
 
     /** API 31+ needs SCAN and CONNECT at runtime. Returns true when nothing is outstanding. */
     private boolean requestPermissions() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+        if (gate().granted()) {
             return true;
         }
-        String[] wanted = {Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT};
-        for (String p : wanted) {
-            if (checkSelfPermission(p) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(wanted, REQ_PERMS);
-                return false;
-            }
+        gate().request();
+        return false;
+    }
+
+    /** Built on first use: the status view it reports into exists only after setContentView. */
+    private PermissionGate gate() {
+        if (gate == null) {
+            String[] wanted = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                    ? new String[]{Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT}
+                    : new String[0];
+            gate = PermissionGate.of(this, wanted, null, new PermissionGate.Listener() {
+                @Override public void onGranted() { reconnect(); }
+                @Override public void onDenied() { statusDetail.setText(R.string.perm_needed); }
+            });
         }
-        return true;
+        return gate;
     }
 
     @Override
     public void onRequestPermissionsResult(int req, String[] perms, int[] results) {
-        if (req != REQ_PERMS) {
-            return;
+        if (!gate().onResult(req, perms, results)) {
+            super.onRequestPermissionsResult(req, perms, results);
         }
-        for (int r : results) {
-            if (r != PackageManager.PERMISSION_GRANTED) {
-                statusDetail.setText(R.string.perm_needed);
-                return;
-            }
-        }
-        reconnect();
     }
 
     @Override
