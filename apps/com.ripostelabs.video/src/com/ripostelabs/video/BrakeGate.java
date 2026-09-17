@@ -27,8 +27,13 @@ import android.os.Looper;
  *
  * So "1" means <em>gate</em>. The MCU decides, and the app only mirrors it: the
  * SysVar is re-read on every change signal rather than parsed out of the notify
- * URI or the broadcast. When the provider cannot be read at all (no gateway, the
- * emulator) the gate stays open, because a player that blanks forever is useless.
+ * URI or the broadcast. When no provider can be read at all (the emulator) the
+ * gate stays open, because a player that blanks forever is useless.
+ *
+ * On Riposte OS 0.2 there is no eventcenter: the launcher owns the MCU port,
+ * replays the broadcast and serves the same row on its own authority
+ * (carlauncher SysVarMirrorProvider, RAV4-98). The authorities are tried in
+ * order and the first one that answers wins, so stock keeps reading the gateway.
  */
 final class BrakeGate {
 
@@ -39,7 +44,13 @@ final class BrakeGate {
 
     /** Declared in the manifest's {@code <queries>}; invisible otherwise on API 30+. */
     static final String AUTHORITY = "com.szchoiceway.eventcenter.SysVarProvider";
-    private static final Uri SYSVAR_URI = Uri.parse("content://" + AUTHORITY + "/SysVar");
+    /** The launcher's mirror of the same table, for Riposte OS 0.2 (RAV4-98). */
+    static final String LAUNCHER_AUTHORITY = "com.ripostelabs.carlauncher.sysvar";
+    /** Gateway first: on stock both may exist and the gateway's row is the MCU's own. */
+    private static final Uri[] SYSVAR_URIS = {
+            Uri.parse("content://" + AUTHORITY + "/SysVar"),
+            Uri.parse("content://" + LAUNCHER_AUTHORITY + "/SysVar"),
+    };
     private static final String COL_KEYNAME = "keyname";
     private static final String COL_KEYVALUE = "keyvalue";
     private static final String SELECT_BY_KEY = COL_KEYNAME + "=?";
@@ -79,10 +90,13 @@ final class BrakeGate {
         started = true;
 
         // registerContentObserver throws SecurityException for an authority this
-        // app cannot see (no gateway installed). No observer means no gate.
-        try {
-            context.getContentResolver().registerContentObserver(SYSVAR_URI, true, observer);
-        } catch (Exception ignored) {
+        // app cannot see (no gateway installed). One observer is enough; none means
+        // the broadcast alone drives the re-read.
+        for (Uri uri : SYSVAR_URIS) {
+            try {
+                context.getContentResolver().registerContentObserver(uri, true, observer);
+            } catch (Exception ignored) {
+            }
         }
         try {
             context.registerReceiver(receiver, new IntentFilter(ACTION_BRAKE_EVT));
@@ -112,11 +126,22 @@ final class BrakeGate {
         listener.onGateChanged(gated);
     }
 
-    /** The row's keyvalue, or null when the provider is absent or the key unset. */
+    /** The row's keyvalue from the first authority that has it, or null when none does. */
     private String readSysVar(String key) {
+        for (Uri uri : SYSVAR_URIS) {
+            String value = readSysVar(uri, key);
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    /** One provider's answer, or null when it is absent or the key unset there. */
+    private String readSysVar(Uri uri, String key) {
         Cursor c = null;
         try {
-            c = context.getContentResolver().query(SYSVAR_URI, new String[] {COL_KEYVALUE},
+            c = context.getContentResolver().query(uri, new String[] {COL_KEYVALUE},
                     SELECT_BY_KEY, new String[] {key}, null);
             if (c == null || !c.moveToFirst()) {
                 return null;
