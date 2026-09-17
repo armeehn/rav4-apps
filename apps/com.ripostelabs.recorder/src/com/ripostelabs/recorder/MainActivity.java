@@ -3,7 +3,6 @@ package com.ripostelabs.recorder;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.pm.PackageManager;
 import android.graphics.drawable.GradientDrawable;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
@@ -31,6 +30,8 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.ripostelabs.design.PermissionGate;
+
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -54,7 +55,8 @@ import com.ripostelabs.design.MediaCitizen;
 public class MainActivity extends Activity
         implements MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener {
 
-    private static final int REQ_PERM = 1;
+    /** The microphone permission, asked and re-asked through the suite's one gate. */
+    private PermissionGate gate;
     /**
      * v0.5.1 — the record affordance follows the launcher's error role. Resolved per call
      * rather than cached in a static: the palette can change while the app is running.
@@ -157,45 +159,39 @@ public class MainActivity extends Activity
         empty = findViewById(R.id.empty);
         emptyText = findViewById(R.id.empty_text);
         grantBtn = findViewById(R.id.grant);
+        gate = PermissionGate.of(this, new String[]{ Manifest.permission.RECORD_AUDIO }, grantBtn,
+                new PermissionGate.Listener() {
+                    @Override public void onGranted() { loadRecordings(); }
+                    @Override public void onDenied() {
+                        emptyText.setText(R.string.need_permission);
+                        showEmpty(true);
+                    }
+                });
 
         adapter = new RecAdapter();
         list.setAdapter(adapter);
 
         btnRecord.setOnClickListener(v -> {
             if (recording) stopRecording();
-            else if (hasPerm()) startRecording();
-            else requestPermissions(new String[]{ Manifest.permission.RECORD_AUDIO }, REQ_PERM);
+            else if (gate.granted()) startRecording();
+            else gate.request();
         });
         btnStop.setOnClickListener(v -> { if (recording) stopRecording(); });
-        grantBtn.setOnClickListener(v ->
-                requestPermissions(new String[]{ Manifest.permission.RECORD_AUDIO }, REQ_PERM));
 
         list.setOnItemClickListener((AdapterView<?> p, View vw, int pos, long id) -> togglePlay(pos));
 
         ui.postDelayed(playTick, 400);
 
-        if (!hasPerm()) {
-            requestPermissions(new String[]{ Manifest.permission.RECORD_AUDIO }, REQ_PERM);
+        if (!gate.granted()) {
+            gate.request();
         }
         loadRecordings();
     }
 
-    private boolean hasPerm() {
-        return checkSelfPermission(Manifest.permission.RECORD_AUDIO)
-                == PackageManager.PERMISSION_GRANTED;
-    }
-
     @Override
     public void onRequestPermissionsResult(int req, String[] p, int[] r) {
-        if (req == REQ_PERM) {
-            boolean granted = r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED;
-            if (granted) {
-                grantBtn.setVisibility(View.GONE);
-                loadRecordings();
-            } else {
-                emptyText.setText(R.string.need_permission);
-                showEmpty(true);
-            }
+        if (!gate.onResult(req, p, r)) {
+            super.onRequestPermissionsResult(req, p, r);
         }
     }
 
@@ -389,7 +385,7 @@ public class MainActivity extends Activity
                 adapter.notifyDataSetChanged();
                 count.setText(getString(R.string.recordings_count, recs.size()));
                 if (recs.isEmpty()) {
-                    emptyText.setText(hasPerm() ? getString(R.string.no_recordings)
+                    emptyText.setText(gate.granted() ? getString(R.string.no_recordings)
                             : getString(R.string.need_permission));
                 }
                 showEmpty(recs.isEmpty());
@@ -413,7 +409,7 @@ public class MainActivity extends Activity
     private void showEmpty(boolean show) {
         empty.setVisibility(show ? View.VISIBLE : View.GONE);
         list.setVisibility(show ? View.GONE : View.VISIBLE);
-        grantBtn.setVisibility(show && !hasPerm() ? View.VISIBLE : View.GONE);
+        grantBtn.setVisibility(show && !gate.granted() ? View.VISIBLE : View.GONE);
     }
 
     private void deleteRec(int pos) {
