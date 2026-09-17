@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -20,6 +19,7 @@ import android.widget.TextView;
 import java.util.List;
 import java.util.Locale;
 import com.ripostelabs.design.Palette;
+import com.ripostelabs.design.PermissionGate;
 
 /**
  * Clean-room standalone GPS speedometer / HUD.
@@ -36,7 +36,8 @@ import com.ripostelabs.design.Palette;
  */
 public class SpeedometerActivity extends Activity {
 
-    private static final int REQ_LOC = 1;
+    /** Fine location, asked through the suite's one gate; no grant control on this screen. */
+    private PermissionGate gate;
     private static final float MS_TO_KMH = 3.6f;
     private static final float KMH_TO_MPH = 0.621371f;
     private static final float MOVING_THRESHOLD_KMH = 3f; // ignore GPS jitter at rest
@@ -108,8 +109,8 @@ public class SpeedometerActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (!hasPermission()) {
-            requestPermissions(new String[]{ Manifest.permission.ACCESS_FINE_LOCATION }, REQ_LOC);
+        if (!gate().granted()) {
+            gate().request();
             showNotice(getString(R.string.perm_needed), getString(R.string.perm_hint), false);
             return;
         }
@@ -126,24 +127,33 @@ public class SpeedometerActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int req, String[] p, int[] r) {
-        if (req == REQ_LOC && r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED) {
-            startUpdates();
-            ui.post(elapsedTick);
-        } else {
-            showNotice(getString(R.string.perm_needed), getString(R.string.perm_hint), false);
+        if (!gate().onResult(req, p, r)) {
+            super.onRequestPermissionsResult(req, p, r);
         }
     }
 
-    private boolean hasPermission() {
-        return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED;
+    /** Built on first use: the notice it reports into exists only after setContentView. */
+    private PermissionGate gate() {
+        if (gate == null) {
+            gate = PermissionGate.of(this, new String[]{ Manifest.permission.ACCESS_FINE_LOCATION }, null,
+                    new PermissionGate.Listener() {
+                        @Override public void onGranted() {
+                            startUpdates();
+                            ui.post(elapsedTick);
+                        }
+                        @Override public void onDenied() {
+                            showNotice(getString(R.string.perm_needed), getString(R.string.perm_hint), false);
+                        }
+                    });
+        }
+        return gate;
     }
 
     // ---------------------------------------------------------------- updates
 
     private void startUpdates() {
         if (lm == null || listening) return;
-        if (!hasPermission()) return;
+        if (!gate().granted()) return;
         try {
             if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                 showNotice(getString(R.string.gps_off),
