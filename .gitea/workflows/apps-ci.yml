@@ -9,13 +9,16 @@ on:
   # Every branch, not just main. Scoping this to main meant the suite's whole
   # development branch never once ran CI, which is where the build is actually
   # at risk — main only ever sees changes that have already been proven somewhere.
+  #
+  # No pull_request trigger: every PR here is a branch of this repo, so its commits
+  # already run on push, and the status lands on the same SHA the PR shows. With
+  # both, seven open PRs put fourteen suite builds on the runner at once.
   push:
-  pull_request:
   workflow_dispatch:
 
 concurrency:
   group: apps-ci-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 jobs:
   build:
