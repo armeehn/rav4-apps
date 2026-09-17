@@ -3,5 +3,6 @@ com.ripostelabs.contacts
 com.ripostelabs.files
 com.ripostelabs.installer
 com.ripostelabs.music
+com.ripostelabs.notes
 com.ripostelabs.recorder
 com.ripostelabs.video
