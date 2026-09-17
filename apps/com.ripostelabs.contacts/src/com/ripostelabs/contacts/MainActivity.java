@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -36,6 +35,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.ripostelabs.design.PermissionGate;
+
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,7 +55,8 @@ import com.ripostelabs.design.Palette;
  */
 public class MainActivity extends Activity {
 
-    private static final int REQ_PERM = 1;
+    /** READ_CONTACTS, asked and re-asked through the suite's one gate. */
+    private PermissionGate gate;
 
     /** A single contact row from ContactsContract.Contacts. */
     private static final class Contact {
@@ -159,8 +161,14 @@ public class MainActivity extends Activity {
         listView.setOnItemClickListener((p, v, pos, id) -> selectContact(visible.get(pos)));
 
         btnFab.setOnClickListener(v -> insertContact());
-        grantBtn.setOnClickListener(v ->
-                requestPermissions(new String[]{ Manifest.permission.READ_CONTACTS }, REQ_PERM));
+        gate = PermissionGate.of(this, new String[]{ Manifest.permission.READ_CONTACTS }, grantBtn,
+                new PermissionGate.Listener() {
+                    @Override public void onGranted() { loadContacts(); }
+                    @Override public void onDenied() {
+                        all.clear();
+                        applyFilter();
+                    }
+                });
 
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
@@ -173,24 +181,15 @@ public class MainActivity extends Activity {
 
         showDetail(false);
 
-        if (hasPerm()) loadContacts();
-        else requestPermissions(new String[]{ Manifest.permission.READ_CONTACTS }, REQ_PERM);
+        gate.request();   // granted → loadContacts() at once
     }
 
     // ---------------- permission ----------------
 
-    private boolean hasPerm() {
-        return checkSelfPermission(Manifest.permission.READ_CONTACTS)
-                == PackageManager.PERMISSION_GRANTED;
-    }
-
     @Override
     public void onRequestPermissionsResult(int req, String[] p, int[] r) {
-        if (req == REQ_PERM && r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED) {
-            loadContacts();
-        } else {
-            all.clear();
-            applyFilter();
+        if (!gate.onResult(req, p, r)) {
+            super.onRequestPermissionsResult(req, p, r);
         }
     }
 
@@ -198,7 +197,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         // Refresh after returning from the system insert-contact screen.
-        if (hasPerm()) loadContacts();
+        if (gate.granted()) loadContacts();
     }
 
     // ---------------- load ----------------
@@ -279,7 +278,7 @@ public class MainActivity extends Activity {
 
     /** Chooses the correct message for the empty pane: permission, no results, no contacts. */
     private void configureEmptyState() {
-        if (!hasPerm()) {
+        if (!gate.granted()) {
             emptyIcon.setImageResource(R.drawable.ic_person);
             emptyTitle.setText(R.string.need_permission_title);
             emptyHint.setText(R.string.need_permission_hint);
