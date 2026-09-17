@@ -42,10 +42,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/btn_ghost"
+                    android:minWidth="48dp"
+                    android:minHeight="48dp"
+                    android:gravity="center"
                     android:paddingLeft="14dp"
                     android:paddingRight="14dp"
-                    android:paddingTop="6dp"
-                    android:paddingBottom="6dp"
                     android:textColor="@color/accent"
                     android:text="@string/rad" />
             </LinearLayout>
@@ -102,10 +103,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/btn_ghost"
+                android:minWidth="48dp"
+                android:minHeight="48dp"
+                android:gravity="center"
                 android:paddingLeft="14dp"
                 android:paddingRight="14dp"
-                android:paddingTop="6dp"
-                android:paddingBottom="6dp"
                 android:textColor="@color/accent"
                 android:text="@string/clear_history" />
         </LinearLayout>

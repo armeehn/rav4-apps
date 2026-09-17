@@ -48,6 +48,8 @@ import com.ripostelabs.design.Palette;
  * shared design system (palette, styles, drawables). Pure android.*, no AndroidX.
  */
 public class MainActivity extends Activity {
+    private static final int MIN_TAP_DP = 48;   // the panel's minimum tap target, as in the launcher
+
 
     private static final int REQ_PERM = 1;
     private static final int CELLS = 42; // 6 weeks x 7 days
@@ -201,6 +203,8 @@ public class MainActivity extends Activity {
         todayBtn.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         todayBtn.setGravity(Gravity.CENTER);
         todayBtn.setPadding(dp(16), dp(8), dp(16), dp(8));
+        todayBtn.setMinHeight(dp(MIN_TAP_DP));
+        todayBtn.setMinWidth(dp(MIN_TAP_DP));
         todayBtn.setBackground(pill(cAccentDim, dp(18)));
         todayBtn.setOnClickListener(v -> goToday());
 
