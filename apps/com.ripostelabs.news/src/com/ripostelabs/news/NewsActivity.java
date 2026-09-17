@@ -71,12 +71,6 @@ public class NewsActivity extends Activity {
     // A literal here paints the fallback pack, and a colour filter is invisible to Palette.apply.
     private int cText, cText2, cText3, cAccent;
 
-    /** One headline. */
-    static final class Item {
-        String title, link, source, snippet;
-        long time;     // epoch millis, 0 if unknown
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -299,10 +293,12 @@ public class NewsActivity extends Activity {
                     return Long.compare(b.time, a.time);   // newest first
                 }
             });
+            out = FeedMerge.dedupe(out);
             if (out.size() > 60) out = new ArrayList<>(out.subList(0, 60));
         } else {
             List<Item> l = cache.get(SOURCES[selected - 1][0]);
             if (l != null) out.addAll(l);
+            out = FeedMerge.dedupe(out);
         }
         return out;
     }
