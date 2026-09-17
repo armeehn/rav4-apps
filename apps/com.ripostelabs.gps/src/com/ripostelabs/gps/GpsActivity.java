@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.drawable.GradientDrawable;
 import android.location.GnssStatus;
 import android.location.Location;
@@ -31,6 +30,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import com.ripostelabs.design.Palette;
+import com.ripostelabs.design.PermissionGate;
 
 /**
  * Clean-room standalone GPS status dashboard. Everything is read straight off the
@@ -40,7 +40,8 @@ import com.ripostelabs.design.Palette;
  */
 public class GpsActivity extends Activity {
 
-    private static final int REQ_LOC = 1;
+    /** Fine location, asked through the suite's one gate; no grant control on this screen. */
+    private PermissionGate gate;
     private static final float SNR_MAX = 50f;   // dB-Hz full-scale for the bars
 
     private final Handler ui = new Handler(Looper.getMainLooper());
@@ -106,8 +107,8 @@ public class GpsActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (!hasPermission()) {
-            requestPermissions(new String[]{ Manifest.permission.ACCESS_FINE_LOCATION }, REQ_LOC);
+        if (!gate().granted()) {
+            gate().request();
             return;
         }
         startUpdates();
@@ -121,18 +122,25 @@ public class GpsActivity extends Activity {
 
     @Override
     public void onRequestPermissionsResult(int req, String[] p, int[] r) {
-        if (req == REQ_LOC && r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED) {
-            startUpdates();
-        } else {
-            conditionView.setText("Permission denied");
-            statusView.setText("Location permission required");
-            coordsView.setText("Grant ACCESS_FINE_LOCATION to see position");
+        if (!gate().onResult(req, p, r)) {
+            super.onRequestPermissionsResult(req, p, r);
         }
     }
 
-    private boolean hasPermission() {
-        return checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
-                == PackageManager.PERMISSION_GRANTED;
+    /** Built on first use: the views it reports into exist only after setContentView. */
+    private PermissionGate gate() {
+        if (gate == null) {
+            gate = PermissionGate.of(this, new String[]{ Manifest.permission.ACCESS_FINE_LOCATION }, null,
+                    new PermissionGate.Listener() {
+                        @Override public void onGranted() { startUpdates(); }
+                        @Override public void onDenied() {
+                            conditionView.setText("Permission denied");
+                            statusView.setText("Location permission required");
+                            coordsView.setText("Grant ACCESS_FINE_LOCATION to see position");
+                        }
+                    });
+        }
+        return gate;
     }
 
     // ---------------------------------------------------------------- updates
@@ -141,7 +149,7 @@ public class GpsActivity extends Activity {
 
     private void startUpdates() {
         if (lm == null || listening) return;
-        if (!hasPermission()) return;
+        if (!gate().granted()) return;
         try {
             // Prompt if the GPS radio itself is off.
             if (!lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
@@ -188,7 +196,7 @@ public class GpsActivity extends Activity {
 
     private void restartUpdates() {
         stopUpdates();
-        if (hasPermission()) startUpdates();
+        if (gate().granted()) startUpdates();
     }
 
     private Location bestLastKnown() {
