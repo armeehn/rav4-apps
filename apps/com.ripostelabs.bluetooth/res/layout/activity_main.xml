@@ -192,46 +192,26 @@
             </LinearLayout>
         </ScrollView>
 
-        <!-- Global empty state (Bluetooth off / no permission) -->
+        <!-- Global empty state (Bluetooth off / no permission): the shared shape, ids stay ours. -->
         <LinearLayout
             android:id="@+id/empty"
+            style="@style/EmptyState"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:padding="24dp"
-            android:visibility="gone">
-
+            android:layout_height="match_parent">
             <ImageView
-                android:layout_width="96dp"
-                android:layout_height="96dp"
-                android:src="@drawable/ic_bluetooth"
-                android:tint="@color/text3"
-                android:alpha="0.7" />
-
+                style="@style/EmptyStateIcon"
+                android:src="@drawable/ic_bluetooth" />
             <TextView
                 android:id="@+id/empty_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                style="@style/H2"
+                style="@style/EmptyStateTitle"
                 android:text="@string/empty_off_title" />
-
             <TextView
                 android:id="@+id/empty_hint"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center"
-                style="@style/Caption"
+                style="@style/EmptyStateHint"
                 android:text="@string/empty_off_hint" />
-
             <Button
                 android:id="@+id/grant"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:visibility="gone"
+                style="@style/EmptyStateAction"
                 android:text="@string/grant" />
         </LinearLayout>
     </FrameLayout>
