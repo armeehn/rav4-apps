@@ -18,6 +18,8 @@
         <!-- The gateway's SysVar store, read by BrakeGate for Sys_CurBreakSate. Same
              rule: undeclared, the query returns null and the gate silently never closes. -->
         <provider android:authorities="com.szchoiceway.eventcenter.SysVarProvider" />
+        <!-- The launcher's mirror of that store on Riposte OS 0.2 (RAV4-98). -->
+        <provider android:authorities="com.ripostelabs.carlauncher.sysvar" />
     </queries>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
