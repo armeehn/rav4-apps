@@ -55,6 +55,9 @@ jobs:
       - name: Theme wiring
         run: scope/check-theme-wiring.sh
 
+      - name: Check empty states
+        run: scope/check-empty-states.sh
+
       # Unit tests for the logic that does not need Android. Runs after the build because a
       # compile failure there is the more useful error to see first.
       - name: Unit tests

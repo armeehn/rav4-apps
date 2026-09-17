@@ -34,6 +34,41 @@
         <item name="android:textColor">@color/text2</item>
         <item name="android:textSize">13sp</item>
     </style>
+    <!-- Empty state (Track D, RAV4-66): one look for "nothing here yet" across the suite.
+         Container, icon, title, hint, action; ids stay the app's own (empty, empty_icon,
+         empty_text / empty_title, empty_hint, grant), the attributes come from here.
+         Flat names on purpose: a dotted child would inherit the container's padding. -->
+    <style name="EmptyState">
+        <item name="android:orientation">vertical</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingLeft">32dp</item>
+        <item name="android:paddingRight">32dp</item>
+        <item name="android:visibility">gone</item>
+    </style>
+    <style name="EmptyStateIcon">
+        <item name="android:layout_width">96dp</item>
+        <item name="android:layout_height">96dp</item>
+        <item name="android:tint">@color/text3</item>
+        <item name="android:alpha">0.7</item>
+    </style>
+    <style name="EmptyStateTitle" parent="H2">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">18dp</item>
+        <item name="android:gravity">center</item>
+    </style>
+    <style name="EmptyStateHint" parent="Caption">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:gravity">center</item>
+    </style>
+    <style name="EmptyStateAction">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">20dp</item>
+        <item name="android:visibility">gone</item>
+    </style>
     <style name="Overline">
         <item name="android:textColor">@color/text3</item>
         <item name="android:textSize">11sp</item>
