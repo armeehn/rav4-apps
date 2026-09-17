@@ -3,7 +3,6 @@ package com.ripostelabs.music;
 import android.Manifest;
 import android.app.Activity;
 import android.content.ContentUris;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.drawable.GradientDrawable;
 import android.media.MediaPlayer;
@@ -26,6 +25,8 @@ import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.ripostelabs.design.PermissionGate;
+
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,7 +42,8 @@ import com.ripostelabs.design.Palette;
 public class MainActivity extends Activity
         implements MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener {
 
-    private static final int REQ_PERM = 1;
+    /** The media-read permission, asked and re-asked through the suite's one gate. */
+    private PermissionGate gate;
 
     private static final class Track {
         final long id;
@@ -116,6 +118,13 @@ public class MainActivity extends Activity
         emptyText = findViewById(R.id.empty_text);
         count = findViewById(R.id.count);
         grantBtn = findViewById(R.id.grant);
+        gate = PermissionGate.of(this, new String[]{ perm() }, grantBtn, new PermissionGate.Listener() {
+            @Override public void onGranted() { loadTracks(); }
+            @Override public void onDenied() {
+                emptyText.setText(R.string.need_permission);
+                showEmpty(true);
+            }
+        });
 
         nowTitle = findViewById(R.id.now_title);
         nowArtist = findViewById(R.id.now_artist);
@@ -129,7 +138,6 @@ public class MainActivity extends Activity
         adapter = new TrackAdapter();
         list.setAdapter(adapter);
 
-        grantBtn.setOnClickListener(v -> requestPermissions(new String[]{ perm() }, REQ_PERM));
 
         list.setOnItemClickListener((AdapterView<?> p, View vw, int pos, long id) -> playAt(pos));
 
@@ -150,8 +158,7 @@ public class MainActivity extends Activity
 
         ui.postDelayed(tick, 500);
 
-        if (hasPerm()) loadTracks();
-        else requestPermissions(new String[]{ perm() }, REQ_PERM);
+        gate.request();   // granted → loadTracks() at once
     }
 
     private String perm() {
@@ -160,18 +167,10 @@ public class MainActivity extends Activity
                 : Manifest.permission.READ_EXTERNAL_STORAGE;
     }
 
-    private boolean hasPerm() {
-        return checkSelfPermission(perm()) == PackageManager.PERMISSION_GRANTED;
-    }
-
     @Override
     public void onRequestPermissionsResult(int req, String[] p, int[] r) {
-        if (req == REQ_PERM && r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED) {
-            grantBtn.setVisibility(View.GONE);
-            loadTracks();
-        } else {
-            emptyText.setText(R.string.need_permission);
-            showEmpty(true);
+        if (!gate.onResult(req, p, r)) {
+            super.onRequestPermissionsResult(req, p, r);
         }
     }
 
@@ -222,7 +221,7 @@ public class MainActivity extends Activity
     private void showEmpty(boolean show) {
         empty.setVisibility(show ? View.VISIBLE : View.GONE);
         list.setVisibility(show ? View.GONE : View.VISIBLE);
-        grantBtn.setVisibility(show && !hasPerm() ? View.VISIBLE : View.GONE);
+        grantBtn.setVisibility(show && !gate.granted() ? View.VISIBLE : View.GONE);
     }
 
     /** The transport the system and the wheel drive; each action is what the UI button does. */
