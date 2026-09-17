@@ -1,1 +1,2 @@
 com.ripostelabs.recorder
+com.ripostelabs.video
