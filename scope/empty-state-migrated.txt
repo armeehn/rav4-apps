@@ -1,3 +1,4 @@
+com.ripostelabs.contacts
 com.ripostelabs.installer
 com.ripostelabs.music
 com.ripostelabs.recorder
