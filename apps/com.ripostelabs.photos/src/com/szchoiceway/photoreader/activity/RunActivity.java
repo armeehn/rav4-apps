@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ContentUris;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -34,6 +33,7 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import com.ripostelabs.design.Palette;
+import com.ripostelabs.design.PermissionGate;
 
 /**
  * Clean-room gallery entry point. Lists device images from MediaStore in a grid and
@@ -42,7 +42,8 @@ import com.ripostelabs.design.Palette;
  */
 public class RunActivity extends Activity {
 
-    private static final int REQ_PERM = 1;
+    /** The media-read permission, asked and re-asked through the suite's one gate. */
+    private PermissionGate gate;
     private static final int COLUMNS = 6;
     private final ArrayList<Uri> images = new ArrayList<>();
     private final ExecutorService io = Executors.newFixedThreadPool(4);
@@ -86,7 +87,10 @@ public class RunActivity extends Activity {
             @Override protected int sizeOf(Uri key, Bitmap b) { return b.getByteCount(); }
         };
 
-        grantBtn.setOnClickListener(v -> requestPermissions(new String[]{ perm() }, REQ_PERM));
+        gate = PermissionGate.of(this, new String[]{ perm() }, grantBtn, new PermissionGate.Listener() {
+            @Override public void onGranted() { loadImages(); }
+            @Override public void onDenied() { showEmpty(true); }
+        });
         grid.setOnItemClickListener((AdapterView<?> p, View vw, int pos, long id) -> {
             String[] arr = new String[images.size()];
             for (int i = 0; i < arr.length; i++) arr[i] = images.get(i).toString();
@@ -96,8 +100,7 @@ public class RunActivity extends Activity {
             startActivity(v);
         });
 
-        if (hasPerm()) loadImages();
-        else requestPermissions(new String[]{ perm() }, REQ_PERM);
+        gate.request();   // granted → loadImages() at once
     }
 
     private String perm() {
@@ -106,17 +109,10 @@ public class RunActivity extends Activity {
                 : Manifest.permission.READ_EXTERNAL_STORAGE;
     }
 
-    private boolean hasPerm() {
-        return checkSelfPermission(perm()) == PackageManager.PERMISSION_GRANTED;
-    }
-
     @Override
     public void onRequestPermissionsResult(int req, String[] p, int[] r) {
-        if (req == REQ_PERM && r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED) {
-            grantBtn.setVisibility(View.GONE);
-            loadImages();
-        } else {
-            showEmpty(true);
+        if (!gate.onResult(req, p, r)) {
+            super.onRequestPermissionsResult(req, p, r);
         }
     }
 
@@ -154,7 +150,7 @@ public class RunActivity extends Activity {
         empty.setVisibility(show ? View.VISIBLE : View.GONE);
         grid.setVisibility(show ? View.GONE : View.VISIBLE);
         // The hint asks for storage permission; with it granted, an empty grid just means no photos.
-        int needPerm = show && !hasPerm() ? View.VISIBLE : View.GONE;
+        int needPerm = show && !gate.granted() ? View.VISIBLE : View.GONE;
         grantBtn.setVisibility(needPerm);
         emptyHint.setVisibility(needPerm);
         if (show) updateCount();
