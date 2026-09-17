@@ -13,9 +13,11 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+
 import java.io.File;
 import java.io.IOException;
 import com.ripostelabs.design.Palette;
+import com.ripostelabs.design.PermissionGate;
 import com.ripostelabs.design.MediaCitizen;
 
 /**
@@ -32,7 +34,8 @@ import com.ripostelabs.design.MediaCitizen;
  */
 public class MainActivity extends Activity {
 
-    private static final int REQ_PERM = 1;
+    /** The microphone permission, asked and re-asked through the suite's one gate. */
+    private PermissionGate gate;
 
     // Amplitude -> dB SPL mapping constants.
     private static final double FULL_SCALE = 32767.0;   // 16-bit PCM peak
@@ -98,8 +101,14 @@ public class MainActivity extends Activity {
         resetBtn = findViewById(R.id.reset);
 
         resetBtn.setOnClickListener(v -> resetStats());
-        grantBtn.setOnClickListener(v -> requestPermissions(
-                new String[]{ Manifest.permission.RECORD_AUDIO }, REQ_PERM));
+        gate = PermissionGate.of(this, new String[]{ Manifest.permission.RECORD_AUDIO }, grantBtn,
+                new PermissionGate.Listener() {
+                    @Override public void onGranted() {
+                        showDenied(false);
+                        startSampling();
+                    }
+                    @Override public void onDenied() { showDenied(true); }
+                });
 
         // Device with no microphone at all: show the graceful fallback.
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_MICROPHONE)) {
@@ -107,26 +116,15 @@ public class MainActivity extends Activity {
             return;
         }
 
-        if (!hasPerm()) {
-            requestPermissions(new String[]{ Manifest.permission.RECORD_AUDIO }, REQ_PERM);
+        if (!gate.granted()) {
+            gate.request();
         }
-    }
-
-    private boolean hasPerm() {
-        return checkSelfPermission(Manifest.permission.RECORD_AUDIO)
-                == PackageManager.PERMISSION_GRANTED;
     }
 
     @Override
     public void onRequestPermissionsResult(int req, String[] p, int[] r) {
-        if (req == REQ_PERM) {
-            boolean granted = r.length > 0 && r[0] == PackageManager.PERMISSION_GRANTED;
-            if (granted) {
-                showDenied(false);
-                startSampling();
-            } else {
-                showDenied(true);
-            }
+        if (!gate.onResult(req, p, r)) {
+            super.onRequestPermissionsResult(req, p, r);
         }
     }
 
@@ -134,7 +132,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (noMicBox.getVisibility() == View.VISIBLE) return;
-        if (hasPerm()) {
+        if (gate.granted()) {
             showDenied(false);
             startSampling();
         } else {
@@ -164,7 +162,7 @@ public class MainActivity extends Activity {
     private void startSampling() {
         // Guard first: returning *after* taking exclusive focus would leave the cabin silent
         // with nothing listening, for as long as this screen stays open.
-        if (sampling || !hasPerm()) return;
+        if (sampling || !gate.granted()) return;
 
         // Exclusive focus: a ducked radio is still audible, and still ends up in the
         // capture. A refusal means something else already holds the microphone.
