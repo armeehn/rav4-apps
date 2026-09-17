@@ -1,3 +1,4 @@
 com.ripostelabs.music
+com.ripostelabs.photos
 com.ripostelabs.recorder
 com.ripostelabs.video
