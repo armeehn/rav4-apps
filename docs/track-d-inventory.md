@@ -59,6 +59,21 @@ three apps. `scope/run-tests.sh` runs them with no framework. A shared
 `PermissionGate` and `EmptyState` would each ship a test there, which makes the
 shared thing the tested thing, as the issue asks.
 
+## Status (2026-09-17, end of day)
+
+- Empty state: styles in the pack (#27), `check-empty-states.sh` in CI, all ten apps
+  migrated (#27-#37). `EmptyStateAction` carries the ghost button (#32).
+- Permission gate: `PermissionGate` in the pack with `PermissionGateTest` (#40); thirteen
+  apps migrated (recorder, music, video, contacts, soundmeter, gps, speedometer, weather,
+  calendar, bluetooth, lamp, photos, projection). Three stay hand-rolled on purpose:
+  - **installer**: `hasStoragePerm()` is any-of over the READ_MEDIA_* set (a partial media
+    grant is enough to list APKs); the gate is all-of.
+  - **files**: all-files access is `MANAGE_EXTERNAL_STORAGE` through a Settings intent,
+    not `requestPermissions`; the READ_MEDIA_* fallback rides on that flow.
+  - **clock**: one fire-and-forget `POST_NOTIFICATIONS` ask with no result handler and no
+    grant control; a gate would add a listener with nothing to do.
+- apps-ci runs once per commit (#38).
+
 ## Order
 
 1. `EmptyState` include + helper in `_design`, migrate the 10 apps one PR each
