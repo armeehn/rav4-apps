@@ -86,7 +86,7 @@ Launcher groups them together and its Setup Doctor reports which are missing.
 
 No Gradle. Each app is a handful of framework-only Java files, and the pipeline is
 `aapt2 → javac → d8 → zipalign → apksigner`. About 2.5 s per app, under a minute
-for all 26.
+for all 28.
 
 Requirements:
 

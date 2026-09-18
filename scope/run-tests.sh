@@ -9,7 +9,7 @@
 # WHAT IT COVERS, deliberately. Only logic that needs no Android. Anything touching an Activity,
 # a View or a system service is not testable this way and is not pretended to be — the checks in
 # check-theme-wiring.sh are what guard that half. An app with no test/ directory is skipped
-# silently, because 26 apps of mostly-UI code should not each carry an empty ceremony.
+# silently, because 28 apps of mostly-UI code should not each carry an empty ceremony.
 #
 # Layout: apps/<pkg>/test/<same package path>/<Name>Test.java, compiled against the app's own src.
 set -uo pipefail
