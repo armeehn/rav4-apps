@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:paddingBottom="16dp">
+            android:paddingBottom="4dp">
 
             <ImageView
                 android:layout_width="34dp"
@@ -35,6 +35,18 @@
                 android:layout_weight="1"
                 android:layout_marginStart="12dp"
                 android:text="@string/app_name" />
+
+            <ImageView
+                android:id="@+id/refreshBtn"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:padding="12dp"
+                android:src="@drawable/ic_refresh"
+                android:tint="@color/accent"
+                android:clickable="true"
+                android:focusable="true"
+                android:contentDescription="@string/refresh"
+                android:background="@drawable/btn_ghost" />
         </LinearLayout>
 
         <TextView
@@ -48,7 +60,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="6dp"
             android:scrollbars="none">
 
             <LinearLayout
@@ -59,31 +71,6 @@
         </ScrollView>
 
         <!-- refresh -->
-        <LinearLayout
-            android:id="@+id/refreshBtn"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="14dp"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:clickable="true"
-            android:focusable="true"
-            android:background="@drawable/btn_ghost">
-
-            <ImageView
-                android:id="@+id/refreshIcon"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_refresh"
-                android:tint="@color/accent" />
-
-            <TextView
-                style="@style/H2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:text="@string/refresh" />
-        </LinearLayout>
     </LinearLayout>
 
     <!-- ===== RIGHT: headline column ===== -->
@@ -131,7 +118,7 @@
             android:layout_weight="1"
             android:scrollbars="none"
             android:clipToPadding="false"
-            android:paddingBottom="8dp">
+            android:paddingBottom="4dp">
 
             <LinearLayout
                 android:id="@+id/headlineList"

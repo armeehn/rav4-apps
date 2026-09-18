@@ -65,6 +65,8 @@ final class Ui {
     }
 
     /** A pill button with accent or ghost background and centered text. */
+    static final int MIN_TAP_DP = 48;   // the panel's minimum tap target, as in the launcher
+
     static TextView pill(Context c, CharSequence label, boolean accent, int textColor) {
         TextView t = new TextView(c);
         t.setText(label);
@@ -75,6 +77,8 @@ final class Ui {
         t.setBackgroundResource(accent ? R.drawable.btn_accent : R.drawable.btn_ghost);
         int ph = dp(c, 22), pv = dp(c, 13);
         t.setPadding(ph, pv, ph, pv);
+        t.setMinHeight(dp(c, MIN_TAP_DP));
+        t.setMinWidth(dp(c, MIN_TAP_DP));
         t.setClickable(true);
         t.setFocusable(true);
         return t;

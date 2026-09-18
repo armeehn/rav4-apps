@@ -63,6 +63,7 @@ public class NewsActivity extends Activity {
     private ImageView refreshIcon;
 
     private final List<View> sourceRows = new ArrayList<>();
+    private static final int MIN_TAP_DP = 48;   // the panel's minimum tap target, as in the launcher
     private int selected = 0;                 // 0 = Top Stories, else 1..N -> SOURCES[selected-1]
     private int generation = 0;               // bumped on each load to discard stale threads
     private int pending = 0;                  // feeds still in flight for the current generation
@@ -87,7 +88,7 @@ public class NewsActivity extends Activity {
         headlineScroll = findViewById(R.id.headlineScroll);
         feedTitle = findViewById(R.id.feedTitle);
         feedStatus = findViewById(R.id.feedStatus);
-        refreshIcon = findViewById(R.id.refreshIcon);
+        refreshIcon = findViewById(R.id.refreshBtn);   // the header icon button is the spinner too
 
         findViewById(R.id.refreshBtn).setOnClickListener(v -> refresh());
 
@@ -113,9 +114,10 @@ public class NewsActivity extends Activity {
         row.setClickable(true);
         row.setFocusable(true);
         row.setPadding(dp(12), dp(12), dp(12), dp(12));
+        row.setMinimumHeight(dp(MIN_TAP_DP));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.topMargin = dp(6);
+        lp.topMargin = dp(2);   // six 48 dp rows plus Refresh must fit the 480 dp panel
         row.setLayoutParams(lp);
 
         ImageView icon = new ImageView(this);
