@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Clean-room radio for the GT6 head unit. FM/AM tuner driven through the
-     vendor event gateway (com.szchoiceway.eventcenter, exported bind) via a
-     hand-rolled Binder proxy — see Tuner.java — plus internet streaming
+<!-- Clean-room radio for the GT6 head unit. FM/AM tuner driven through whichever
+     process owns the MCU link: the vendor event gateway (com.szchoiceway.eventcenter,
+     VendorTuner) or on Riposte OS 0.2 the launcher's ITuner (LauncherTuner), both via
+     hand-rolled Binder proxies — see Tuner.java — plus internet streaming
      (android.media.MediaPlayer) on a NET tab.
      Standalone normal app: no sharedUserId, no platform signing, no system perms. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -17,6 +18,10 @@
          silently keeps its built-in palette. Declaring the authority is the whole grant. -->
     <queries>
         <provider android:authorities="com.ripostelabs.carlauncher.theme" />
+        <!-- The launcher's ITuner on 0.2 (release, then the farm's debug build): without the
+             package here, bindService() on API 30+ cannot see the service at all. -->
+        <package android:name="com.ripostelabs.carlauncher" />
+        <package android:name="com.ripostelabs.carlauncher.debug" />
     </queries>
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
