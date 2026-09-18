@@ -580,11 +580,6 @@ public class MainActivity extends Activity {
             avatar.setColorFilter(isDir ? cAccent : cText2);
 
             more.setOnClickListener(v -> showActions(f));
-
-            // spacing between rows
-            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) row.getLayoutParams();
-            if (lp == null) lp = new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             return row;
         }
     }
