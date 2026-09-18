@@ -117,7 +117,7 @@ public class MainActivity extends Activity
         cStroke = Palette.color(this, R.color.stroke);
 
         prefs = getSharedPreferences("presets", MODE_PRIVATE);
-        tuner = new Tuner(this, this);
+        tuner = Tuner.open(this, this);
 
         bindTunerViews();
         bindNetViews();
