@@ -59,6 +59,8 @@ import com.ripostelabs.design.Palette;
  * Pure android.* framework - no AndroidX / Gradle.
  */
 public class MainActivity extends Activity {
+    private static final int MIN_TAP_DP = 48;   // the panel's minimum tap target, as in the launcher
+
 
     private static final int REQ_MEDIA = 1;
 
@@ -346,6 +348,7 @@ public class MainActivity extends Activity {
 
     private void promptRename(File f) {
         final EditText in = new EditText(this);
+        in.setMinimumHeight(dp(MIN_TAP_DP));   // the View-level minimum; TextView.setMinHeight is ignored inside an AlertDialog
         in.setInputType(InputType.TYPE_CLASS_TEXT);
         in.setText(f.getName());
         in.setSelectAllOnFocus(true);
@@ -371,6 +374,7 @@ public class MainActivity extends Activity {
     private void promptNewFolder() {
         if (currentDir == null) return;
         final EditText in = new EditText(this);
+        in.setMinimumHeight(dp(MIN_TAP_DP));   // the View-level minimum; TextView.setMinHeight is ignored inside an AlertDialog
         in.setInputType(InputType.TYPE_CLASS_TEXT);
         in.setHint("Folder name");
         in.setTextColor(cText);
@@ -542,9 +546,9 @@ public class MainActivity extends Activity {
                 more.setBackgroundResource(R.drawable.btn_icon);
                 more.setColorFilter(cText2);
                 more.setScaleType(ImageView.ScaleType.FIT_CENTER);
-                int mp = dp(11);
+                int mp = dp(13);
                 more.setPadding(mp, mp, mp, mp);
-                row.addView(more, new LinearLayout.LayoutParams(dp(44), dp(44)));
+                row.addView(more, new LinearLayout.LayoutParams(dp(MIN_TAP_DP), dp(MIN_TAP_DP)));
 
                 GradientDrawable rowBg = new GradientDrawable();
                 rowBg.setShape(GradientDrawable.RECTANGLE);
