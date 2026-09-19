@@ -9,6 +9,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Parcel;
+import android.util.Log;
 
 /**
  * The {@link Tuner} backend for Riposte OS 0.2, where the launcher owns the MCU link and
@@ -32,6 +33,8 @@ final class LauncherTuner extends Tuner {
             "com.ripostelabs.carlauncher", "com.ripostelabs.carlauncher.debug"};
     private static final String DESCRIPTOR = "com.ripostelabs.carlauncher.tuner.ITuner";
     private static final String CALLBACK_DESCRIPTOR = "com.ripostelabs.carlauncher.tuner.ITunerCallback";
+
+    private static final String TAG = "LauncherTuner";
 
     private static final int TR_CLAIM = 1;
     private static final int TR_RELEASE = 2;
@@ -218,7 +221,8 @@ final class LauncherTuner extends Tuner {
             s.transact(TR_GET_STATE, data, reply, 0);
             reply.readException();
             if (reply.readInt() != 0) state = State.read(reply);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            Log.w(TAG, "getState failed", e);
         } finally {
             reply.recycle();
             data.recycle();
@@ -239,7 +243,8 @@ final class LauncherTuner extends Tuner {
             writer.write(data);
             s.transact(code, data, reply, 0);
             reply.readException();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            Log.w(TAG, "transaction " + code + " failed", e);
         } finally {
             reply.recycle();
             data.recycle();
