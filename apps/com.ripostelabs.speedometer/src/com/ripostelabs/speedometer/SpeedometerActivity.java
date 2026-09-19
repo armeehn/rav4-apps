@@ -38,6 +38,13 @@ public class SpeedometerActivity extends Activity {
 
     /** Fine location, asked through the suite's one gate; no grant control on this screen. */
     private PermissionGate gate;
+    /**
+     * One ask per activity instance. Asking on every resume looked harmless until Android
+     * fixed the denial (two "Don't allow"): from then each ask is answered "denied" at once,
+     * the result resumes the activity, and onResume asks again, four times in 700 ms until
+     * the system bounced to Home. A driver who denies twice was locked out of the app.
+     */
+    private boolean asked;
     private static final float MS_TO_KMH = 3.6f;
     private static final float KMH_TO_MPH = 0.621371f;
     private static final float MOVING_THRESHOLD_KMH = 3f; // ignore GPS jitter at rest
@@ -110,7 +117,10 @@ public class SpeedometerActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (!gate().granted()) {
-            gate().request();
+            if (!asked) {
+                asked = true;
+                gate().request();
+            }
             showNotice(getString(R.string.perm_needed), getString(R.string.perm_hint), false);
             return;
         }

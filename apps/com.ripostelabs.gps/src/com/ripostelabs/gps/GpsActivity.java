@@ -42,6 +42,13 @@ public class GpsActivity extends Activity {
 
     /** Fine location, asked through the suite's one gate; no grant control on this screen. */
     private PermissionGate gate;
+    /**
+     * One ask per activity instance. Asking on every resume looked harmless until Android
+     * fixed the denial (two "Don't allow"): from then each ask is answered "denied" at once,
+     * the result resumes the activity, and onResume asks again, four times in 700 ms until
+     * the system bounced to Home. A driver who denies twice was locked out of the app.
+     */
+    private boolean asked;
     private static final float SNR_MAX = 50f;   // dB-Hz full-scale for the bars
 
     private final Handler ui = new Handler(Looper.getMainLooper());
@@ -108,7 +115,10 @@ public class GpsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (!gate().granted()) {
-            gate().request();
+            if (!asked) {
+                asked = true;
+                gate().request();
+            }
             return;
         }
         startUpdates();
