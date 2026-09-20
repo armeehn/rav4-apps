@@ -56,6 +56,11 @@ public final class Bridge implements FoxServer.Listener {
 
         /** The phone's call picture changed. */
         void onCallState(Messages.CallState state);
+
+        /** The daemon wants the cabin microphone in this format, or no longer. */
+        void onMic(Messages.MicStart format);
+
+        void onMicStop();
     }
 
     /** The wireless bootstrap, on the reader threads: the hotspot and the phone's RFCOMM link. */
@@ -161,6 +166,14 @@ public final class Bridge implements FoxServer.Listener {
 
     public void stopSession() {
         control.send(Messages.STOP, Messages.idOnly(Messages.STOP));
+    }
+
+    /** One frame of cabin microphone PCM, in the format the daemon asked for. */
+    public void mic(int sampleRate, int channels, int bits, byte[] pcm, int len) {
+        if (Messages.MIC_DATA == 0) {
+            return;
+        }
+        control.send(Messages.MIC_DATA, Messages.micData(sampleRate, channels, bits, pcm, len));
     }
 
     // ---- wireless bootstrap ------------------------------------------------------------------
@@ -283,6 +296,16 @@ public final class Bridge implements FoxServer.Listener {
                     w.onApInfoRequested();
                 }
                 return;
+            case Messages.MIC_START:
+                if (Messages.MIC_START != 0) {
+                    final Messages.MicStart ms = Messages.micStart(f.payload);
+                    final Session sl = session;
+                    if (sl != null) {
+                        main.post(() -> sl.onMic(ms));
+                    }
+                    return;
+                }
+                break;
             case Messages.CALL_STATE:
                 final Messages.CallState c = Messages.callState(f.payload);
                 final Session l = session;

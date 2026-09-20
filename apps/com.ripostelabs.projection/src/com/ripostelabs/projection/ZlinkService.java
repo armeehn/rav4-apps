@@ -69,6 +69,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     private Bridge bridge;
     private CarPlayWireless wireless;
     private MediaCitizen citizen;
+    private MicSource mic;
     private boolean hasFocus;
     private boolean callOn;
     private boolean mainAudio;
@@ -122,6 +123,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         bridge.setWireless(wireless);
         bridge.setSession(this);
         citizen = MediaCitizen.attach(this, CITIZEN_TAG, transport);
+        mic = new MicSource(this);
         try {
             bridge.start();
         } catch (IOException e) {
@@ -152,6 +154,9 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         }
         videoSink.stop();
         audioSink.stop();
+        if (mic != null) {
+            mic.stop();
+        }
         if (citizen != null) {
             citizen.releaseFocus();
             citizen.release();
@@ -185,6 +190,9 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
             citizen.setIdle();
             hasFocus = false;
         }
+        if (!up) {
+            mic.stop();
+        }
     }
 
     @Override
@@ -197,6 +205,19 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
             mainAudio = state.mainAudio;
             status(mainAudio ? STATUS_MAIN_AUDIO_START : STATUS_MAIN_AUDIO_STOP, null);
         }
+    }
+
+    @Override
+    public void onMic(final Messages.MicStart format) {
+        final int rate = format.sampleRate;
+        final int channels = Math.max(1, format.channels);
+        final int bits = format.bits;
+        mic.start(rate, channels, (pcm, len) -> bridge.mic(rate, channels, bits, pcm, len));
+    }
+
+    @Override
+    public void onMicStop() {
+        mic.stop();
     }
 
     /** CarPlay follows the unit's day and night, the launcher's theme included. */

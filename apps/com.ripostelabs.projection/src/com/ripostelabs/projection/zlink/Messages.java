@@ -124,6 +124,62 @@ public final class Messages {
      */
     public static final int CALL_STATE = 0x710;
 
+    // ---- microphone --------------------------------------------------------------------------
+    /**
+     * {@code <} {@code zj.mic.MicStart}: sample rate (2), channels (3), bits (4), bt aec (5).
+     * The daemon logs "AudioMicStart" when it sends it. Id to be read from the first Siri press.
+     */
+    public static final int MIC_START = 0;
+    /** {@code <} empty; the daemon logs "AudioMicStop". Id to be read alongside MIC_START. */
+    public static final int MIC_STOP = 0;
+    /**
+     * {@code >} {@code zj.mic.MIC_DATA}: rate (2), channels (3), bits (4), aec_enable (5),
+     * delay_ms (7), data (8). Id to be probed: the daemon logs "mic_message_handle error" on
+     * a malformed one and names unknown ids.
+     */
+    public static final int MIC_DATA = 0;
+
+    /** A decoded {@link #MIC_START}. */
+    public static final class MicStart {
+        public int sampleRate;
+        public int channels;
+        public int bits;
+    }
+
+    public static MicStart micStart(byte[] payload) {
+        MicStart m = new MicStart();
+        Proto.Reader r = new Proto.Reader(payload);
+        while (r.next()) {
+            if (r.wire() != Proto.WIRE_VARINT) {
+                skip(r);
+                continue;
+            }
+            long v = r.varint();
+            if (r.field() == 2) {
+                m.sampleRate = (int) v;
+            } else if (r.field() == 3) {
+                m.channels = (int) v;
+            } else if (r.field() == 4) {
+                m.bits = (int) v;
+            }
+        }
+        return m;
+    }
+
+    public static byte[] micData(int sampleRate, int channels, int bits, byte[] pcm, int len) {
+        byte[] data = new byte[len];
+        System.arraycopy(pcm, 0, data, 0, len);
+        return new Proto.Writer()
+                .int32(1, MIC_DATA)
+                .int32(2, sampleRate)
+                .int32(3, channels)
+                .int32(4, bits)
+                .bool(5, false)      // aec_enable: the daemon's own AEC stays off; the HAL did its part
+                .int32(7, 0)         // delay_ms
+                .bytes(8, data)
+                .toBytes();
+    }
+
     // ---- environment -------------------------------------------------------------------------
     public static final int NIGHT_START = 0x705;
     public static final int NIGHT_STOP = 0x706;
