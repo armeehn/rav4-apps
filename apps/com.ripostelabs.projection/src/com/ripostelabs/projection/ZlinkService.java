@@ -23,13 +23,25 @@ import java.io.IOException;
  * Riposte OS 0.2 always has an app to talk to, and owns the decoders so a session outlives the
  * activity that shows it. {@link CarPlayActivity} binds for the surface and the touches.
  */
-public final class ZlinkService extends Service implements Bridge.Media {
+public final class ZlinkService extends Service implements Bridge.Media, Bridge.Session {
 
     private static final String TAG = "Projection";
     private static final String CHANNEL_ID = "projection";
     private static final int NOTIFICATION_ID = 1;
     private static final int AUDIO_CHANNEL_MEDIA = 0;
     private static final int PCM_BITS = 16;
+
+    /**
+     * The broadcast the OEM app sent and the launcher still listens for (device-reveng
+     * carlib/Zlink.kt): action, `status` and `phoneMode` extras, unpermissioned.
+     */
+    private static final String STATUS_ACTION = "com.zjinnova.zlink";
+    private static final String EXTRA_STATUS = "status";
+    private static final String EXTRA_PHONE_MODE = "phoneMode";
+    private static final String STATUS_CONNECTED = "CONNECTED";
+    private static final String STATUS_DISCONNECT = "DISCONNECT";
+    private static final String MODE_WIRELESS = "carplay_wireless";
+    private static final String MODE_WIRED = "carplay_wired";
 
     /** The SoC's USB role switch on this head unit (QCM6125 "trinket"), run by the daemon as root. */
     private static final String USB_MODE_NODE = "/sys/devices/platform/soc/4e00000.ssusb/mode";
@@ -59,6 +71,7 @@ public final class ZlinkService extends Service implements Bridge.Media {
         bridge.setMedia(this);
         wireless = new CarPlayWireless(this, bridge);
         bridge.setWireless(wireless);
+        bridge.setSession(this);
         try {
             bridge.start();
         } catch (IOException e) {
@@ -98,6 +111,18 @@ public final class ZlinkService extends Service implements Bridge.Media {
 
     void setSurface(Surface surface) {
         videoSink.setSurface(surface);
+    }
+
+    // ---- Bridge.Session ----------------------------------------------------------------------
+
+    @Override
+    public void onSession(boolean up, int linkType) {
+        Intent i = new Intent(STATUS_ACTION)
+                .putExtra(EXTRA_STATUS, up ? STATUS_CONNECTED : STATUS_DISCONNECT)
+                .putExtra(EXTRA_PHONE_MODE, linkType == Messages.LINK_TYPE_WIRELESS_CARPLAY ? MODE_WIRELESS : MODE_WIRED)
+                .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+        sendBroadcast(i);
+        Log.i(TAG, "zlink: session " + (up ? "up" : "down") + ", launcher told");
     }
 
     // ---- Bridge.Media ------------------------------------------------------------------------

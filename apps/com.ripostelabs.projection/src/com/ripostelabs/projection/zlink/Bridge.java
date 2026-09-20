@@ -50,6 +50,11 @@ public final class Bridge implements FoxServer.Listener {
         void onAudio(byte[] data, int off, int len);
     }
 
+    /** Session edges for whoever tells the rest of the unit; main thread. */
+    public interface Session {
+        void onSession(boolean up, int linkType);
+    }
+
     /** The wireless bootstrap, on the reader threads: the hotspot and the phone's RFCOMM link. */
     public interface Wireless {
         /** The daemon wants the access point; answer with {@link #apUp} once it is up. */
@@ -76,6 +81,8 @@ public final class Bridge implements FoxServer.Listener {
     private volatile Screen screen;
     private volatile Media media;
     private volatile Wireless wireless;
+    private volatile Session session;
+    private boolean sessionUp;
     private volatile String btLocalMac;
     private volatile String btService;
     private int videoFramesLogged;
@@ -99,6 +106,10 @@ public final class Bridge implements FoxServer.Listener {
 
     public void setWireless(Wireless w) {
         wireless = w;
+    }
+
+    public void setSession(Session s) {
+        session = s;
     }
 
     public void start() throws IOException {
@@ -191,6 +202,13 @@ public final class Bridge implements FoxServer.Listener {
     public void onClosed(FoxServer server) {
         status(server.name + " link down");
         if (server == control) {
+            if (sessionUp) {
+                sessionUp = false;
+                final Session l = session;
+                if (l != null) {
+                    main.post(() -> l.onSession(false, 0));
+                }
+            }
             state = 0;
             videoFramesLogged = 0;
             audioFramesLogged = 0;
@@ -274,6 +292,14 @@ public final class Bridge implements FoxServer.Listener {
         final Screen s = screen;
         if (s != null) {
             main.post(() -> s.onSessionState(newState, linkType));
+        }
+        boolean up = newState == Messages.STATE_SESSION;
+        if (up != sessionUp) {
+            sessionUp = up;
+            final Session l = session;
+            if (l != null) {
+                main.post(() -> l.onSession(up, linkType));
+            }
         }
     }
 
