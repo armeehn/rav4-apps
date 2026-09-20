@@ -41,6 +41,10 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
                 service.setSurface(video.getHolder().getSurface());
             }
             onStatus(service.bridge().isDaemonUp() ? "daemon linked" : "waiting for the daemon");
+            // A screen that returns mid-session has the picture already; no strip over it.
+            if (service.bridge().state() == Messages.STATE_SESSION) {
+                status.setVisibility(View.GONE);
+            }
         }
 
         @Override
