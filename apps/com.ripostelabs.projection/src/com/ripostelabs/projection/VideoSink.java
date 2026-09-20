@@ -35,6 +35,10 @@ final class VideoSink {
     private Surface surface;
     private int dropped;
     private int fed;
+    /** Bench aid: with the property set, every access unit is appended to this file as well. */
+    private static final String DUMP_PROP = "riposte.video.dump";
+    private static final String DUMP_PATH = "/data/local/tmp/carplay.h264";
+    private java.io.FileOutputStream dump;
     private static volatile int rendered;
     private static final int REPORT_EVERY = 10;
 
@@ -94,7 +98,14 @@ final class VideoSink {
             codec = null;
             return;
         }
-        Log.i(TAG, "video: decoder up at " + width + "x" + height + ", " + pending.size() + " held units");
+        Log.i(TAG, "video: decoder " + codec.getName() + " up at " + width + "x" + height + ", " + pending.size() + " held units");
+        if ("1".equals(SystemProps.get(DUMP_PROP))) {
+            try {
+                dump = new java.io.FileOutputStream(DUMP_PATH);
+            } catch (IOException e) {
+                Log.w(TAG, "video: no dump: " + e.getMessage());
+            }
+        }
 
         while (!pending.isEmpty()) {
             byte[] unit = pending.pollFirst();
@@ -122,6 +133,13 @@ final class VideoSink {
     }
 
     private void push(byte[] data, int off, int len, long timestampUs) {
+        if (dump != null) {
+            try {
+                dump.write(data, off, len);
+            } catch (IOException ignored) {
+                // bench aid only
+            }
+        }
         try {
             int index = codec.dequeueInputBuffer(INPUT_WAIT_US);
             if (index < 0) {
