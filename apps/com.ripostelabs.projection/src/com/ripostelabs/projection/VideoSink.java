@@ -1,6 +1,7 @@
 package com.ripostelabs.projection;
 
 import android.media.MediaCodec;
+import android.graphics.SurfaceTexture;
 import android.media.MediaFormat;
 import android.util.Log;
 import android.view.Surface;
@@ -24,6 +25,7 @@ final class VideoSink {
     private static final String TAG = "Projection";
     private static final String MIME = "video/avc";
     private static final int PENDING_LIMIT = 64;
+    private static final int OFFSCREEN_TEXTURE_NAME = 0;
     private static final int START_CODE_LEN = 4;
     private static final int NAL_TYPE_MASK = 0x1f;
     private static final int NAL_IDR = 5;
@@ -57,25 +59,42 @@ final class VideoSink {
         onStarved = r;
     }
 
+    /**
+     * The screen's surface, or null while it is away. The decoder never stops for that: it
+     * keeps decoding onto an off-screen surface and is only re-pointed, so the picture is whole
+     * the moment the screen comes back and no key frame has to be asked for.
+     */
     synchronized void setSurface(Surface s) {
         surface = s;
-        if (surface == null) {
-            stop();
+        if (codec == null) {
             return;
         }
-        if (width > 0) {
-            start();
+        try {
+            codec.setOutputSurface(s != null ? s : offscreen());
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            Log.w(TAG, "video: output surface switch failed: " + e);
         }
     }
 
-    /** The phone told us the stream size; the decoder starts once a surface exists too. */
+    /** The phone told us the stream size; the decoder starts right away, screen or not. */
     synchronized void configure(int w, int h) {
         stop();
         width = w;
         height = h;
-        if (surface != null) {
-            start();
+        start();
+    }
+
+    private SurfaceTexture offscreenTexture;
+    private Surface offscreenSurface;
+
+    /** A surface nobody looks at, for the frames decoded while the screen is away. */
+    private Surface offscreen() {
+        if (offscreenSurface == null) {
+            offscreenTexture = new SurfaceTexture(OFFSCREEN_TEXTURE_NAME);
+            offscreenTexture.setDefaultBufferSize(width, height);
+            offscreenSurface = new Surface(offscreenTexture);
         }
+        return offscreenSurface;
     }
 
     synchronized void feed(byte[] data, int off, int len, long timestampUs) {
@@ -100,13 +119,19 @@ final class VideoSink {
             codec.release();
             codec = null;
         }
+        if (offscreenSurface != null) {
+            offscreenSurface.release();
+            offscreenTexture.release();
+            offscreenSurface = null;
+            offscreenTexture = null;
+        }
     }
 
     private void start() {
         try {
             codec = MediaCodec.createDecoderByType(MIME);
             MediaFormat format = MediaFormat.createVideoFormat(MIME, width, height);
-            codec.configure(format, surface, null, 0);
+            codec.configure(format, surface != null ? surface : offscreen(), null, 0);
             codec.start();
         } catch (IOException | IllegalStateException | IllegalArgumentException e) {
             Log.e(TAG, "video: decoder failed to start: " + e);
