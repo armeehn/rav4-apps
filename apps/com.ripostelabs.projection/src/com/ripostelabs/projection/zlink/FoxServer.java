@@ -8,6 +8,8 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * One localhost server the daemon dials: accepts a connection, hands every frame to the
@@ -32,10 +34,11 @@ final class FoxServer {
     final String name;
     private final int port;
     private final Listener listener;
+    private final BlockingQueue<byte[]> outbox = new LinkedBlockingQueue<>();
     private ServerSocket server;
-    private Socket client;
-    private OutputStream out;
+    private volatile Socket client;
     private Thread acceptor;
+    private Thread writer;
     private volatile boolean running;
 
     FoxServer(String name, int port, Listener listener) {
@@ -73,23 +76,32 @@ final class FoxServer {
         return client != null;
     }
 
-    /** Frames go out whole and in order; a failed write drops the link so the daemon redials. */
+    /**
+     * Frames go out whole and in order from the writer thread, so a caller on the main thread
+     * (a hotspot callback, a touch) never touches the socket. Nothing queued survives a link
+     * drop: the daemon redials and starts its session over.
+     */
     void send(int id, byte[] payload) {
-        OutputStream o;
-        synchronized (this) {
-            o = out;
-        }
-        if (o == null) {
+        if (client == null) {
             return;
         }
+        outbox.offer(Fox.encode(id, payload));
+    }
+
+    private void writeLoop(Socket s) {
+        OutputStream o;
         try {
-            synchronized (o) {
-                o.write(Fox.encode(id, payload));
+            o = s.getOutputStream();
+            while (true) {
+                byte[] frame = outbox.take();
+                o.write(frame);
                 o.flush();
             }
         } catch (IOException e) {
             Log.w(TAG, name + ": write failed: " + e.getMessage());
             closeClient();
+        } catch (InterruptedException ignored) {
+            // link closed under us
         }
     }
 
@@ -117,7 +129,9 @@ final class FoxServer {
             synchronized (this) {
                 closeClient();
                 client = s;
-                out = s.getOutputStream();
+                outbox.clear();
+                writer = new Thread(() -> writeLoop(s), "fox-" + name + "-out");
+                writer.start();
             }
         } catch (IOException e) {
             Log.w(TAG, name + ": client setup failed: " + e.getMessage());
@@ -155,6 +169,10 @@ final class FoxServer {
             // already gone
         }
         client = null;
-        out = null;
+        if (writer != null) {
+            writer.interrupt();
+            writer = null;
+        }
+        outbox.clear();
     }
 }
