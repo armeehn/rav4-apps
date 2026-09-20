@@ -34,6 +34,9 @@ final class VideoSink {
     private int height;
     private Surface surface;
     private int dropped;
+    private int fed;
+    private static volatile int rendered;
+    private static final int REPORT_EVERY = 100;
 
     synchronized void setSurface(Surface s) {
         surface = s;
@@ -134,6 +137,10 @@ final class VideoSink {
             buf.clear();
             buf.put(data, off, len);
             codec.queueInputBuffer(index, 0, len, timestampUs, 0);
+            fed++;
+            if (fed % REPORT_EVERY == 0) {
+                Log.i(TAG, "video: fed " + fed + " rendered " + rendered + " dropped " + dropped);
+            }
         } catch (IllegalStateException e) {
             Log.w(TAG, "video: decoder rejected input: " + e);
         }
@@ -147,6 +154,9 @@ final class VideoSink {
                 int index = running.dequeueOutputBuffer(info, OUTPUT_WAIT_US);
                 if (index >= 0) {
                     running.releaseOutputBuffer(index, true);
+                    rendered++;
+                } else if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                    Log.i(TAG, "video: output format " + running.getOutputFormat());
                 }
             } catch (IllegalStateException e) {
                 return;
