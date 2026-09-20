@@ -40,12 +40,22 @@ final class VideoSink {
     private Surface surface;
     private int dropped;
     private int fed;
+    /** Units fed with no output since the last render; past the limit the sink asks for a picture. */
+    private int starved;
+    private int renderedSeen;
+    private static final int STARVE_LIMIT = 30;
+    private Runnable onStarved;
     /** Bench aid: with the property set, every access unit is appended to this file as well. */
     private static final String DUMP_PROP = "riposte.video.dump";
     private static final String DUMP_PATH = "/data/data/com.ripostelabs.projection/files/carplay.h264";
     private java.io.FileOutputStream dump;
     private static volatile int rendered;
     private static final int REPORT_EVERY = 10;
+
+    /** Called (on the feeding thread) when the decoder keeps eating and shows nothing. */
+    void setOnStarved(Runnable r) {
+        onStarved = r;
+    }
 
     synchronized void setSurface(Surface s) {
         surface = s;
@@ -187,6 +197,16 @@ final class VideoSink {
             fed++;
             if (fed % REPORT_EVERY == 0) {
                 Log.i(TAG, "video: fed " + fed + " rendered " + rendered + " dropped " + dropped);
+            }
+            if (rendered != renderedSeen) {
+                renderedSeen = rendered;
+                starved = 0;
+            } else if (++starved >= STARVE_LIMIT) {
+                starved = 0;
+                Log.i(TAG, "video: no output for " + STARVE_LIMIT + " units, asking for a picture");
+                if (onStarved != null) {
+                    onStarved.run();
+                }
             }
         } catch (IllegalStateException e) {
             Log.w(TAG, "video: decoder rejected input: " + e);

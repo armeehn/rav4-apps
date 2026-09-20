@@ -171,6 +171,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         wireless = new CarPlayWireless(this, bridge);
         bridge.setWireless(wireless);
         bridge.setSession(this);
+        videoSink.setOnStarved(bridge::requestKeyFrame);
         citizen = MediaCitizen.attach(this, CITIZEN_TAG, transport);
         mic = new MicSource(this);
         registerReceiver(requests, new IntentFilter(STATUS_ACTION), Context.RECEIVER_EXPORTED);
