@@ -61,7 +61,7 @@ public final class Bridge implements FoxServer.Listener {
 
     private static final String TAG = "Projection";
     private static final int LOG_FIRST_FRAMES = 12;
-    private static final int HEAD_BYTES = 16;
+    private static final int HEAD_BYTES = 72;
     private static final byte[] ANNEX_B = {0, 0, 0, 1};
 
     private final Handler main = new Handler(Looper.getMainLooper());
