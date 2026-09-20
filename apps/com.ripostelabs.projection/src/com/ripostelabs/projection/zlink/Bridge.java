@@ -57,11 +57,14 @@ public final class Bridge implements FoxServer.Listener {
 
         /** Bytes the daemon wants written to the phone's RFCOMM socket. */
         void onBtDataToPhone(byte[] data);
+
+        /** The session moved to Wi-Fi; the RFCOMM link is no longer wanted. */
+        void onBtRelease();
     }
 
     private static final String TAG = "Projection";
     private static final int LOG_FIRST_FRAMES = 12;
-    private static final int HEAD_BYTES = 72;
+    private static final int HEAD_BYTES = 32;
     private static final byte[] ANNEX_B = {0, 0, 0, 1};
 
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -79,6 +82,8 @@ public final class Bridge implements FoxServer.Listener {
     private int audioFramesLogged;
     private int state;
     private long videoFrames;
+    private int videoWidth;
+    private int videoHeight;
 
     public Bridge(Messages.InitInfo init) {
         this.init = init;
@@ -189,6 +194,8 @@ public final class Bridge implements FoxServer.Listener {
             state = 0;
             videoFramesLogged = 0;
             audioFramesLogged = 0;
+            videoWidth = 0;
+            videoHeight = 0;
         }
     }
 
@@ -217,6 +224,12 @@ public final class Bridge implements FoxServer.Listener {
                 Wireless w = wireless;
                 if (w != null) {
                     w.onBtDataToPhone(f.payload);
+                }
+                return;
+            case Messages.BT_RELEASE:
+                Wireless r = wireless;
+                if (r != null) {
+                    r.onBtRelease();
                 }
                 return;
             default:
@@ -274,6 +287,23 @@ public final class Bridge implements FoxServer.Listener {
         if (m == null) {
             return;
         }
+        if (f.id == Messages.VIDEO_FRAME && f.payload.length > Messages.VIDEO_HEADER_LEN) {
+            int w = u32(f.payload, 0);
+            int h = u32(f.payload, 4);
+            if (w != videoWidth || h != videoHeight) {
+                videoWidth = w;
+                videoHeight = h;
+                m.onVideoSize(w, h);
+                final Screen s = screen;
+                if (s != null) {
+                    main.post(() -> s.onVideoSize(w, h));
+                }
+            }
+            videoFrames++;
+            m.onVideo(f.payload, Messages.VIDEO_HEADER_LEN, f.payload.length - Messages.VIDEO_HEADER_LEN,
+                    videoFrames * 1_000_000L / init.fps);
+            return;
+        }
         if (startsWith(f.payload, ANNEX_B)) {
             videoFrames++;
             m.onVideo(f.payload, 0, f.payload.length, videoFrames * 1_000_000L / init.fps);
@@ -324,6 +354,10 @@ public final class Bridge implements FoxServer.Listener {
             return null;
         }
         return new int[] {w, h};
+    }
+
+    private static int u32(byte[] b, int at) {
+        return ((b[at] & 0xff) << 24) | ((b[at + 1] & 0xff) << 16) | ((b[at + 2] & 0xff) << 8) | (b[at + 3] & 0xff);
     }
 
     private static boolean startsWith(byte[] b, byte[] prefix) {

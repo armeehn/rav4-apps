@@ -71,6 +71,8 @@ public final class Messages {
      * detect). Empty bodies close the channel; never send one.
      */
     public static final int BT_DATA = 0x604;
+    /** {@code <} empty: the session moved to Wi-Fi, the RFCOMM link may go. */
+    public static final int BT_RELEASE = 0x605;
     /** {@code >} the RFCOMM link closed. */
     public static final int BT_DISCONNECTED = 0x606;
 
@@ -89,8 +91,21 @@ public final class Messages {
     public static final int MFI_INFO_REQUEST = 0x114;
     /** {@code <} is_fake (2), mfi_uuid (3). is_fake=0 on this unit: the chip is genuine. */
     public static final int MFI_INFO = 0x115;
+    /** {@code <} empty, once per session; the session runs without an answer. */
+    public static final int HANDSHAKE_REQUEST = 0x116;
     /** {@code >} the answer to a challenge the daemon sends; unverified so far. */
     public static final int HANDSHAKE_RESPOND = 0x117;
+    /** SessionState 4: the phone's session is up and media flows. */
+    public static final int STATE_SESSION = 4;
+
+    // ---- video channel -----------------------------------------------------------------------
+    /**
+     * Every video frame: a 24-byte raw header, then one Annex-B H.264 access unit. The header
+     * is six big-endian u32: width, height, available width, available height, two zeros
+     * (bench capture 2026-09-20: {@code 00000780 000002d0 00000780 000002d0 0 0 | 00000001 25…}).
+     */
+    public static final int VIDEO_FRAME = 0x302;
+    public static final int VIDEO_HEADER_LEN = 24;
 
     // ---- environment -------------------------------------------------------------------------
     public static final int NIGHT_START = 0x705;

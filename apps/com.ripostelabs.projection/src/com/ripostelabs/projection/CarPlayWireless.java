@@ -210,6 +210,11 @@ final class CarPlayWireless implements Bridge.Wireless {
         }
     }
 
+    @Override
+    public void onBtRelease() {
+        dropPhone("session on Wi-Fi, daemon released the link");
+    }
+
     private String localMac() {
         // The adapter's own address is hidden from apps since Android 6; the daemon only echoes
         // it into an Android Auto field, so a placeholder costs CarPlay nothing.
