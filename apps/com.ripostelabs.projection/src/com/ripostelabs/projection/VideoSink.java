@@ -24,6 +24,11 @@ final class VideoSink {
     private static final String TAG = "Projection";
     private static final String MIME = "video/avc";
     private static final int PENDING_LIMIT = 64;
+    private static final int START_CODE_LEN = 4;
+    private static final int NAL_TYPE_MASK = 0x1f;
+    private static final int NAL_IDR = 5;
+    private static final int NAL_SPS = 7;
+    private static final int NAL_PPS = 8;
     private static final long INPUT_WAIT_US = 20_000;
     private static final long OUTPUT_WAIT_US = 10_000;
 
@@ -122,14 +127,31 @@ final class VideoSink {
         drain.start();
     }
 
+    /**
+     * A key frame makes everything before it dead weight: start the held run over from it,
+     * so the decoder that comes up later opens on a picture instead of waiting for the next
+     * one (the phone sends key frames only on request).
+     */
     private void hold(byte[] data, int off, int len) {
-        if (pending.size() >= PENDING_LIMIT) {
+        if (isKeyFrame(data, off, len)) {
+            dropped += pending.size();
+            pending.clear();
+        } else if (pending.size() >= PENDING_LIMIT) {
             pending.pollFirst();
             dropped++;
         }
         byte[] copy = new byte[len];
         System.arraycopy(data, off, copy, 0, len);
         pending.addLast(copy);
+    }
+
+    /** Annex-B unit whose first NAL is an IDR slice (type 5) or a parameter set (7, 8). */
+    private static boolean isKeyFrame(byte[] data, int off, int len) {
+        if (len < START_CODE_LEN + 1) {
+            return false;
+        }
+        int type = data[off + START_CODE_LEN] & NAL_TYPE_MASK;
+        return type == NAL_IDR || type == NAL_SPS || type == NAL_PPS;
     }
 
     private void push(byte[] data, int off, int len, long timestampUs) {

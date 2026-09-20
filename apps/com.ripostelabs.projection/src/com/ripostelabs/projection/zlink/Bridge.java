@@ -293,6 +293,10 @@ public final class Bridge implements FoxServer.Listener {
                     w.onApInfoRequested();
                 }
                 return;
+            case Messages.MIC_START:
+            case Messages.MIC_STOP:
+                onMicMessage(f);
+                return;
             case Messages.CALL_STATE:
                 final Messages.CallState c = Messages.callState(f.payload);
                 final Session l = session;
@@ -373,26 +377,33 @@ public final class Bridge implements FoxServer.Listener {
         }
     }
 
+    /** Mic start and stop: seen on the control channel; the data goes back on the audio one. */
+    private boolean onMicMessage(Fox.Frame f) {
+        if (f.id != Messages.MIC_START && f.id != Messages.MIC_STOP) {
+            return false;
+        }
+        final Session sl = session;
+        if (sl == null) {
+            return true;
+        }
+        if (f.id == Messages.MIC_START) {
+            final Messages.MicStart ms = Messages.micStart(f.payload);
+            status("mic start " + ms.sampleRate + " Hz x" + ms.channels + " " + ms.bits + " bit");
+            main.post(() -> sl.onMic(ms));
+        } else {
+            status("mic stop");
+            main.post(sl::onMicStop);
+        }
+        return true;
+    }
+
     private void onAudioFrame(Fox.Frame f) {
         if (audioFramesLogged < LOG_FIRST_FRAMES) {
             audioFramesLogged++;
             Log.i(TAG, "audio id=0x" + Integer.toHexString(f.id) + " len=" + f.payload.length
                     + " head=" + hex(f.payload, HEAD_BYTES));
         }
-        // The microphone lives on this channel too: the daemon asks and stops here.
-        if (f.id == Messages.MIC_START || f.id == Messages.MIC_STOP) {
-            final Session sl = session;
-            if (sl == null) {
-                return;
-            }
-            if (f.id == Messages.MIC_START) {
-                final Messages.MicStart ms = Messages.micStart(f.payload);
-                status("mic start " + ms.sampleRate + " Hz x" + ms.channels + " " + ms.bits + " bit");
-                main.post(() -> sl.onMic(ms));
-            } else {
-                status("mic stop");
-                main.post(sl::onMicStop);
-            }
+        if (onMicMessage(f)) {
             return;
         }
         Media m = media;
