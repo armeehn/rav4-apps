@@ -153,4 +153,9 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
     public void onVideoSize(int width, int height) {
         status.setVisibility(View.GONE);
     }
+
+    @Override
+    public void onLeave() {
+        moveTaskToBack(true);
+    }
 }

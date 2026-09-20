@@ -179,6 +179,9 @@ public final class Messages {
                 .toBytes();
     }
 
+    /** {@code <} empty: the driver tapped CarPlay's "back to the car" button. */
+    public static final int LEAVE_TO_CAR = 0x501;
+
     // ---- environment -------------------------------------------------------------------------
     public static final int NIGHT_START = 0x705;
     public static final int NIGHT_STOP = 0x706;

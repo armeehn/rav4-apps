@@ -37,6 +37,9 @@ public final class Bridge implements FoxServer.Listener {
         void onSessionState(int state, int linkType);
 
         void onVideoSize(int width, int height);
+
+        /** The driver asked for the car's own screen; step back behind the launcher. */
+        void onLeave();
     }
 
     /** Media consumers, on the reader threads. */
@@ -307,6 +310,12 @@ public final class Bridge implements FoxServer.Listener {
             case Messages.MIC_START:
             case Messages.MIC_STOP:
                 onMicMessage(f);
+                return;
+            case Messages.LEAVE_TO_CAR:
+                final Screen sc = screen;
+                if (sc != null) {
+                    main.post(sc::onLeave);
+                }
                 return;
             case Messages.CALL_STATE:
                 final Messages.CallState c = Messages.callState(f.payload);
