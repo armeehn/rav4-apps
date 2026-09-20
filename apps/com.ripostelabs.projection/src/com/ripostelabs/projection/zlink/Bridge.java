@@ -174,6 +174,16 @@ public final class Bridge implements FoxServer.Listener {
         control.send(Messages.STOP, Messages.idOnly(Messages.STOP));
     }
 
+    /**
+     * The screen (re)appeared: ask for a fresh picture. The phone sends key frames only on
+     * request, and the daemon's resize path restarts the stream; same geometry, so nothing
+     * else changes. Which message the daemon honours is being settled on the bench.
+     */
+    public void requestKeyFrame() {
+        control.send(Messages.VIDEO_RESIZE, Messages.videoResize(init.width, init.height, init.aaDensity));
+        status("key frame requested");
+    }
+
     /** Bench aid: any frame on any channel, from a debug broadcast. */
     public void debugSend(String channel, int id, byte[] payload) {
         FoxServer target = "audio".equals(channel) ? audio : "video".equals(channel) ? video

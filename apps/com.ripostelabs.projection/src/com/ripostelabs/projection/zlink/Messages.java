@@ -269,6 +269,12 @@ public final class Messages {
         return new Proto.Writer().int32(1, AP_STATE).int32(2, 1).bool(3, up).toBytes();
     }
 
+    /** {@code zj.control.resize}: res_index (2), width (3), height (4), aa_density (5). */
+    public static byte[] videoResize(int width, int height, int aaDensity) {
+        return new Proto.Writer().int32(1, VIDEO_RESIZE).int32(2, 0).int32(3, width).int32(4, height)
+                .int32(5, aaDensity).toBytes();
+    }
+
     public static byte[] idOnly(int id) {
         return new Proto.Writer().int32(1, id).toBytes();
     }

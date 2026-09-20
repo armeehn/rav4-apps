@@ -83,6 +83,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     private final BroadcastReceiver debugSend = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.i(TAG, "debug: broadcast " + intent.getExtras());
             if (!"1".equals(SystemProps.get(DEBUG_PROP))) {
                 return;
             }
@@ -222,6 +223,9 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
 
     void setSurface(Surface surface) {
         videoSink.setSurface(surface);
+        if (surface != null && bridge.state() == Messages.STATE_SESSION) {
+            bridge.requestKeyFrame();
+        }
     }
 
     // ---- Bridge.Session ----------------------------------------------------------------------
