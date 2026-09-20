@@ -12,6 +12,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.view.Surface;
 
+import com.ripostelabs.design.MediaCitizen;
 import com.ripostelabs.projection.aa.Messages.AudioConfig;
 import com.ripostelabs.projection.zlink.Bridge;
 import com.ripostelabs.projection.zlink.Messages;
@@ -42,6 +43,11 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     private static final String STATUS_DISCONNECT = "DISCONNECT";
     private static final String MODE_WIRELESS = "carplay_wireless";
     private static final String MODE_WIRED = "carplay_wired";
+    /** Android media key codes; the OEM gateway forwarded these raw to the daemon in mode 32. */
+    private static final int KEY_PLAY_PAUSE = 85;
+    private static final int KEY_NEXT = 87;
+    private static final int KEY_PREVIOUS = 88;
+    private static final String CITIZEN_TAG = "carplay";
 
     /** The SoC's USB role switch on this head unit (QCM6125 "trinket"), run by the daemon as root. */
     private static final String USB_MODE_NODE = "/sys/devices/platform/soc/4e00000.ssusb/mode";
@@ -57,6 +63,41 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     private final AudioSink audioSink = new AudioSink(AUDIO_CHANNEL_MEDIA);
     private Bridge bridge;
     private CarPlayWireless wireless;
+    private MediaCitizen citizen;
+    private boolean hasFocus;
+
+    /** The wheel's media keys and the launcher's card act on the phone through the daemon. */
+    private final MediaCitizen.Transport transport = new MediaCitizen.Transport() {
+        @Override
+        public void onPlay() {
+            tap(KEY_PLAY_PAUSE);
+        }
+
+        @Override
+        public void onPause() {
+            tap(KEY_PLAY_PAUSE);
+        }
+
+        @Override
+        public void onNext() {
+            tap(KEY_NEXT);
+        }
+
+        @Override
+        public void onPrevious() {
+            tap(KEY_PREVIOUS);
+        }
+
+        @Override
+        public void onStop() {
+            tap(KEY_PLAY_PAUSE);
+        }
+
+        @Override
+        public void onDuck(boolean duck) {
+            audioSink.setVolume(MediaCitizen.duckVolume(duck));
+        }
+    };
 
     @Override
     public void onCreate() {
@@ -72,6 +113,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         wireless = new CarPlayWireless(this, bridge);
         bridge.setWireless(wireless);
         bridge.setSession(this);
+        citizen = MediaCitizen.attach(this, CITIZEN_TAG, transport);
         try {
             bridge.start();
         } catch (IOException e) {
@@ -102,6 +144,10 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         }
         videoSink.stop();
         audioSink.stop();
+        if (citizen != null) {
+            citizen.releaseFocus();
+            citizen.release();
+        }
         super.onDestroy();
     }
 
@@ -123,6 +169,16 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
                 .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
         sendBroadcast(i);
         Log.i(TAG, "zlink: session " + (up ? "up" : "down") + ", launcher told");
+        if (!up && hasFocus) {
+            citizen.releaseFocus();
+            citizen.setIdle();
+            hasFocus = false;
+        }
+    }
+
+    private void tap(int keyCode) {
+        bridge.key(keyCode, true);
+        bridge.key(keyCode, false);
     }
 
     // ---- Bridge.Media ------------------------------------------------------------------------
@@ -140,6 +196,12 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     @Override
     public void onAudioFormat(int sampleRate, int channels) {
         audioSink.start(new AudioConfig(sampleRate, PCM_BITS, channels));
+        // Focus on the first audio of a session: the radio ducks, the launcher's card sees us.
+        if (!hasFocus) {
+            hasFocus = citizen.takeFocus(MediaCitizen.Focus.MEDIA);
+            citizen.setMetadata(getString(R.string.carplay_name), "", 0);
+            citizen.setState(true, 0);
+        }
     }
 
     @Override
