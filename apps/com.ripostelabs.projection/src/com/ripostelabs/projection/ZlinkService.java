@@ -5,7 +5,10 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.os.Binder;
 import android.os.Build;
@@ -39,6 +42,10 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
      */
     private static final String STATUS_ACTION = "com.zjinnova.zlink";
     private static final String EXTRA_STATUS = "status";
+    /** The launcher's wheel and tile requests: `command=REQ_SPEC_FUNC_CMD`, `specFuncCode=<n>`. */
+    private static final String EXTRA_COMMAND = "command";
+    private static final String COMMAND_SPEC_FUNC = "REQ_SPEC_FUNC_CMD";
+    private static final String EXTRA_SPEC_FUNC_CODE = "specFuncCode";
     private static final String EXTRA_PHONE_MODE = "phoneMode";
     private static final String STATUS_CONNECTED = "CONNECTED";
     private static final String STATUS_DISCONNECT = "DISCONNECT";
@@ -64,6 +71,24 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     }
 
     private final IBinder binder = new LocalBinder();
+
+    /**
+     * Requests from the launcher on the OEM app's own action. The daemon's key handler takes
+     * the launcher's codes as they are (1500 Siri, 1504 maps, 1505 phone, 1506 music, 1507
+     * now playing, 1508 home) next to Android's media key codes, so they pass straight through.
+     */
+    private final BroadcastReceiver requests = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!COMMAND_SPEC_FUNC.equals(intent.getStringExtra(EXTRA_COMMAND))) {
+                return;
+            }
+            int code = intent.getIntExtra(EXTRA_SPEC_FUNC_CODE, 0);
+            if (code > 0) {
+                tap(code);
+            }
+        }
+    };
     private final VideoSink videoSink = new VideoSink();
     private final AudioSink audioSink = new AudioSink(AUDIO_CHANNEL_MEDIA);
     private Bridge bridge;
@@ -124,6 +149,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         bridge.setSession(this);
         citizen = MediaCitizen.attach(this, CITIZEN_TAG, transport);
         mic = new MicSource(this);
+        registerReceiver(requests, new IntentFilter(STATUS_ACTION), Context.RECEIVER_EXPORTED);
         try {
             bridge.start();
         } catch (IOException e) {
@@ -146,6 +172,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
 
     @Override
     public void onDestroy() {
+        unregisterReceiver(requests);
         if (wireless != null) {
             wireless.stop();
         }
