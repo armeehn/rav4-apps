@@ -21,7 +21,7 @@ import java.util.Locale;
  *          ◀────────           ◀── InitInfo, heartbeat echo, touch, keys
  *   daemon ──1888──▶ video    ──▶ H.264 access units ──▶ VideoSink (MediaCodec on the surface)
  *   daemon ──1666──▶ audio    ──▶ PCM ──▶ AudioSink
- *   daemon ──1999──▶ bluetooth   (wireless bootstrap; accepted and ignored for now)
+ *   daemon ──1999──▶ bluetooth ◀─▶ the phone's RFCOMM bytes, relayed raw (wireless bootstrap)
  * </pre>
  *
  * <p>The audio and video payload layouts are still being learned on the bench: until the first
@@ -50,6 +50,15 @@ public final class Bridge implements FoxServer.Listener {
         void onAudio(byte[] data, int off, int len);
     }
 
+    /** The wireless bootstrap, on the reader threads: the hotspot and the phone's RFCOMM link. */
+    public interface Wireless {
+        /** The daemon wants the access point; answer with {@link #apUp} once it is up. */
+        void onApInfoRequested();
+
+        /** Bytes the daemon wants written to the phone's RFCOMM socket. */
+        void onBtDataToPhone(byte[] data);
+    }
+
     private static final String TAG = "Projection";
     private static final int LOG_FIRST_FRAMES = 12;
     private static final int HEAD_BYTES = 16;
@@ -63,6 +72,9 @@ public final class Bridge implements FoxServer.Listener {
     private final Messages.InitInfo init;
     private volatile Screen screen;
     private volatile Media media;
+    private volatile Wireless wireless;
+    private volatile String btLocalMac;
+    private volatile String btService;
     private int videoFramesLogged;
     private int audioFramesLogged;
     private int state;
@@ -78,6 +90,10 @@ public final class Bridge implements FoxServer.Listener {
 
     public void setMedia(Media m) {
         media = m;
+    }
+
+    public void setWireless(Wireless w) {
+        wireless = w;
     }
 
     public void start() throws IOException {
@@ -126,6 +142,39 @@ public final class Bridge implements FoxServer.Listener {
         control.send(Messages.STOP, Messages.idOnly(Messages.STOP));
     }
 
+    // ---- wireless bootstrap ------------------------------------------------------------------
+
+    /** The phone's RFCOMM link is open on the given service; the daemon takes it from here. */
+    public void btConnected(String localMac, String serviceHex) {
+        btLocalMac = localMac;
+        btService = serviceHex;
+        bluetooth.send(Messages.BT_INFO, Messages.btInfo(localMac, serviceHex, true));
+    }
+
+    /** Bytes the phone sent; an empty body would close the channel, so those are dropped. */
+    public void btData(byte[] data, int off, int len) {
+        if (len <= 0) {
+            return;
+        }
+        byte[] body = new byte[len];
+        System.arraycopy(data, off, body, 0, len);
+        bluetooth.send(Messages.BT_DATA, body);
+    }
+
+    public void btDisconnected() {
+        btService = null;
+        bluetooth.send(Messages.BT_DISCONNECTED, Messages.idOnly(Messages.BT_DISCONNECTED));
+    }
+
+    public void apUp(String ssid, String passphrase, int band, String iface) {
+        control.send(Messages.AP_STATE, Messages.apState(true));
+        control.send(Messages.AP_INFO, Messages.apInfo(ssid, passphrase, band, iface));
+    }
+
+    public void apDown() {
+        control.send(Messages.AP_STATE, Messages.apState(false));
+    }
+
     // ---- from the daemon ---------------------------------------------------------------------
 
     @Override
@@ -152,7 +201,26 @@ public final class Bridge implements FoxServer.Listener {
         } else if (server == audio) {
             onAudioFrame(f);
         } else {
-            Log.d(TAG, "bluetooth id=0x" + Integer.toHexString(f.id) + " len=" + f.payload.length);
+            onBluetooth(f);
+        }
+    }
+
+    private void onBluetooth(Fox.Frame f) {
+        switch (f.id) {
+            case Messages.BT_INFO_REQUEST:
+                // Answered once a phone link exists; before that there is nothing to say.
+                if (btService != null) {
+                    bluetooth.send(Messages.BT_INFO, Messages.btInfo(btLocalMac, btService, true));
+                }
+                return;
+            case Messages.BT_DATA_TO_PHONE:
+                Wireless w = wireless;
+                if (w != null) {
+                    w.onBtDataToPhone(f.payload);
+                }
+                return;
+            default:
+                Log.d(TAG, "bluetooth id=0x" + Integer.toHexString(f.id) + " len=" + f.payload.length);
         }
     }
 
@@ -170,6 +238,12 @@ public final class Bridge implements FoxServer.Listener {
                 return;
             case Messages.MFI_INFO:
                 status("mfi " + Messages.describe(f.payload));
+                return;
+            case Messages.AP_INFO_REQUEST:
+                Wireless w = wireless;
+                if (w != null) {
+                    w.onApInfoRequested();
+                }
                 return;
             default:
                 status(String.format(Locale.ROOT, "control 0x%x %s", f.id, Messages.describe(f.payload)));

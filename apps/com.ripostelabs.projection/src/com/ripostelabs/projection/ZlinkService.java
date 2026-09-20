@@ -44,6 +44,7 @@ public final class ZlinkService extends Service implements Bridge.Media {
     private final VideoSink videoSink = new VideoSink();
     private final AudioSink audioSink = new AudioSink(AUDIO_CHANNEL_MEDIA);
     private Bridge bridge;
+    private CarPlayWireless wireless;
 
     @Override
     public void onCreate() {
@@ -53,14 +54,19 @@ public final class ZlinkService extends Service implements Bridge.Media {
         Messages.InitInfo init = new Messages.InitInfo();
         init.otgToHost = "echo host > " + USB_MODE_NODE + ";";
         init.otgToDevice = "echo peripheral > " + USB_MODE_NODE + ";";
+        init.linkTypes = Messages.LINK_WIRED_CARPLAY | Messages.LINK_WIRELESS_CARPLAY;
         bridge = new Bridge(init);
         bridge.setMedia(this);
+        wireless = new CarPlayWireless(this, bridge);
+        bridge.setWireless(wireless);
         try {
             bridge.start();
         } catch (IOException e) {
             Log.e(TAG, "zlink bridge cannot listen: " + e.getMessage());
             stopSelf();
+            return;
         }
+        wireless.start();
     }
 
     @Override
@@ -75,6 +81,9 @@ public final class ZlinkService extends Service implements Bridge.Media {
 
     @Override
     public void onDestroy() {
+        if (wireless != null) {
+            wireless.stop();
+        }
         if (bridge != null) {
             bridge.stop();
         }

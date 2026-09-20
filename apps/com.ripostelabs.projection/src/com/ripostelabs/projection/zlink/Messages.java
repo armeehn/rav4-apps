@@ -32,10 +32,48 @@ public final class Messages {
 
     public static final int STATE_WAIT_INIT = 1;
     public static final int STATE_WAITING_LINK = 2;
+    /** A phone is on the way in over Bluetooth; the daemon now wants the access point. */
+    public static final int STATE_WIRELESS_CARPLAY = 3;
     public static final int STATE_STOPPED = 6;
 
-    /** InitInfo field 7: a bit set of transports to arm. Bit 0 printed as "wired carplay". */
+    /** InitInfo field 7, a bit set of transports to arm; the daemon prints each bit's name. */
     public static final int LINK_WIRED_CARPLAY = 1;
+    public static final int LINK_WIRELESS_CARPLAY = 2;
+    public static final int LINK_WIRED_AA = 4;
+    public static final int LINK_WIRELESS_AA = 8;
+
+    /** SessionState field 3 while a wireless CarPlay phone is linking. */
+    public static final int LINK_TYPE_WIRELESS_CARPLAY = 2;
+
+    // ---- wireless bootstrap (control channel) ------------------------------------------------
+    /** {@code <} empty, every 5 s until answered: the daemon wants the access point. */
+    public static final int AP_INFO_REQUEST = 0x607;
+    /** {@code >} ssid (2), passphrase (3), band (4), interface name (5). */
+    public static final int AP_INFO = 0x608;
+    /** {@code >} hotspot up or down: type (2), enabled (3). */
+    public static final int AP_STATE = 0x503;
+    /** AP_INFO band: the platform's WifiConfiguration.AP_BAND_* values, 2.4 GHz is 0. */
+    public static final int AP_BAND_2GHZ = 0;
+    public static final int AP_BAND_5GHZ = 1;
+
+    // ---- Bluetooth relay (its own channel, port 1999) ----------------------------------------
+    /** {@code <} empty, on connect: the daemon wants to know about the phone. */
+    public static final int BT_INFO_REQUEST = 0x602;
+    /**
+     * {@code >} local MAC (2), the matched service UUID as 32 uppercase hex digits (3), paired
+     * (4), pair mode (5), pair code (6). The CarPlay UUID here is what moves the session to
+     * {@link #STATE_WIRELESS_CARPLAY}; the daemon compares the string byte for byte.
+     */
+    public static final int BT_INFO = 0x603;
+    /** {@code >} raw RFCOMM bytes from the phone. Empty bodies close the channel; never send one. */
+    public static final int BT_DATA = 0x604;
+    /** {@code <} raw bytes for the phone (the daemon's iAP2 packets). */
+    public static final int BT_DATA_TO_PHONE = 0x605;
+    /** {@code >} the RFCOMM link closed. */
+    public static final int BT_DISCONNECTED = 0x606;
+
+    /** iAP2 over RFCOMM, as the daemon spells it (no dashes, uppercase). */
+    public static final String CARPLAY_BT_SERVICE = "00000000DECAFADEDECADEAFDECACAFE";
 
     // ---- input -------------------------------------------------------------------------------
     /** {@code >} x (2), y (3), is_down (4): panel pixels. */
@@ -112,6 +150,31 @@ public final class Messages {
 
     public static byte[] key(int keyCode, boolean down) {
         return new Proto.Writer().int32(1, KEY).int32(2, keyCode).bool(3, down).toBytes();
+    }
+
+    public static byte[] btInfo(String localMac, String serviceHex, boolean paired) {
+        return new Proto.Writer()
+                .int32(1, BT_INFO)
+                .string(2, localMac)
+                .string(3, serviceHex)
+                .bool(4, paired)
+                .int32(5, 0)
+                .string(6, "")
+                .toBytes();
+    }
+
+    public static byte[] apInfo(String ssid, String passphrase, int band, String iface) {
+        return new Proto.Writer()
+                .int32(1, AP_INFO)
+                .string(2, ssid)
+                .string(3, passphrase)
+                .int32(4, band)
+                .string(5, iface)
+                .toBytes();
+    }
+
+    public static byte[] apState(boolean up) {
+        return new Proto.Writer().int32(1, AP_STATE).int32(2, 1).bool(3, up).toBytes();
     }
 
     public static byte[] idOnly(int id) {
