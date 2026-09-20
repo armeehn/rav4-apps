@@ -27,6 +27,7 @@ final class FoxServer {
     private static final String TAG = "Projection";
     private static final int BACKLOG = 1;
     private static final int READ_BUF = 64 * 1024;
+    private static final String LOOPBACK_V4 = "127.0.0.1";
 
     final String name;
     private final int port;
@@ -47,7 +48,8 @@ final class FoxServer {
         if (running) {
             return;
         }
-        server = new ServerSocket(port, BACKLOG, InetAddress.getLoopbackAddress());
+        // The daemon dials 127.0.0.1; the platform's loopback default is ::1, which never sees it.
+        server = new ServerSocket(port, BACKLOG, InetAddress.getByName(LOOPBACK_V4));
         server.setReuseAddress(true);
         running = true;
         acceptor = new Thread(this::acceptLoop, "fox-" + name);
