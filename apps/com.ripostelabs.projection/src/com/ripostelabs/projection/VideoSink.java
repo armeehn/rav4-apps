@@ -37,7 +37,7 @@ final class VideoSink {
     private int fed;
     /** Bench aid: with the property set, every access unit is appended to this file as well. */
     private static final String DUMP_PROP = "riposte.video.dump";
-    private static final String DUMP_PATH = "/data/local/tmp/carplay.h264";
+    private static final String DUMP_PATH = "/data/data/com.ripostelabs.projection/files/carplay.h264";
     private java.io.FileOutputStream dump;
     private static volatile int rendered;
     private static final int REPORT_EVERY = 10;
