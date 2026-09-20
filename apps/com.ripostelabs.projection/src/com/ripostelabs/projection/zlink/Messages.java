@@ -117,6 +117,13 @@ public final class Messages {
     public static final int AUDIO_FRAME = 0x202;
     public static final int AUDIO_HEADER_LEN = 24;
 
+    /**
+     * {@code <} the phone's audio and call picture, as {@code phone_call_state}: call on (2),
+     * turn-by-turn (3), speech (4), main audio (5), alt audio (6). Seen idle as
+     * {@code 2=0 3=0 4=-1 5=0 6=0}.
+     */
+    public static final int CALL_STATE = 0x710;
+
     // ---- environment -------------------------------------------------------------------------
     public static final int NIGHT_START = 0x705;
     public static final int NIGHT_STOP = 0x706;
@@ -206,6 +213,33 @@ public final class Messages {
 
     public static byte[] idOnly(int id) {
         return new Proto.Writer().int32(1, id).toBytes();
+    }
+
+    /** A decoded {@link #CALL_STATE}. */
+    public static final class CallState {
+        public boolean callOn;
+        public boolean turnByTurn;
+        public boolean mainAudio;
+    }
+
+    public static CallState callState(byte[] payload) {
+        CallState c = new CallState();
+        Proto.Reader r = new Proto.Reader(payload);
+        while (r.next()) {
+            if (r.wire() != Proto.WIRE_VARINT) {
+                skip(r);
+                continue;
+            }
+            long v = r.varint();
+            if (r.field() == 2) {
+                c.callOn = v != 0;
+            } else if (r.field() == 3) {
+                c.turnByTurn = v != 0;
+            } else if (r.field() == 5) {
+                c.mainAudio = v != 0;
+            }
+        }
+        return c;
     }
 
     /** A decoded SessionState. */

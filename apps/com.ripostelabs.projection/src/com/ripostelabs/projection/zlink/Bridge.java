@@ -53,6 +53,9 @@ public final class Bridge implements FoxServer.Listener {
     /** Session edges for whoever tells the rest of the unit; main thread. */
     public interface Session {
         void onSession(boolean up, int linkType);
+
+        /** The phone's call picture changed. */
+        void onCallState(Messages.CallState state);
     }
 
     /** The wireless bootstrap, on the reader threads: the hotspot and the phone's RFCOMM link. */
@@ -278,6 +281,13 @@ public final class Bridge implements FoxServer.Listener {
                 Wireless w = wireless;
                 if (w != null) {
                     w.onApInfoRequested();
+                }
+                return;
+            case Messages.CALL_STATE:
+                final Messages.CallState c = Messages.callState(f.payload);
+                final Session l = session;
+                if (l != null) {
+                    main.post(() -> l.onCallState(c));
                 }
                 return;
             default:
