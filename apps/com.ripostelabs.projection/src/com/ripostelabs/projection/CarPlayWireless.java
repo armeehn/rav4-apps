@@ -57,6 +57,11 @@ final class CarPlayWireless implements Bridge.Wireless {
     private static final String PROP_AP_KEY = "riposte.ap.psk";
     private static final String PROP_AP_IFACE = "riposte.ap.iface";
     private static final String DEFAULT_AP_IFACE = "wlan1";
+    /** Bench aid: with the property set, the RFCOMM bytes are recorded, one file per direction. */
+    private static final String DUMP_PROP = "riposte.bt.dump";
+    private static final String DUMP_DIR = "/data/data/com.ripostelabs.projection/files/";
+    private java.io.FileOutputStream dumpIn;
+    private java.io.FileOutputStream dumpOut;
 
     private final Context context;
     private final Bridge bridge;
@@ -165,11 +170,13 @@ final class CarPlayWireless implements Bridge.Wireless {
         }
         bridge.btConnected(localMac(), Messages.CARPLAY_BT_SERVICE);
         Log.i(TAG, "wireless: rfcomm open to " + device.getAddress());
+        openDumps();
 
         byte[] buf = new byte[READ_BUF];
         try {
             int n;
             while ((n = in.read(buf)) > 0) {
+                record(dumpIn, buf, n);
                 bridge.btData(buf, 0, n);
             }
         } catch (IOException e) {
@@ -205,8 +212,33 @@ final class CarPlayWireless implements Bridge.Wireless {
         try {
             o.write(data);
             o.flush();
+            record(dumpOut, data, data.length);
         } catch (IOException e) {
             dropPhone("write to the phone failed: " + e.getMessage());
+        }
+    }
+
+    private void openDumps() {
+        if (!"1".equals(SystemProps.get(DUMP_PROP))) {
+            return;
+        }
+        try {
+            dumpIn = new java.io.FileOutputStream(DUMP_DIR + "iap2-from-phone.bin");
+            dumpOut = new java.io.FileOutputStream(DUMP_DIR + "iap2-to-phone.bin");
+        } catch (IOException e) {
+            Log.w(TAG, "wireless: no bt dump: " + e.getMessage());
+        }
+    }
+
+    private static void record(java.io.FileOutputStream f, byte[] data, int len) {
+        if (f == null) {
+            return;
+        }
+        try {
+            f.write(data, 0, len);
+            f.flush();
+        } catch (IOException ignored) {
+            // bench aid only
         }
     }
 
