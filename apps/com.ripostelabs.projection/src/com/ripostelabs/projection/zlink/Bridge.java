@@ -213,7 +213,7 @@ public final class Bridge implements FoxServer.Listener {
                     bluetooth.send(Messages.BT_INFO, Messages.btInfo(btLocalMac, btService, true));
                 }
                 return;
-            case Messages.BT_DATA_TO_PHONE:
+            case Messages.BT_DATA:
                 Wireless w = wireless;
                 if (w != null) {
                     w.onBtDataToPhone(f.payload);

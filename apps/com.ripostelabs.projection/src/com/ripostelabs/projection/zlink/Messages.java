@@ -65,10 +65,12 @@ public final class Messages {
      * {@link #STATE_WIRELESS_CARPLAY}; the daemon compares the string byte for byte.
      */
     public static final int BT_INFO = 0x603;
-    /** {@code >} raw RFCOMM bytes from the phone. Empty bodies close the channel; never send one. */
+    /**
+     * Both ways: raw RFCOMM bytes. From the phone as {@code >}, and the daemon's own iAP2
+     * packets for the phone as {@code <} under the same id (its first one is the six-byte link
+     * detect). Empty bodies close the channel; never send one.
+     */
     public static final int BT_DATA = 0x604;
-    /** {@code <} raw bytes for the phone (the daemon's iAP2 packets). */
-    public static final int BT_DATA_TO_PHONE = 0x605;
     /** {@code >} the RFCOMM link closed. */
     public static final int BT_DISCONNECTED = 0x606;
 
