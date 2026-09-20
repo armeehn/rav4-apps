@@ -77,6 +77,29 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
      * the launcher's codes as they are (1500 Siri, 1504 maps, 1505 phone, 1506 music, 1507
      * now playing, 1508 home) next to Android's media key codes, so they pass straight through.
      */
+    /** Bench aid, only with riposte.debug=1: `am broadcast -a com.ripostelabs.projection.SEND --es channel ctrl --ei id 0x203 --es hex 08830410 01`. */
+    private static final String DEBUG_ACTION = "com.ripostelabs.projection.SEND";
+    private static final String DEBUG_PROP = "riposte.debug";
+    private final BroadcastReceiver debugSend = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!"1".equals(SystemProps.get(DEBUG_PROP))) {
+                return;
+            }
+            String hex = intent.getStringExtra("hex");
+            byte[] payload = hex == null ? new byte[0] : unhex(hex.replace(" ", ""));
+            bridge.debugSend(intent.getStringExtra("channel"), intent.getIntExtra("id", 0), payload);
+        }
+    };
+
+    private static byte[] unhex(String h) {
+        byte[] out = new byte[h.length() / 2];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = (byte) Integer.parseInt(h.substring(2 * i, 2 * i + 2), 16);
+        }
+        return out;
+    }
+
     private final BroadcastReceiver requests = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -150,6 +173,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         citizen = MediaCitizen.attach(this, CITIZEN_TAG, transport);
         mic = new MicSource(this);
         registerReceiver(requests, new IntentFilter(STATUS_ACTION), Context.RECEIVER_EXPORTED);
+        registerReceiver(debugSend, new IntentFilter(DEBUG_ACTION), Context.RECEIVER_EXPORTED);
         try {
             bridge.start();
         } catch (IOException e) {
@@ -173,6 +197,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     @Override
     public void onDestroy() {
         unregisterReceiver(requests);
+        unregisterReceiver(debugSend);
         if (wireless != null) {
             wireless.stop();
         }

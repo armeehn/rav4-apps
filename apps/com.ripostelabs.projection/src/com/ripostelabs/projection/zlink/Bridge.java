@@ -79,6 +79,9 @@ public final class Bridge implements FoxServer.Listener {
     private static final int LOG_FIRST_FRAMES = 12;
     private static final int HEAD_BYTES = 32;
     private static final byte[] ANNEX_B = {0, 0, 0, 1};
+    private static final int NAL_TYPE_MASK = 0x1f;
+    private static final int NAL_IDR = 5;
+    private static final int NAL_SPS = 7;
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final FoxServer control = new FoxServer("control", Fox.PORT_CONTROL, this);
@@ -166,6 +169,14 @@ public final class Bridge implements FoxServer.Listener {
 
     public void stopSession() {
         control.send(Messages.STOP, Messages.idOnly(Messages.STOP));
+    }
+
+    /** Bench aid: any frame on any channel, from a debug broadcast. */
+    public void debugSend(String channel, int id, byte[] payload) {
+        FoxServer target = "audio".equals(channel) ? audio : "video".equals(channel) ? video
+                : "bt".equals(channel) ? bluetooth : control;
+        target.send(id, payload);
+        status("debug sent 0x" + Integer.toHexString(id) + " on " + target.name);
     }
 
     /** One frame of cabin microphone PCM, in the format the daemon asked for. */
@@ -354,6 +365,10 @@ public final class Bridge implements FoxServer.Listener {
                 }
             }
             videoFrames++;
+            int nal = f.payload[Messages.VIDEO_HEADER_LEN + ANNEX_B.length] & NAL_TYPE_MASK;
+            if (nal == NAL_IDR || nal == NAL_SPS) {
+                Log.i(TAG, "video: key frame (nal " + nal + ") at unit " + videoFrames);
+            }
             m.onVideo(f.payload, Messages.VIDEO_HEADER_LEN, f.payload.length - Messages.VIDEO_HEADER_LEN,
                     videoFrames * 1_000_000L / init.fps);
             return;
