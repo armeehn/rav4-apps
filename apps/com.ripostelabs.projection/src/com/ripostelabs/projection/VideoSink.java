@@ -36,7 +36,7 @@ final class VideoSink {
     private int dropped;
     private int fed;
     private static volatile int rendered;
-    private static final int REPORT_EVERY = 100;
+    private static final int REPORT_EVERY = 10;
 
     synchronized void setSurface(Surface s) {
         surface = s;
