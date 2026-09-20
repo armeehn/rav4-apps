@@ -187,3 +187,32 @@ phone's certificate and neither carries a CA for it; this does the same.
   `ZLINK_REWRITE.md` in device-reveng recovering how the OEM app reaches it.
 - Also missing: microphone (AV input channel), steering-wheel keys as button
   events, Bluetooth channel for hands-free pairing, night mode from the car.
+
+## CarPlay on Riposte OS 0.2 (through the OEM daemon)
+
+The OEM projection daemon (`zlink5`, a root init service on the stock kernel) does the whole
+CarPlay job: iAP2, the MFi authentication chip on i2c, AirPlay. Its own app cannot run on the
+GSI base (vendor platform key), and it needs an app for six things. This package is that app,
+in `src/.../zlink/` plus `ZlinkService`, `CarPlayActivity` and `CarPlayWireless`:
+
+```
+ daemon ──1777──▶ control   session state, InitInfo, MFi, touch, keys, AP request   (protobuf)
+ daemon ──1888──▶ video     0x302: 20-byte header + Annex-B H.264 ──▶ MediaCodec on a SurfaceView
+ daemon ──1666──▶ audio     0x202: 24-byte header + PCM ──▶ AudioTrack behind MediaCitizen
+ daemon ◀─1999──▶ bluetooth the iPhone's iAP2 RFCOMM bytes, relayed raw both ways
+ frame = ff ff ff 10 | u32 length | u32 id | payload      (all big-endian)
+```
+
+Everything here was learned on the bench by black-box capture and an id sweep read back from
+the daemon's own log names (device-reveng RAV4-92 has the record); no OEM code was read.
+
+| Step | Status (bench, 2026-09-20) |
+|---|---|
+| Daemon bootstrap: InitInfo, MFi info (chip genuine), session states | works |
+| Wireless: bonded iPhone → iAP2 over RFCOMM relay → identification + MFi auth | works |
+| Access point: the OS's 5 GHz AP (`riposte.ap.*` props), app hotspot as fallback | works with the OS AP; the fallback is 2.4 GHz, which the phone refuses |
+| Video: 1920x720 H.264 to the panel | works, 397 of 400 units rendered |
+| Audio: 44.1 kHz stereo PCM | frames decoded, playback unverified (no speaker on the bench) |
+| Touch: panel pixels straight to the daemon | works |
+| Wired (USB, iAP2 gadget + NCM) | not tried yet: needs the port in host mode |
+| Siri, calls, mic | not started |

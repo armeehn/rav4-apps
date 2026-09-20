@@ -5,4 +5,6 @@
     <string name="connect">Connect</string>
     <string name="wireless_off">Wireless</string>
     <string name="wireless_on">Wireless on</string>
+    <string name="zlink_notification">CarPlay bridge ready</string>
+    <string name="carplay_name">CarPlay</string>
 </resources>
