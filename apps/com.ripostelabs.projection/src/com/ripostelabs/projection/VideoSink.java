@@ -133,7 +133,10 @@ final class VideoSink {
      * one (the phone sends key frames only on request).
      */
     private void hold(byte[] data, int off, int len) {
-        if (isKeyFrame(data, off, len)) {
+        int type = nalType(data, off, len);
+        boolean restart = type == NAL_SPS
+                || (type == NAL_IDR && (pending.isEmpty() || !isParameterSet(pending.peekLast())));
+        if (restart) {
             dropped += pending.size();
             pending.clear();
         } else if (pending.size() >= PENDING_LIMIT) {
@@ -145,13 +148,17 @@ final class VideoSink {
         pending.addLast(copy);
     }
 
-    /** Annex-B unit whose first NAL is an IDR slice (type 5) or a parameter set (7, 8). */
-    private static boolean isKeyFrame(byte[] data, int off, int len) {
+    /** The type of an Annex-B unit's first NAL, or 0 when it is too short to say. */
+    private static int nalType(byte[] data, int off, int len) {
         if (len < START_CODE_LEN + 1) {
-            return false;
+            return 0;
         }
-        int type = data[off + START_CODE_LEN] & NAL_TYPE_MASK;
-        return type == NAL_IDR || type == NAL_SPS || type == NAL_PPS;
+        return data[off + START_CODE_LEN] & NAL_TYPE_MASK;
+    }
+
+    private static boolean isParameterSet(byte[] unit) {
+        int type = nalType(unit, 0, unit.length);
+        return type == NAL_SPS || type == NAL_PPS;
     }
 
     private void push(byte[] data, int off, int len, long timestampUs) {
