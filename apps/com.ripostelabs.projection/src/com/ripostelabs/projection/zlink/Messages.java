@@ -100,12 +100,12 @@ public final class Messages {
 
     // ---- video channel -----------------------------------------------------------------------
     /**
-     * Every video frame: a 24-byte raw header, then one Annex-B H.264 access unit. The header
-     * is six big-endian u32: width, height, available width, available height, two zeros
-     * (bench capture 2026-09-20: {@code 00000780 000002d0 00000780 000002d0 0 0 | 00000001 25…}).
+     * Every video frame: a 20-byte raw header, then one Annex-B H.264 access unit. The header
+     * is five big-endian u32: width, height, available width, available height, zero (bench
+     * capture 2026-09-20: {@code 00000780 000002d0 00000780 000002d0 00000000 | 00000001 27…}).
      */
     public static final int VIDEO_FRAME = 0x302;
-    public static final int VIDEO_HEADER_LEN = 24;
+    public static final int VIDEO_HEADER_LEN = 20;
 
     // ---- environment -------------------------------------------------------------------------
     public static final int NIGHT_START = 0x705;
