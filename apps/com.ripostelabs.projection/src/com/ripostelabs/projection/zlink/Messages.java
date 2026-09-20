@@ -107,6 +107,16 @@ public final class Messages {
     public static final int VIDEO_FRAME = 0x302;
     public static final int VIDEO_HEADER_LEN = 20;
 
+    // ---- audio channel -----------------------------------------------------------------------
+    /**
+     * Every audio frame: a 24-byte raw header, then PCM. The header is six big-endian u32:
+     * sample rate, channels, bits per sample, zero, audio type, zero (bench capture
+     * 2026-09-20: {@code 0000ac44 00000002 00000010 00000000 00000001 00000000}, then 3840
+     * bytes of 16-bit little-endian stereo).
+     */
+    public static final int AUDIO_FRAME = 0x202;
+    public static final int AUDIO_HEADER_LEN = 24;
+
     // ---- environment -------------------------------------------------------------------------
     public static final int NIGHT_START = 0x705;
     public static final int NIGHT_STOP = 0x706;

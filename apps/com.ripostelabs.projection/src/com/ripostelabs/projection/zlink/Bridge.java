@@ -91,6 +91,8 @@ public final class Bridge implements FoxServer.Listener {
     private long videoFrames;
     private int videoWidth;
     private int videoHeight;
+    private int audioRate;
+    private int audioChannels;
 
     public Bridge(Messages.InitInfo init) {
         this.init = init;
@@ -214,6 +216,8 @@ public final class Bridge implements FoxServer.Listener {
             audioFramesLogged = 0;
             videoWidth = 0;
             videoHeight = 0;
+            audioRate = 0;
+            audioChannels = 0;
         }
     }
 
@@ -355,6 +359,18 @@ public final class Bridge implements FoxServer.Listener {
             Log.i(TAG, "audio id=0x" + Integer.toHexString(f.id) + " len=" + f.payload.length
                     + " head=" + hex(f.payload, HEAD_BYTES));
         }
+        Media m = media;
+        if (m == null || f.id != Messages.AUDIO_FRAME || f.payload.length <= Messages.AUDIO_HEADER_LEN) {
+            return;
+        }
+        int rate = u32(f.payload, 0);
+        int channels = u32(f.payload, 4);
+        if (rate != audioRate || channels != audioChannels) {
+            audioRate = rate;
+            audioChannels = channels;
+            m.onAudioFormat(rate, channels);
+        }
+        m.onAudio(f.payload, Messages.AUDIO_HEADER_LEN, f.payload.length - Messages.AUDIO_HEADER_LEN);
     }
 
     private static int[] widthHeight(byte[] payload) {
