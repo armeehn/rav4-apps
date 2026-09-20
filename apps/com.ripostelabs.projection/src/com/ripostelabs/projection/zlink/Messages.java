@@ -127,17 +127,16 @@ public final class Messages {
     // ---- microphone --------------------------------------------------------------------------
     /**
      * {@code <} {@code zj.mic.MicStart}: sample rate (2), channels (3), bits (4), bt aec (5).
-     * The daemon logs "AudioMicStart" when it sends it. Id to be read from the first Siri press.
+     * Sent on the audio channel; the daemon logs "AudioMicStart".
      */
-    public static final int MIC_START = 0;
-    /** {@code <} empty; the daemon logs "AudioMicStop". Id to be read alongside MIC_START. */
-    public static final int MIC_STOP = 0;
+    public static final int MIC_START = 0x402;
+    /** {@code <} empty, audio channel; the daemon logs "AudioMicStop". */
+    public static final int MIC_STOP = 0x403;
     /**
-     * {@code >} {@code zj.mic.MIC_DATA}: rate (2), channels (3), bits (4), aec_enable (5),
-     * delay_ms (7), data (8). Id to be probed: the daemon logs "mic_message_handle error" on
-     * a malformed one and names unknown ids.
+     * {@code >} {@code zj.mic.MIC_DATA} on the audio channel, the one inbound id its reader
+     * handles: rate (2), channels (3), bits (4), aec_enable (5), delay_ms (7), data (8).
      */
-    public static final int MIC_DATA = 0;
+    public static final int MIC_DATA = 0x404;
 
     /** A decoded {@link #MIC_START}. */
     public static final class MicStart {

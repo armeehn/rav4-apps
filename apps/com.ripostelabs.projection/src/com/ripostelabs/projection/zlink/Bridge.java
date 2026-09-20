@@ -170,10 +170,7 @@ public final class Bridge implements FoxServer.Listener {
 
     /** One frame of cabin microphone PCM, in the format the daemon asked for. */
     public void mic(int sampleRate, int channels, int bits, byte[] pcm, int len) {
-        if (Messages.MIC_DATA == 0) {
-            return;
-        }
-        control.send(Messages.MIC_DATA, Messages.micData(sampleRate, channels, bits, pcm, len));
+        audio.send(Messages.MIC_DATA, Messages.micData(sampleRate, channels, bits, pcm, len));
     }
 
     // ---- wireless bootstrap ------------------------------------------------------------------
@@ -296,16 +293,6 @@ public final class Bridge implements FoxServer.Listener {
                     w.onApInfoRequested();
                 }
                 return;
-            case Messages.MIC_START:
-                if (Messages.MIC_START != 0) {
-                    final Messages.MicStart ms = Messages.micStart(f.payload);
-                    final Session sl = session;
-                    if (sl != null) {
-                        main.post(() -> sl.onMic(ms));
-                    }
-                    return;
-                }
-                break;
             case Messages.CALL_STATE:
                 final Messages.CallState c = Messages.callState(f.payload);
                 final Session l = session;
@@ -391,6 +378,22 @@ public final class Bridge implements FoxServer.Listener {
             audioFramesLogged++;
             Log.i(TAG, "audio id=0x" + Integer.toHexString(f.id) + " len=" + f.payload.length
                     + " head=" + hex(f.payload, HEAD_BYTES));
+        }
+        // The microphone lives on this channel too: the daemon asks and stops here.
+        if (f.id == Messages.MIC_START || f.id == Messages.MIC_STOP) {
+            final Session sl = session;
+            if (sl == null) {
+                return;
+            }
+            if (f.id == Messages.MIC_START) {
+                final Messages.MicStart ms = Messages.micStart(f.payload);
+                status("mic start " + ms.sampleRate + " Hz x" + ms.channels + " " + ms.bits + " bit");
+                main.post(() -> sl.onMic(ms));
+            } else {
+                status("mic stop");
+                main.post(sl::onMicStop);
+            }
+            return;
         }
         Media m = media;
         if (m == null || f.id != Messages.AUDIO_FRAME || f.payload.length <= Messages.AUDIO_HEADER_LEN) {
