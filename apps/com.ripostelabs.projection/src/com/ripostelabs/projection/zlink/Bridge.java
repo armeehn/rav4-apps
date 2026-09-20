@@ -227,7 +227,7 @@ public final class Bridge implements FoxServer.Listener {
     private void onControl(Fox.Frame f) {
         switch (f.id) {
             case Messages.HEARTBEAT:
-                control.send(Messages.HEARTBEAT, f.payload);
+                // One way: the daemon logs an echo as an unhandled id.
                 return;
             case Messages.SESSION_STATE:
                 Messages.SessionState s = Messages.sessionState(f.payload);

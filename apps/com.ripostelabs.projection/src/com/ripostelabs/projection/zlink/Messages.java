@@ -23,7 +23,7 @@ public final class Messages {
     public static final int SESSION_STATE = 0x101;
     /** {@code >} the head unit's geometry and platform facts; answered by state WAITING_LINK. */
     public static final int INIT_INFO = 0x102;
-    /** {@code <} every 2 s, empty payload. */
+    /** {@code <} every 2 s, empty payload; not to be echoed. */
     public static final int HEARTBEAT = 0x118;
     /** {@code <} build hash of the daemon, string in field 2. */
     public static final int DAEMON_VERSION = 0xa02;
