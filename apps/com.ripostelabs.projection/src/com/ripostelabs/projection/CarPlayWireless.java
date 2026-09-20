@@ -52,6 +52,11 @@ final class CarPlayWireless implements Bridge.Wireless {
     private static final UUID IAP2_SERVICE = UUID.fromString("00000000-DECA-FADE-DECA-DEAFDECACAFE");
     private static final int READ_BUF = 4096;
     private static final String UNKNOWN_MAC = "00:00:00:00:00:00";
+    /** Set by riposte-hotspot.sh on Riposte OS 0.2 (device-reveng os/overlay). */
+    private static final String PROP_AP_SSID = "riposte.ap.ssid";
+    private static final String PROP_AP_KEY = "riposte.ap.psk";
+    private static final String PROP_AP_IFACE = "riposte.ap.iface";
+    private static final String DEFAULT_AP_IFACE = "wlan1";
 
     private final Context context;
     private final Bridge bridge;
@@ -235,8 +240,20 @@ final class CarPlayWireless implements Bridge.Wireless {
         main.post(this::raiseAp);
     }
 
-    /** One hotspot per session; the daemon keeps asking until the answer arrives. */
+    /**
+     * The OS's own access point comes first: Riposte OS raises a 5 GHz local-only hotspot from
+     * init (wireless CarPlay refuses 2.4 GHz, and only a shell can pick the band) and publishes
+     * it as properties. A normal app's hotspot is the fallback, 2.4 GHz and all.
+     */
     private void raiseAp() {
+        String ssid = SystemProps.get(PROP_AP_SSID);
+        String key = SystemProps.get(PROP_AP_KEY);
+        if (!ssid.isEmpty() && !key.isEmpty()) {
+            String iface = SystemProps.get(PROP_AP_IFACE);
+            Log.i(TAG, "wireless: the OS access point " + ssid + " on " + iface);
+            bridge.apUp(ssid, key, Messages.AP_BAND_5GHZ, iface.isEmpty() ? DEFAULT_AP_IFACE : iface);
+            return;
+        }
         if (apStarting || softAp != null) {
             return;
         }
