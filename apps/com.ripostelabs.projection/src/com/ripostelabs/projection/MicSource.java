@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.MediaRecorder;
+import android.os.Process;
 import android.util.Log;
 
 /**
@@ -24,6 +25,7 @@ final class MicSource {
     private static final int FRAME_MS = 20;
     private static final int BYTES_PER_SAMPLE = 2;
     private static final int BUFFER_FRAMES = 8;
+    private static final int LEVEL_EVERY_MS = 1000;
 
     private final Context context;
     private AudioRecord record;
@@ -64,16 +66,37 @@ final class MicSource {
         final AudioRecord r = record;
         final int frameLen = frame;
         pump = new Thread(() -> {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
             byte[] buf = new byte[frameLen];
+            int peak = 0;
+            int frames = 0;
             while (running) {
                 int n = r.read(buf, 0, frameLen);
-                if (n > 0) {
-                    sink.onMic(buf, n);
+                if (n <= 0) {
+                    continue;
+                }
+                sink.onMic(buf, n);
+                // One line a second with the loudest sample: a recorder the policy silences
+                // (a foreground service started from the background) reads all zeros.
+                peak = Math.max(peak, peak(buf, n));
+                if (++frames * FRAME_MS >= LEVEL_EVERY_MS) {
+                    Log.i(TAG, "mic: peak " + peak + " / 32767");
+                    peak = 0;
+                    frames = 0;
                 }
             }
         }, "carplay-mic");
         pump.start();
         Log.i(TAG, "mic: recording " + sampleRate + " Hz x" + channels);
+    }
+
+    private static int peak(byte[] pcm, int len) {
+        int peak = 0;
+        for (int i = 0; i + 1 < len; i += BYTES_PER_SAMPLE) {
+            int s = (short) ((pcm[i] & 0xff) | (pcm[i + 1] << 8));
+            peak = Math.max(peak, Math.abs(s));
+        }
+        return peak;
     }
 
     synchronized void stop() {
