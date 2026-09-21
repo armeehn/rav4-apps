@@ -216,6 +216,7 @@ final class CarPlayWireless implements Bridge.Wireless {
         }
         phone = null;
         toPhone = null;
+        closeDumps();
         bridge.btDisconnected();
     }
 
@@ -238,7 +239,7 @@ final class CarPlayWireless implements Bridge.Wireless {
     }
 
     private void openDumps() {
-        if (!"1".equals(SystemProps.get(DUMP_PROP))) {
+        if (!SystemProps.bench() || !"1".equals(SystemProps.get(DUMP_PROP))) {
             return;
         }
         try {
@@ -247,6 +248,21 @@ final class CarPlayWireless implements Bridge.Wireless {
         } catch (IOException e) {
             Log.w(TAG, "wireless: no bt dump: " + e.getMessage());
         }
+    }
+
+    private void closeDumps() {
+        for (java.io.FileOutputStream f : new java.io.FileOutputStream[] {dumpIn, dumpOut}) {
+            if (f == null) {
+                continue;
+            }
+            try {
+                f.close();
+            } catch (IOException ignored) {
+                // bench aid only
+            }
+        }
+        dumpIn = null;
+        dumpOut = null;
     }
 
     private static void record(java.io.FileOutputStream f, byte[] data, int len) {

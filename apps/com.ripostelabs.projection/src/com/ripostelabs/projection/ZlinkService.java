@@ -12,7 +12,9 @@ import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Surface;
 
@@ -84,7 +86,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.i(TAG, "debug: broadcast " + intent.getExtras());
-            if (!"1".equals(SystemProps.get(DEBUG_PROP))) {
+            if (!SystemProps.bench() || !"1".equals(SystemProps.get(DEBUG_PROP))) {
                 return;
             }
             String hex = intent.getStringExtra("hex");
@@ -114,6 +116,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         }
     };
     private final VideoSink videoSink = new VideoSink();
+    private final Handler main = new Handler(Looper.getMainLooper());
     private final AudioSink audioSink = new AudioSink(AUDIO_CHANNEL_MEDIA);
     private Bridge bridge;
     private CarPlayWireless wireless;
@@ -176,7 +179,9 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         citizen = MediaCitizen.attach(this, CITIZEN_TAG, transport);
         mic = new MicSource(this);
         registerReceiver(requests, new IntentFilter(STATUS_ACTION), Context.RECEIVER_EXPORTED);
-        registerReceiver(debugSend, new IntentFilter(DEBUG_ACTION), Context.RECEIVER_EXPORTED);
+        if (SystemProps.bench()) {
+            registerReceiver(debugSend, new IntentFilter(DEBUG_ACTION), Context.RECEIVER_EXPORTED);
+        }
         try {
             bridge.start();
         } catch (IOException e) {
@@ -200,7 +205,9 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     @Override
     public void onDestroy() {
         unregisterReceiver(requests);
-        unregisterReceiver(debugSend);
+        if (SystemProps.bench()) {
+            unregisterReceiver(debugSend);
+        }
         if (wireless != null) {
             wireless.stop();
         }
@@ -318,11 +325,14 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     public void onAudioFormat(int sampleRate, int channels) {
         audioSink.start(new AudioConfig(sampleRate, PCM_BITS, channels));
         // Focus on the first audio of a session: the radio ducks, the launcher's card sees us.
-        if (!hasFocus) {
-            hasFocus = citizen.takeFocus(MediaCitizen.Focus.MEDIA);
-            citizen.setMetadata(getString(R.string.carplay_name), "", 0);
-            citizen.setState(true, 0);
-        }
+        // hasFocus lives on the main thread with the rest of the session state.
+        main.post(() -> {
+            if (!hasFocus) {
+                hasFocus = citizen.takeFocus(MediaCitizen.Focus.MEDIA);
+                citizen.setMetadata(getString(R.string.carplay_name), "", 0);
+                citizen.setState(true, 0);
+            }
+        });
     }
 
     @Override

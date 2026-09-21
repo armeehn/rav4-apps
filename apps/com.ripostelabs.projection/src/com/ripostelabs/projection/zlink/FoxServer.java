@@ -37,7 +37,9 @@ final class FoxServer {
     private final int port;
     private final int threadPriority;
     private final Listener listener;
-    private final BlockingQueue<byte[]> outbox = new LinkedBlockingQueue<>();
+    /** Bounded: a daemon that stops reading a channel drops our oldest frame, not the process. */
+    private static final int OUTBOX_LIMIT = 256;
+    private final BlockingQueue<byte[]> outbox = new LinkedBlockingQueue<>(OUTBOX_LIMIT);
     private ServerSocket server;
     private volatile Socket client;
     private Thread acceptor;
@@ -94,7 +96,10 @@ final class FoxServer {
         if (client == null) {
             return;
         }
-        outbox.offer(Fox.encode(id, payload));
+        byte[] frame = Fox.encode(id, payload);
+        while (!outbox.offer(frame)) {
+            outbox.poll();
+        }
     }
 
     private void writeLoop(Socket s) {
