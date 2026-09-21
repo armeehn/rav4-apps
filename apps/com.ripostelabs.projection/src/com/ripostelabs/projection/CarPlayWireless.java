@@ -79,6 +79,10 @@ final class CarPlayWireless implements Bridge.Wireless {
     /** A dial in flight: the bonded sweep and ACTION_UUID both see the phone, one may dial. */
     private boolean connecting;
     private boolean started;
+    /** A refused dial is retried: the phone may still hold the previous session's iAP2 link. */
+    private static final long RFCOMM_RETRY_MS = 15_000;
+    private static final int RFCOMM_RETRIES = 8;
+    private int dialsLeft;
     private volatile boolean apStarting;
 
     private final BroadcastReceiver btEvents = new BroadcastReceiver() {
@@ -123,6 +127,14 @@ final class CarPlayWireless implements Bridge.Wireless {
             return;
         }
         // A phone already linked for hands-free is found through its cached record.
+        dialsLeft = RFCOMM_RETRIES;
+        dialBonded();
+    }
+
+    private void dialBonded() {
+        if (adapter == null || !btPermitted()) {
+            return;
+        }
         for (BluetoothDevice d : adapter.getBondedDevices()) {
             onUuids(d);
         }
@@ -190,6 +202,10 @@ final class CarPlayWireless implements Bridge.Wireless {
             Log.w(TAG, "wireless: rfcomm connect failed: " + e.getMessage());
             synchronized (this) {
                 connecting = false;
+            }
+            if (dialsLeft > 0) {
+                dialsLeft--;
+                main.postDelayed(this::dialBonded, RFCOMM_RETRY_MS);
             }
             return;
         }
@@ -294,12 +310,8 @@ final class CarPlayWireless implements Bridge.Wireless {
      */
     @Override
     public void onBtWanted() {
-        if (adapter == null || !btPermitted()) {
-            return;
-        }
-        for (BluetoothDevice d : adapter.getBondedDevices()) {
-            onUuids(d);
-        }
+        dialsLeft = RFCOMM_RETRIES;
+        main.post(this::dialBonded);
     }
 
     private String localMac() {
