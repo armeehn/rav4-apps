@@ -2,6 +2,7 @@ package com.ripostelabs.projection.zlink;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Process;
 import android.util.Log;
 import android.view.Surface;
 
@@ -87,10 +88,14 @@ public final class Bridge implements FoxServer.Listener {
     private static final int NAL_SPS = 7;
 
     private final Handler main = new Handler(Looper.getMainLooper());
-    private final FoxServer control = new FoxServer("control", Fox.PORT_CONTROL, this);
-    private final FoxServer audio = new FoxServer("audio", Fox.PORT_AUDIO, this);
-    private final FoxServer video = new FoxServer("video", Fox.PORT_VIDEO, this);
-    private final FoxServer bluetooth = new FoxServer("bluetooth", Fox.PORT_BLUETOOTH, this);
+    private final FoxServer control =
+            new FoxServer("control", Fox.PORT_CONTROL, Process.THREAD_PRIORITY_DISPLAY, this);
+    private final FoxServer audio =
+            new FoxServer("audio", Fox.PORT_AUDIO, Process.THREAD_PRIORITY_URGENT_AUDIO, this);
+    private final FoxServer video =
+            new FoxServer("video", Fox.PORT_VIDEO, Process.THREAD_PRIORITY_URGENT_DISPLAY, this);
+    private final FoxServer bluetooth =
+            new FoxServer("bluetooth", Fox.PORT_BLUETOOTH, Process.THREAD_PRIORITY_DISPLAY, this);
     private final Messages.InitInfo init;
     private volatile Screen screen;
     private volatile Media media;

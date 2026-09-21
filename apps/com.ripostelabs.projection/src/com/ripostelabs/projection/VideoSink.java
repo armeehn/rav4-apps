@@ -3,6 +3,7 @@ package com.ripostelabs.projection;
 import android.media.MediaCodec;
 import android.graphics.SurfaceTexture;
 import android.media.MediaFormat;
+import android.os.Process;
 import android.util.Log;
 import android.view.Surface;
 
@@ -240,6 +241,8 @@ final class VideoSink {
 
     /** Renders every decoded frame as soon as it exists; the phone paces the stream. */
     private static void drainLoop(MediaCodec running) {
+        // Renders every frame to the panel: never behind the launcher or a background sync.
+        Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_DISPLAY);
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         while (!Thread.currentThread().isInterrupted()) {
             try {
