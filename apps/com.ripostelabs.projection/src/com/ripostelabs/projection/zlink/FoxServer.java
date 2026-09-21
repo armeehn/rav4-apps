@@ -31,6 +31,7 @@ final class FoxServer {
     private static final int BACKLOG = 1;
     private static final int READ_BUF = 64 * 1024;
     private static final String LOOPBACK_V4 = "127.0.0.1";
+    private static final long ACCEPT_RETRY_MS = 500;
 
     final String name;
     private final int port;
@@ -121,10 +122,17 @@ final class FoxServer {
             try {
                 s = server.accept();
             } catch (IOException e) {
-                if (running) {
-                    Log.w(TAG, name + ": accept failed: " + e.getMessage());
+                if (!running || server.isClosed()) {
+                    return;
                 }
-                return;
+                // A transient accept error (fd pressure, a reset) is not the end of the channel.
+                Log.w(TAG, name + ": accept failed: " + e.getMessage());
+                try {
+                    Thread.sleep(ACCEPT_RETRY_MS);
+                } catch (InterruptedException ie) {
+                    return;
+                }
+                continue;
             }
             serve(s);
         }
@@ -157,7 +165,13 @@ final class FoxServer {
                 parser.feed(buf, 0, n);
                 Fox.Frame f;
                 while ((f = parser.next()) != null) {
-                    listener.onFrame(this, f);
+                    // One malformed payload is the daemon's bug, not a reason to lose the
+                    // session: the listener's parser throws on it, the link stays up.
+                    try {
+                        listener.onFrame(this, f);
+                    } catch (RuntimeException e) {
+                        Log.w(TAG, name + ": frame 0x" + Integer.toHexString(f.id) + " rejected: " + e);
+                    }
                 }
             }
         } catch (IOException e) {

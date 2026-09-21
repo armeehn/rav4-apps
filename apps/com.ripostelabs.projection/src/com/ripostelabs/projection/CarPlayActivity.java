@@ -3,6 +3,7 @@ package com.ripostelabs.projection;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
@@ -109,13 +110,20 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
         }
     }
 
+    /** Day and night are handled in place: the phone's picture stays up, only the strip recolours. */
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        Palette.apply(this);
+    }
+
     @Override
     protected void onDestroy() {
         if (service != null) {
             service.bridge().setScreen(null);
             service.setSurface(null);
-            unbindService(connection);
         }
+        unbindService(connection);
         SurfaceTexture texture = video.getSurfaceTexture();
         if (videoSurface != null) {
             videoSurface.release();

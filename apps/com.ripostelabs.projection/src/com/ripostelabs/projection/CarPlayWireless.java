@@ -70,6 +70,9 @@ final class CarPlayWireless implements Bridge.Wireless {
     private SoftAp softAp;
     private BluetoothSocket phone;
     private OutputStream toPhone;
+    /** A dial in flight: the bonded sweep and ACTION_UUID both see the phone, one may dial. */
+    private boolean connecting;
+    private boolean started;
     private volatile boolean apStarting;
 
     private final BroadcastReceiver btEvents = new BroadcastReceiver() {
@@ -85,7 +88,9 @@ final class CarPlayWireless implements Bridge.Wireless {
             } else if (BluetoothDevice.ACTION_UUID.equals(action)) {
                 onUuids(device);
             } else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
-                dropPhone("bluetooth link to " + device.getAddress() + " went down");
+                if (isPhone(device)) {
+                    dropPhone("bluetooth link to " + device.getAddress() + " went down");
+                }
             }
         }
     };
@@ -106,6 +111,7 @@ final class CarPlayWireless implements Bridge.Wireless {
         f.addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED);
         f.addAction(BluetoothDevice.ACTION_UUID);
         context.registerReceiver(btEvents, f);
+        started = true;
         if (!btPermitted()) {
             Log.w(TAG, "wireless: BLUETOOTH_CONNECT not granted; phones will not be found");
             return;
@@ -117,7 +123,10 @@ final class CarPlayWireless implements Bridge.Wireless {
     }
 
     void stop() {
-        context.unregisterReceiver(btEvents);
+        if (started) {
+            context.unregisterReceiver(btEvents);
+            started = false;
+        }
         dropPhone("service stopping");
         closeAp("service stopping");
     }
@@ -135,8 +144,13 @@ final class CarPlayWireless implements Bridge.Wireless {
         }
     }
 
+    /** A passenger's phone dropping its hands-free link is not the CarPlay phone leaving. */
+    private synchronized boolean isPhone(BluetoothDevice device) {
+        return phone != null && device.getAddress().equals(phone.getRemoteDevice().getAddress());
+    }
+
     private synchronized void onUuids(BluetoothDevice device) {
-        if (phone != null || !btPermitted()) {
+        if (phone != null || connecting || !btPermitted()) {
             return;
         }
         ParcelUuid[] uuids;
@@ -149,6 +163,7 @@ final class CarPlayWireless implements Bridge.Wireless {
             return;
         }
         Log.i(TAG, "wireless: " + device.getAddress() + " offers iAP2, connecting");
+        connecting = true;
         new Thread(() -> connect(device), "carplay-rfcomm").start();
     }
 
@@ -163,9 +178,13 @@ final class CarPlayWireless implements Bridge.Wireless {
             synchronized (this) {
                 phone = s;
                 toPhone = s.getOutputStream();
+                connecting = false;
             }
         } catch (IOException | SecurityException e) {
             Log.w(TAG, "wireless: rfcomm connect failed: " + e.getMessage());
+            synchronized (this) {
+                connecting = false;
+            }
             return;
         }
         bridge.btConnected(localMac(), Messages.CARPLAY_BT_SERVICE);
