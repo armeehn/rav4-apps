@@ -191,7 +191,7 @@ public final class Messages {
     public static final class InitInfo {
         public int width = 1920;
         public int height = 720;
-        public int fps = 45;
+        public int fps = 60;
         public boolean leftHandDrive = true;
         public boolean night;
         public int linkTypes = LINK_WIRED_CARPLAY;
