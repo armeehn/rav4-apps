@@ -288,6 +288,20 @@ final class CarPlayWireless implements Bridge.Wireless {
         dropPhone("session on Wi-Fi, daemon released the link");
     }
 
+    /**
+     * After a release no ACL event brings the phone back (its hands-free link never went
+     * down), so the bonded sweep from start() runs again on the daemon's request.
+     */
+    @Override
+    public void onBtWanted() {
+        if (adapter == null || !btPermitted()) {
+            return;
+        }
+        for (BluetoothDevice d : adapter.getBondedDevices()) {
+            onUuids(d);
+        }
+    }
+
     private String localMac() {
         // The adapter's own address is hidden from apps since Android 6; the daemon only echoes
         // it into an Android Auto field, so a placeholder costs CarPlay nothing.

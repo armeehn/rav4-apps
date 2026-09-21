@@ -77,6 +77,9 @@ public final class Bridge implements FoxServer.Listener {
 
         /** The session moved to Wi-Fi; the RFCOMM link is no longer wanted. */
         void onBtRelease();
+
+        /** The daemon wants a phone over Bluetooth and none is linked: dial the bonded one. */
+        void onBtWanted();
     }
 
     private static final String TAG = "Projection";
@@ -287,9 +290,15 @@ public final class Bridge implements FoxServer.Listener {
     private void onBluetooth(Fox.Frame f) {
         switch (f.id) {
             case Messages.BT_INFO_REQUEST:
-                // Answered once a phone link exists; before that there is nothing to say.
+                // Answered once a phone link exists. With none (the daemon released it for a
+                // Wi-Fi session that has since dropped) the phone is dialled again.
                 if (btService != null) {
                     bluetooth.send(Messages.BT_INFO, Messages.btInfo(btLocalMac, btService, true));
+                    return;
+                }
+                Wireless wanted = wireless;
+                if (wanted != null) {
+                    wanted.onBtWanted();
                 }
                 return;
             case Messages.BT_DATA:
