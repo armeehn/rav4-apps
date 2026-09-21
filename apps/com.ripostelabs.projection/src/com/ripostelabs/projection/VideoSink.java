@@ -109,12 +109,31 @@ final class VideoSink {
         return offscreenSurface;
     }
 
-    synchronized void feed(byte[] data, int off, int len, long timestampUs) {
-        if (codec == null) {
-            hold(data, off, len);
+    void feed(byte[] data, int off, int len, long timestampUs) {
+        MediaCodec c;
+        synchronized (this) {
+            if (codec == null) {
+                hold(data, off, len);
+                return;
+            }
+            c = codec;
+        }
+        // Outside the monitor: the wait for an input buffer can run to a second, and the
+        // main thread takes this lock to switch surfaces. A codec stopped meanwhile throws
+        // IllegalStateException, which push() treats as one lost unit.
+        push(c, data, off, len, timestampUs);
+    }
+
+    private void closeDump() {
+        if (dump == null) {
             return;
         }
-        push(data, off, len, timestampUs);
+        try {
+            dump.close();
+        } catch (IOException ignored) {
+            // bench aid only
+        }
+        dump = null;
     }
 
     synchronized void stop() {
@@ -122,6 +141,7 @@ final class VideoSink {
             drain.interrupt();
             drain = null;
         }
+        closeDump();
         if (codec != null) {
             try {
                 codec.stop();
@@ -158,7 +178,7 @@ final class VideoSink {
             return;
         }
         Log.i(TAG, "video: decoder " + codec.getName() + " up at " + width + "x" + height + ", " + pending.size() + " held units");
-        if ("1".equals(SystemProps.get(DUMP_PROP))) {
+        if (SystemProps.bench() && "1".equals(SystemProps.get(DUMP_PROP))) {
             try {
                 dump = new java.io.FileOutputStream(DUMP_PATH);
             } catch (IOException e) {
@@ -168,7 +188,7 @@ final class VideoSink {
 
         while (!pending.isEmpty()) {
             byte[] unit = pending.pollFirst();
-            push(unit, 0, unit.length, 0);
+            push(codec, unit, 0, unit.length, 0);
         }
 
         final MediaCodec running = codec;
@@ -215,7 +235,7 @@ final class VideoSink {
         return type == NAL_SPS || type == NAL_PPS;
     }
 
-    private void push(byte[] data, int off, int len, long timestampUs) {
+    private void push(MediaCodec codec, byte[] data, int off, int len, long timestampUs) {
         if (dump != null) {
             try {
                 dump.write(data, off, len);
