@@ -24,6 +24,8 @@ final class AudioSink {
     private final int channel;
     private AudioTrack track;
     private int dropped;
+    private int written;
+    private static final int REPORT_EVERY = 100;
 
     AudioSink(int channel) {
         this.channel = channel;
@@ -66,6 +68,10 @@ final class AudioSink {
         int n = track.write(data, off, len, AudioTrack.WRITE_NON_BLOCKING);
         if (n < len) {
             dropped += len - Math.max(n, 0);
+        }
+        // The video counter's twin: says whether the phone is sending sound at all.
+        if (++written % REPORT_EVERY == 0) {
+            Log.i(TAG, "audio " + channel + ": written " + written + " dropped " + dropped + " bytes");
         }
     }
 
