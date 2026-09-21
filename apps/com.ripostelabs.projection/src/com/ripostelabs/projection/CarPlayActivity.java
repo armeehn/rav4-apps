@@ -35,6 +35,8 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
     private ZlinkService service;
     private final StringBuilder log = new StringBuilder();
     private int lines;
+    /** A second finger arrived: the gesture stays multi-touch until every finger is up. */
+    private boolean multiGesture;
 
     private final ServiceConnection connection = new ServiceConnection() {
         @Override
@@ -135,25 +137,62 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
         super.onDestroy();
     }
 
-    /** One finger, panel pixels: the surface fills the panel, so view and panel agree. */
+    /**
+     * Panel pixels: the surface fills the panel, so view and panel agree. One finger goes as
+     * the single-touch report the daemon has always had; a second finger switches the gesture
+     * to multi-touch reports (pinch in Maps) until every finger is up. The digitiser's batched
+     * samples go out too, so a drag reaches the phone at the digitiser's rate, not the
+     * display's.
+     */
     private boolean forwardTouch(View v, MotionEvent event) {
         if (service == null) {
             return false;
         }
-        int x = (int) event.getX();
-        int y = (int) event.getY();
-        switch (event.getActionMasked()) {
+        Bridge bridge = service.bridge();
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_POINTER_DOWN) {
+            multiGesture = true;
+        }
+        if (multiGesture) {
+            forwardFingers(bridge, event);
+            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                multiGesture = false;
+            }
+            return true;
+        }
+        switch (action) {
             case MotionEvent.ACTION_DOWN:
+                bridge.touch((int) event.getX(), (int) event.getY(), true);
+                return true;
             case MotionEvent.ACTION_MOVE:
-                service.bridge().touch(x, y, true);
+                for (int h = 0; h < event.getHistorySize(); h++) {
+                    bridge.touch((int) event.getHistoricalX(h), (int) event.getHistoricalY(h), true);
+                }
+                bridge.touch((int) event.getX(), (int) event.getY(), true);
                 return true;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                service.bridge().touch(x, y, false);
+                bridge.touch((int) event.getX(), (int) event.getY(), false);
                 return true;
             default:
                 return false;
         }
+    }
+
+    /** Every finger in the event; the one this action lifts is reported up. */
+    private static void forwardFingers(Bridge bridge, MotionEvent event) {
+        int action = event.getActionMasked();
+        boolean lifting = action == MotionEvent.ACTION_POINTER_UP || action == MotionEvent.ACTION_UP
+                || action == MotionEvent.ACTION_CANCEL;
+        int lifted = lifting ? event.getActionIndex() : -1;
+        boolean all = action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP;
+        Messages.Finger[] fingers = new Messages.Finger[event.getPointerCount()];
+        for (int i = 0; i < fingers.length; i++) {
+            boolean down = !(all || i == lifted);
+            fingers[i] = new Messages.Finger(event.getPointerId(i),
+                    (int) event.getX(i), (int) event.getY(i), down);
+        }
+        bridge.touch(fingers);
     }
 
     // ---- Bridge.Screen -----------------------------------------------------------------------
