@@ -165,10 +165,6 @@ public final class Bridge implements FoxServer.Listener {
         control.send(Messages.TOUCH, Messages.touch(x, y, down));
     }
 
-    public void touch(Messages.Finger[] fingers) {
-        control.send(Messages.TOUCH_MULTI, Messages.multiTouch(fingers));
-    }
-
     public void key(int keyCode, boolean down) {
         control.send(Messages.KEY, Messages.key(keyCode, down));
     }

@@ -35,8 +35,6 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
     private ZlinkService service;
     private final StringBuilder log = new StringBuilder();
     private int lines;
-    /** A second finger arrived: the gesture stays multi-touch until every finger is up. */
-    private boolean multiGesture;
 
     private final ServiceConnection connection = new ServiceConnection() {
         @Override
@@ -138,29 +136,19 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
     }
 
     /**
-     * Panel pixels: the surface fills the panel, so view and panel agree. One finger goes as
-     * the single-touch report the daemon has always had; a second finger switches the gesture
-     * to multi-touch reports (pinch in Maps) until every finger is up. The digitiser's batched
-     * samples go out too, so a drag reaches the phone at the digitiser's rate, not the
-     * display's.
+     * One finger, panel pixels: the surface fills the panel, so view and panel agree. The
+     * daemon's CarPlay HID is single-touch by design (HIDTouchScreenSingleCreateDescriptor;
+     * its multi_touch report 0x111 reaches only HiCar in hal_multi_touch_event), so a second
+     * finger is ignored and the first finger's up must always go out, or the phone keeps it
+     * down and every later tap is dead. The digitiser's batched samples go out too, so a drag
+     * reaches the phone at the digitiser's rate, not the display's.
      */
     private boolean forwardTouch(View v, MotionEvent event) {
         if (service == null) {
             return false;
         }
         Bridge bridge = service.bridge();
-        int action = event.getActionMasked();
-        if (action == MotionEvent.ACTION_POINTER_DOWN) {
-            multiGesture = true;
-        }
-        if (multiGesture) {
-            forwardFingers(bridge, event);
-            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                multiGesture = false;
-            }
-            return true;
-        }
-        switch (action) {
+        switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 bridge.touch((int) event.getX(), (int) event.getY(), true);
                 return true;
@@ -177,22 +165,6 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
             default:
                 return false;
         }
-    }
-
-    /** Every finger in the event; the one this action lifts is reported up. */
-    private static void forwardFingers(Bridge bridge, MotionEvent event) {
-        int action = event.getActionMasked();
-        boolean lifting = action == MotionEvent.ACTION_POINTER_UP || action == MotionEvent.ACTION_UP
-                || action == MotionEvent.ACTION_CANCEL;
-        int lifted = lifting ? event.getActionIndex() : -1;
-        boolean all = action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_UP;
-        Messages.Finger[] fingers = new Messages.Finger[event.getPointerCount()];
-        for (int i = 0; i < fingers.length; i++) {
-            boolean down = !(all || i == lifted);
-            fingers[i] = new Messages.Finger(event.getPointerId(i),
-                    (int) event.getX(i), (int) event.getY(i), down);
-        }
-        bridge.touch(fingers);
     }
 
     // ---- Bridge.Screen -----------------------------------------------------------------------
