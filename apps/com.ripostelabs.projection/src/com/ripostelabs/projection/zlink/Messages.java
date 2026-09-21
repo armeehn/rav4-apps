@@ -82,6 +82,7 @@ public final class Messages {
     // ---- input -------------------------------------------------------------------------------
     /** {@code >} x (2), y (3), is_down (4): panel pixels. */
     public static final int TOUCH = 0x112;
+    /** multi_touch {repeated touch_data {id, x, y, is_down}}: the daemon acts on it for HiCar only. */
     public static final int TOUCH_MULTI = 0x111;
     /** {@code >} key_code (2), is_down (3). */
     public static final int KEY = 0x113;
@@ -238,35 +239,6 @@ public final class Messages {
 
     public static byte[] touch(int x, int y, boolean down) {
         return new Proto.Writer().int32(1, TOUCH).int32(2, x).int32(3, y).bool(4, down).toBytes();
-    }
-
-    /** One finger of a multi-touch report: zj.control.touch_data. */
-    public static final class Finger {
-        public final int id;
-        public final int x;
-        public final int y;
-        public final boolean down;
-
-        public Finger(int id, int x, int y, boolean down) {
-            this.id = id;
-            this.x = x;
-            this.y = y;
-            this.down = down;
-        }
-    }
-
-    /**
-     * zj.control.multi_touch: repeated touch_data maps = 1, each {id, x, y, is_down as int32}.
-     * The frame id 0x111 is the only message id; the body carries none (libzjL10001
-     * descriptors).
-     */
-    public static byte[] multiTouch(Finger[] fingers) {
-        Proto.Writer w = new Proto.Writer();
-        for (Finger f : fingers) {
-            w.message(1, new Proto.Writer()
-                    .int32(1, f.id).int32(2, f.x).int32(3, f.y).int32(4, f.down ? 1 : 0));
-        }
-        return w.toBytes();
     }
 
     public static byte[] key(int keyCode, boolean down) {
