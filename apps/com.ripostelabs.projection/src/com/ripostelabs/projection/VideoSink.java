@@ -33,6 +33,8 @@ final class VideoSink {
     private static final int NAL_SPS = 7;
     private static final int NAL_PPS = 8;
     private static final long INPUT_WAIT_US = 20_000;
+    /** How long a unit may wait for an input buffer before it is given up as lost. */
+    private static final long INPUT_GIVE_UP_US = 1_000_000;
     /** MediaFormat.KEY_PRIORITY: 0 is realtime, 1 is best effort. */
     private static final int PRIORITY_REALTIME = 0;
     private static final int DEFAULT_FRAME_RATE = 30;
@@ -222,9 +224,20 @@ final class VideoSink {
             }
         }
         try {
+            // The phone sends P-frames only, with a key frame on request: a dropped unit
+            // corrupts the picture until the intra refresh has walked it. When the session's
+            // opening burst (110 frames in 1.3 s) fills the input queue, the reader waits
+            // instead; the socket holds the daemon. A unit given up asks for a key frame.
             int index = codec.dequeueInputBuffer(INPUT_WAIT_US);
+            for (long waited = INPUT_WAIT_US; index < 0 && waited < INPUT_GIVE_UP_US; waited += INPUT_WAIT_US) {
+                index = codec.dequeueInputBuffer(INPUT_WAIT_US);
+            }
             if (index < 0) {
                 dropped++;
+                Log.w(TAG, "video: no input buffer for a unit, asking for a picture");
+                if (onStarved != null) {
+                    onStarved.run();
+                }
                 return;
             }
             ByteBuffer buf = codec.getInputBuffer(index);
