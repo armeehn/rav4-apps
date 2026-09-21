@@ -260,6 +260,15 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         }
     }
 
+    /** The launcher's card mirrors the phone's main stream: playing while it runs, paused after. */
+    @Override
+    public void onAudioState(Messages.AudioState state, boolean playing) {
+        if (state.audioType != Messages.AUDIO_TYPE_MAIN) {
+            return;
+        }
+        citizen.setState(playing, 0);
+    }
+
     @Override
     public void onCallState(Messages.CallState state) {
         if (state.callOn != callOn) {

@@ -124,6 +124,11 @@ public final class Messages {
      * {@code 2=0 3=0 4=-1 5=0 6=0}.
      */
     public static final int CALL_STATE = 0x710;
+    /** zj.control.AudioState {id, audio_type, is_main_audio, is_duck_state}: a stream starts / stops. */
+    public static final int AUDIO_STATE_START = 0x103;
+    public static final int AUDIO_STATE_STOP = 0x104;
+    /** audio_type: 1 is the main (media) stream, 2 the alternate one (Siri, prompts). */
+    public static final int AUDIO_TYPE_MAIN = 1;
 
     // ---- microphone --------------------------------------------------------------------------
     /**
@@ -305,6 +310,33 @@ public final class Messages {
             }
         }
         return c;
+    }
+
+    /** A decoded AudioState. */
+    public static final class AudioState {
+        public int audioType;
+        public boolean mainAudio;
+        public boolean duck;
+    }
+
+    public static AudioState audioState(byte[] payload) {
+        AudioState a = new AudioState();
+        Proto.Reader r = new Proto.Reader(payload);
+        while (r.next()) {
+            if (r.wire() != Proto.WIRE_VARINT) {
+                skip(r);
+                continue;
+            }
+            long v = r.varint();
+            if (r.field() == 2) {
+                a.audioType = (int) v;
+            } else if (r.field() == 3) {
+                a.mainAudio = v != 0;
+            } else if (r.field() == 4) {
+                a.duck = v != 0;
+            }
+        }
+        return a;
     }
 
     /** A decoded SessionState. */
