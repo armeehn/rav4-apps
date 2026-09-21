@@ -5,7 +5,10 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <SurfaceView
+    <!-- A TextureView, not a SurfaceView: its texture survives the screen going behind the
+         launcher, so the decoder keeps drawing into it and the return shows the latest picture
+         at once (the phone only sends a frame when something changes). -->
+    <TextureView
         android:id="@+id/carplay_video"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

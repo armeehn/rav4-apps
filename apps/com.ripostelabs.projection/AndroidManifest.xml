@@ -38,6 +38,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Siri and calls: the cabin microphone goes to the daemon as MIC_DATA. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
     <uses-feature android:name="android.hardware.wifi" android:required="false" />
 
@@ -91,7 +94,8 @@
         </activity>
         <service
             android:name="com.ripostelabs.projection.ZlinkService"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback|microphone" />
         <receiver
             android:name="com.ripostelabs.projection.BootReceiver"
             android:exported="true">

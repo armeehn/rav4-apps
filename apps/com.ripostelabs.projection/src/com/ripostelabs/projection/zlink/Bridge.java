@@ -2,6 +2,7 @@ package com.ripostelabs.projection.zlink;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.os.Process;
 import android.util.Log;
 import android.view.Surface;
 
@@ -37,6 +38,9 @@ public final class Bridge implements FoxServer.Listener {
         void onSessionState(int state, int linkType);
 
         void onVideoSize(int width, int height);
+
+        /** The driver asked for the car's own screen; step back behind the launcher. */
+        void onLeave();
     }
 
     /** Media consumers, on the reader threads. */
@@ -53,6 +57,14 @@ public final class Bridge implements FoxServer.Listener {
     /** Session edges for whoever tells the rest of the unit; main thread. */
     public interface Session {
         void onSession(boolean up, int linkType);
+
+        /** The phone's call picture changed. */
+        void onCallState(Messages.CallState state);
+
+        /** The daemon wants the cabin microphone in this format, or no longer. */
+        void onMic(Messages.MicStart format);
+
+        void onMicStop();
     }
 
     /** The wireless bootstrap, on the reader threads: the hotspot and the phone's RFCOMM link. */
@@ -71,12 +83,19 @@ public final class Bridge implements FoxServer.Listener {
     private static final int LOG_FIRST_FRAMES = 12;
     private static final int HEAD_BYTES = 32;
     private static final byte[] ANNEX_B = {0, 0, 0, 1};
+    private static final int NAL_TYPE_MASK = 0x1f;
+    private static final int NAL_IDR = 5;
+    private static final int NAL_SPS = 7;
 
     private final Handler main = new Handler(Looper.getMainLooper());
-    private final FoxServer control = new FoxServer("control", Fox.PORT_CONTROL, this);
-    private final FoxServer audio = new FoxServer("audio", Fox.PORT_AUDIO, this);
-    private final FoxServer video = new FoxServer("video", Fox.PORT_VIDEO, this);
-    private final FoxServer bluetooth = new FoxServer("bluetooth", Fox.PORT_BLUETOOTH, this);
+    private final FoxServer control =
+            new FoxServer("control", Fox.PORT_CONTROL, Process.THREAD_PRIORITY_DISPLAY, this);
+    private final FoxServer audio =
+            new FoxServer("audio", Fox.PORT_AUDIO, Process.THREAD_PRIORITY_URGENT_AUDIO, this);
+    private final FoxServer video =
+            new FoxServer("video", Fox.PORT_VIDEO, Process.THREAD_PRIORITY_URGENT_DISPLAY, this);
+    private final FoxServer bluetooth =
+            new FoxServer("bluetooth", Fox.PORT_BLUETOOTH, Process.THREAD_PRIORITY_DISPLAY, this);
     private final Messages.InitInfo init;
     private volatile Screen screen;
     private volatile Media media;
@@ -158,6 +177,29 @@ public final class Bridge implements FoxServer.Listener {
 
     public void stopSession() {
         control.send(Messages.STOP, Messages.idOnly(Messages.STOP));
+    }
+
+    /**
+     * The screen (re)appeared: ask for a fresh picture. The phone sends key frames only on
+     * request, and the daemon's resize path restarts the stream; same geometry, so nothing
+     * else changes. Which message the daemon honours is being settled on the bench.
+     */
+    public void requestKeyFrame() {
+        control.send(Messages.VIDEO_RESIZE, Messages.videoResize(init.width, init.height, init.aaDensity));
+        status("key frame requested");
+    }
+
+    /** Bench aid: any frame on any channel, from a debug broadcast. */
+    public void debugSend(String channel, int id, byte[] payload) {
+        FoxServer target = "audio".equals(channel) ? audio : "video".equals(channel) ? video
+                : "bt".equals(channel) ? bluetooth : control;
+        target.send(id, payload);
+        status("debug sent 0x" + Integer.toHexString(id) + " on " + target.name);
+    }
+
+    /** One frame of cabin microphone PCM, in the format the daemon asked for. */
+    public void mic(int sampleRate, int channels, int bits, byte[] pcm, int len) {
+        audio.send(Messages.MIC_DATA, Messages.micData(sampleRate, channels, bits, pcm, len));
     }
 
     // ---- wireless bootstrap ------------------------------------------------------------------
@@ -280,6 +322,23 @@ public final class Bridge implements FoxServer.Listener {
                     w.onApInfoRequested();
                 }
                 return;
+            case Messages.MIC_START:
+            case Messages.MIC_STOP:
+                onMicMessage(f);
+                return;
+            case Messages.LEAVE_TO_CAR:
+                final Screen sc = screen;
+                if (sc != null) {
+                    main.post(sc::onLeave);
+                }
+                return;
+            case Messages.CALL_STATE:
+                final Messages.CallState c = Messages.callState(f.payload);
+                final Session l = session;
+                if (l != null) {
+                    main.post(() -> l.onCallState(c));
+                }
+                return;
             default:
                 status(String.format(Locale.ROOT, "control 0x%x %s", f.id, Messages.describe(f.payload)));
         }
@@ -330,6 +389,10 @@ public final class Bridge implements FoxServer.Listener {
                 }
             }
             videoFrames++;
+            int nal = f.payload[Messages.VIDEO_HEADER_LEN + ANNEX_B.length] & NAL_TYPE_MASK;
+            if (nal == NAL_IDR || nal == NAL_SPS) {
+                Log.i(TAG, "video: key frame (nal " + nal + ") at unit " + videoFrames);
+            }
             m.onVideo(f.payload, Messages.VIDEO_HEADER_LEN, f.payload.length - Messages.VIDEO_HEADER_LEN,
                     videoFrames * 1_000_000L / init.fps);
             return;
@@ -353,11 +416,34 @@ public final class Bridge implements FoxServer.Listener {
         }
     }
 
+    /** Mic start and stop: seen on the control channel; the data goes back on the audio one. */
+    private boolean onMicMessage(Fox.Frame f) {
+        if (f.id != Messages.MIC_START && f.id != Messages.MIC_STOP) {
+            return false;
+        }
+        final Session sl = session;
+        if (sl == null) {
+            return true;
+        }
+        if (f.id == Messages.MIC_START) {
+            final Messages.MicStart ms = Messages.micStart(f.payload);
+            status("mic start " + ms.sampleRate + " Hz x" + ms.channels + " " + ms.bits + " bit");
+            main.post(() -> sl.onMic(ms));
+        } else {
+            status("mic stop");
+            main.post(sl::onMicStop);
+        }
+        return true;
+    }
+
     private void onAudioFrame(Fox.Frame f) {
         if (audioFramesLogged < LOG_FIRST_FRAMES) {
             audioFramesLogged++;
             Log.i(TAG, "audio id=0x" + Integer.toHexString(f.id) + " len=" + f.payload.length
                     + " head=" + hex(f.payload, HEAD_BYTES));
+        }
+        if (onMicMessage(f)) {
+            return;
         }
         Media m = media;
         if (m == null || f.id != Messages.AUDIO_FRAME || f.payload.length <= Messages.AUDIO_HEADER_LEN) {

@@ -1,5 +1,6 @@
 package com.ripostelabs.projection.zlink;
 
+import android.os.Process;
 import android.util.Log;
 
 import java.io.IOException;
@@ -33,6 +34,7 @@ final class FoxServer {
 
     final String name;
     private final int port;
+    private final int threadPriority;
     private final Listener listener;
     private final BlockingQueue<byte[]> outbox = new LinkedBlockingQueue<>();
     private ServerSocket server;
@@ -41,9 +43,15 @@ final class FoxServer {
     private Thread writer;
     private volatile boolean running;
 
-    FoxServer(String name, int port, Listener listener) {
+    /**
+     * @param threadPriority android.os.Process.THREAD_PRIORITY_* for the channel's reader and
+     *                       writer threads. The daemon's frames must not queue behind the launcher
+     *                       or a background sync; the video and audio channels run urgent.
+     */
+    FoxServer(String name, int port, int threadPriority, Listener listener) {
         this.name = name;
         this.port = port;
+        this.threadPriority = threadPriority;
         this.listener = listener;
     }
 
@@ -89,6 +97,7 @@ final class FoxServer {
     }
 
     private void writeLoop(Socket s) {
+        Process.setThreadPriority(threadPriority);
         OutputStream o;
         try {
             o = s.getOutputStream();
@@ -106,6 +115,7 @@ final class FoxServer {
     }
 
     private void acceptLoop() {
+        Process.setThreadPriority(threadPriority);
         while (running) {
             Socket s;
             try {

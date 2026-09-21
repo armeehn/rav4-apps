@@ -20,6 +20,7 @@ public final class FoxTest {
         initInfoCarriesTheLinkBit();
         touchAndKey();
         describeIsReadable();
+        callStateAndMic();
         System.out.println("zlink: all checks passed");
     }
 
@@ -83,6 +84,20 @@ public final class FoxTest {
     private static void describeIsReadable() {
         String d = Messages.describe(hex("08 95 02 10 00 1a 03 41 42 43"));
         eq("1=0x115 2=0x0 3=\"ABC\"", d, "describe");
+    }
+
+    private static void callStateAndMic() {
+        // The idle picture the daemon sent: 2=0 3=0 4=-1 5=0 6=0
+        Messages.CallState idle = Messages.callState(hex("08 90 0e 10 00 18 00 20 ff ff ff ff ff ff ff ff ff 01 28 00 30 00"));
+        that(!idle.callOn && !idle.mainAudio, "idle call state");
+        Messages.CallState busy = Messages.callState(hex("08 90 0e 10 01 28 01"));
+        that(busy.callOn && busy.mainAudio, "call on, main audio on");
+        Messages.MicStart m = Messages.micStart(hex("08 82 08 10 80 7d 18 01 20 10"));
+        eq(16000, m.sampleRate, "mic rate");
+        eq(1, m.channels, "mic channels");
+        eq(16, m.bits, "mic bits");
+        byte[] d = Messages.micData(16000, 1, 16, new byte[] {1, 2, 3, 4}, 4);
+        that(startsWith(d, hex("08 84 08 10 80 7d 18 01 20 10 28 00 38 00 42 04 01 02 03 04")), "mic data frame");
     }
 
     // ---- assertions (the aa tests' Check is package-private) ----------------------------------

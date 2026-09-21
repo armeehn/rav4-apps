@@ -5,7 +5,11 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.res.Configuration;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
@@ -38,9 +42,17 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
      */
     private static final String STATUS_ACTION = "com.zjinnova.zlink";
     private static final String EXTRA_STATUS = "status";
+    /** The launcher's wheel and tile requests: `command=REQ_SPEC_FUNC_CMD`, `specFuncCode=<n>`. */
+    private static final String EXTRA_COMMAND = "command";
+    private static final String COMMAND_SPEC_FUNC = "REQ_SPEC_FUNC_CMD";
+    private static final String EXTRA_SPEC_FUNC_CODE = "specFuncCode";
     private static final String EXTRA_PHONE_MODE = "phoneMode";
     private static final String STATUS_CONNECTED = "CONNECTED";
     private static final String STATUS_DISCONNECT = "DISCONNECT";
+    private static final String STATUS_CALL_ON = "PHONE_CALL_ON";
+    private static final String STATUS_CALL_OFF = "PHONE_CALL_OFF";
+    private static final String STATUS_MAIN_AUDIO_START = "MAIN_AUDIO_START";
+    private static final String STATUS_MAIN_AUDIO_STOP = "MAIN_AUDIO_STOP";
     private static final String MODE_WIRELESS = "carplay_wireless";
     private static final String MODE_WIRED = "carplay_wired";
     /** Android media key codes; the OEM gateway forwarded these raw to the daemon in mode 32. */
@@ -59,12 +71,58 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     }
 
     private final IBinder binder = new LocalBinder();
+
+    /**
+     * Requests from the launcher on the OEM app's own action. The daemon's key handler takes
+     * the launcher's codes as they are (1500 Siri, 1504 maps, 1505 phone, 1506 music, 1507
+     * now playing, 1508 home) next to Android's media key codes, so they pass straight through.
+     */
+    /** Bench aid, only with riposte.debug=1: `am broadcast -a com.ripostelabs.projection.SEND --es channel ctrl --ei id 0x203 --es hex 08830410 01`. */
+    private static final String DEBUG_ACTION = "com.ripostelabs.projection.SEND";
+    private static final String DEBUG_PROP = "riposte.debug";
+    private final BroadcastReceiver debugSend = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.i(TAG, "debug: broadcast " + intent.getExtras());
+            if (!"1".equals(SystemProps.get(DEBUG_PROP))) {
+                return;
+            }
+            String hex = intent.getStringExtra("hex");
+            byte[] payload = hex == null ? new byte[0] : unhex(hex.replace(" ", ""));
+            bridge.debugSend(intent.getStringExtra("channel"), intent.getIntExtra("id", 0), payload);
+        }
+    };
+
+    private static byte[] unhex(String h) {
+        byte[] out = new byte[h.length() / 2];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = (byte) Integer.parseInt(h.substring(2 * i, 2 * i + 2), 16);
+        }
+        return out;
+    }
+
+    private final BroadcastReceiver requests = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (!COMMAND_SPEC_FUNC.equals(intent.getStringExtra(EXTRA_COMMAND))) {
+                return;
+            }
+            int code = intent.getIntExtra(EXTRA_SPEC_FUNC_CODE, 0);
+            if (code > 0) {
+                tap(code);
+            }
+        }
+    };
     private final VideoSink videoSink = new VideoSink();
     private final AudioSink audioSink = new AudioSink(AUDIO_CHANNEL_MEDIA);
     private Bridge bridge;
     private CarPlayWireless wireless;
     private MediaCitizen citizen;
+    private MicSource mic;
     private boolean hasFocus;
+    private boolean callOn;
+    private boolean mainAudio;
+    private boolean night;
 
     /** The wheel's media keys and the launcher's card act on the phone through the daemon. */
     private final MediaCitizen.Transport transport = new MediaCitizen.Transport() {
@@ -105,6 +163,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         startForeground(NOTIFICATION_ID, notification());
 
         Messages.InitInfo init = new Messages.InitInfo();
+        videoSink.setFrameRate(init.fps);
         init.otgToHost = "echo host > " + USB_MODE_NODE + ";";
         init.otgToDevice = "echo peripheral > " + USB_MODE_NODE + ";";
         init.linkTypes = Messages.LINK_WIRED_CARPLAY | Messages.LINK_WIRELESS_CARPLAY;
@@ -113,7 +172,11 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         wireless = new CarPlayWireless(this, bridge);
         bridge.setWireless(wireless);
         bridge.setSession(this);
+        videoSink.setOnStarved(bridge::requestKeyFrame);
         citizen = MediaCitizen.attach(this, CITIZEN_TAG, transport);
+        mic = new MicSource(this);
+        registerReceiver(requests, new IntentFilter(STATUS_ACTION), Context.RECEIVER_EXPORTED);
+        registerReceiver(debugSend, new IntentFilter(DEBUG_ACTION), Context.RECEIVER_EXPORTED);
         try {
             bridge.start();
         } catch (IOException e) {
@@ -136,6 +199,8 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
 
     @Override
     public void onDestroy() {
+        unregisterReceiver(requests);
+        unregisterReceiver(debugSend);
         if (wireless != null) {
             wireless.stop();
         }
@@ -144,6 +209,9 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         }
         videoSink.stop();
         audioSink.stop();
+        if (mic != null) {
+            mic.stop();
+        }
         if (citizen != null) {
             citizen.releaseFocus();
             citizen.release();
@@ -157,23 +225,76 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
 
     void setSurface(Surface surface) {
         videoSink.setSurface(surface);
+        if (surface != null && bridge.state() == Messages.STATE_SESSION) {
+            bridge.requestKeyFrame();
+        }
     }
 
     // ---- Bridge.Session ----------------------------------------------------------------------
 
     @Override
     public void onSession(boolean up, int linkType) {
-        Intent i = new Intent(STATUS_ACTION)
-                .putExtra(EXTRA_STATUS, up ? STATUS_CONNECTED : STATUS_DISCONNECT)
-                .putExtra(EXTRA_PHONE_MODE, linkType == Messages.LINK_TYPE_WIRELESS_CARPLAY ? MODE_WIRELESS : MODE_WIRED)
-                .addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
-        sendBroadcast(i);
+        status(up ? STATUS_CONNECTED : STATUS_DISCONNECT,
+                linkType == Messages.LINK_TYPE_WIRELESS_CARPLAY ? MODE_WIRELESS : MODE_WIRED);
         Log.i(TAG, "zlink: session " + (up ? "up" : "down") + ", launcher told");
+        if (up) {
+            // The daemon starts a session in day; tell it where the unit is right now.
+            night = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                    == Configuration.UI_MODE_NIGHT_YES;
+            bridge.night(night);
+        }
         if (!up && hasFocus) {
             citizen.releaseFocus();
             citizen.setIdle();
             hasFocus = false;
         }
+        if (!up) {
+            mic.stop();
+        }
+    }
+
+    @Override
+    public void onCallState(Messages.CallState state) {
+        if (state.callOn != callOn) {
+            callOn = state.callOn;
+            status(callOn ? STATUS_CALL_ON : STATUS_CALL_OFF, null);
+        }
+        if (state.mainAudio != mainAudio) {
+            mainAudio = state.mainAudio;
+            status(mainAudio ? STATUS_MAIN_AUDIO_START : STATUS_MAIN_AUDIO_STOP, null);
+        }
+    }
+
+    @Override
+    public void onMic(final Messages.MicStart format) {
+        final int rate = format.sampleRate;
+        final int channels = Math.max(1, format.channels);
+        final int bits = format.bits;
+        mic.start(rate, channels, (pcm, len) -> bridge.mic(rate, channels, bits, pcm, len));
+    }
+
+    @Override
+    public void onMicStop() {
+        mic.stop();
+    }
+
+    /** CarPlay follows the unit's day and night, the launcher's theme included. */
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        boolean dark = (newConfig.uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        if (dark != night) {
+            night = dark;
+            bridge.night(dark);
+        }
+    }
+
+    private void status(String status, String phoneMode) {
+        Intent i = new Intent(STATUS_ACTION).putExtra(EXTRA_STATUS, status).addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES);
+        if (phoneMode != null) {
+            i.putExtra(EXTRA_PHONE_MODE, phoneMode);
+        }
+        sendBroadcast(i);
     }
 
     private void tap(int keyCode) {

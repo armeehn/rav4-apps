@@ -7,9 +7,10 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.graphics.SurfaceTexture;
 import android.view.MotionEvent;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
+import android.view.Surface;
+import android.view.TextureView;
 import android.view.View;
 import android.widget.TextView;
 
@@ -26,7 +27,9 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
 
     private static final int STATUS_LINES = 6;
 
-    private SurfaceView video;
+    private TextureView video;
+    /** The one surface the decoder draws into for this screen's whole life. */
+    private Surface videoSurface;
     private TextView status;
     private ZlinkService service;
     private final StringBuilder log = new StringBuilder();
@@ -37,10 +40,14 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
         public void onServiceConnected(ComponentName name, IBinder binder) {
             service = ((ZlinkService.LocalBinder) binder).service();
             service.bridge().setScreen(CarPlayActivity.this);
-            if (video.getHolder().getSurface().isValid()) {
-                service.setSurface(video.getHolder().getSurface());
+            if (videoSurface != null) {
+                service.setSurface(videoSurface);
             }
             onStatus(service.bridge().isDaemonUp() ? "daemon linked" : "waiting for the daemon");
+            // A screen that returns mid-session has the picture already; no strip over it.
+            if (service.bridge().state() == Messages.STATE_SESSION) {
+                status.setVisibility(View.GONE);
+            }
         }
 
         @Override
@@ -62,23 +69,27 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
         video = findViewById(R.id.carplay_video);
         status = findViewById(R.id.carplay_status);
 
-        video.getHolder().addCallback(new SurfaceHolder.Callback() {
+        video.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
-            public void surfaceCreated(SurfaceHolder holder) {
+            public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
+                videoSurface = new Surface(texture);
                 if (service != null) {
-                    service.setSurface(holder.getSurface());
+                    service.setSurface(videoSurface);
                 }
             }
 
             @Override
-            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+            public void onSurfaceTextureSizeChanged(SurfaceTexture texture, int width, int height) {
+            }
+
+            /** Kept: the decoder goes on drawing into it while the screen is away. */
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture texture) {
+                return false;
             }
 
             @Override
-            public void surfaceDestroyed(SurfaceHolder holder) {
-                if (service != null) {
-                    service.setSurface(null);
-                }
+            public void onSurfaceTextureUpdated(SurfaceTexture texture) {
             }
         });
         video.setOnTouchListener(this::forwardTouch);
@@ -104,6 +115,14 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
             service.bridge().setScreen(null);
             service.setSurface(null);
             unbindService(connection);
+        }
+        SurfaceTexture texture = video.getSurfaceTexture();
+        if (videoSurface != null) {
+            videoSurface.release();
+            videoSurface = null;
+        }
+        if (texture != null) {
+            texture.release();
         }
         super.onDestroy();
     }
@@ -152,5 +171,10 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
     @Override
     public void onVideoSize(int width, int height) {
         status.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void onLeave() {
+        moveTaskToBack(true);
     }
 }
