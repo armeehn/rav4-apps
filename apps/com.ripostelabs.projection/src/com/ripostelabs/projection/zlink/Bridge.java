@@ -254,13 +254,21 @@ public final class Bridge implements FoxServer.Listener {
                 }
             }
             state = 0;
-            videoFramesLogged = 0;
-            audioFramesLogged = 0;
-            videoWidth = 0;
-            videoHeight = 0;
-            audioRate = 0;
-            audioChannels = 0;
+            forgetMedia();
         }
+    }
+
+    /**
+     * The next session announces its formats again. Without this a phone that comes back
+     * within one daemon life looks "unchanged": no onVideoSize, no onAudioFormat, no focus.
+     */
+    private void forgetMedia() {
+        videoFramesLogged = 0;
+        audioFramesLogged = 0;
+        videoWidth = 0;
+        videoHeight = 0;
+        audioRate = 0;
+        audioChannels = 0;
     }
 
     @Override
@@ -359,6 +367,9 @@ public final class Bridge implements FoxServer.Listener {
         boolean up = newState == Messages.STATE_SESSION;
         if (up != sessionUp) {
             sessionUp = up;
+            if (!up) {
+                forgetMedia();
+            }
             final Session l = session;
             if (l != null) {
                 main.post(() -> l.onSession(up, linkType));
@@ -376,7 +387,8 @@ public final class Bridge implements FoxServer.Listener {
         if (m == null) {
             return;
         }
-        if (f.id == Messages.VIDEO_FRAME && f.payload.length > Messages.VIDEO_HEADER_LEN) {
+        if (f.id == Messages.VIDEO_FRAME
+                && f.payload.length > Messages.VIDEO_HEADER_LEN + ANNEX_B.length) {
             int w = u32(f.payload, 0);
             int h = u32(f.payload, 4);
             if (w != videoWidth || h != videoHeight) {
