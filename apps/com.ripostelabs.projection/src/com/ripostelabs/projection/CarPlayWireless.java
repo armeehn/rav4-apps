@@ -56,6 +56,12 @@ final class CarPlayWireless implements Bridge.Wireless {
     private static final String PROP_AP_SSID = "riposte.ap.ssid";
     private static final String PROP_AP_KEY = "riposte.ap.psk";
     private static final String PROP_AP_IFACE = "riposte.ap.iface";
+    /** "1" once the OS keeper has the AP on air; the credentials alone say nothing about that. */
+    private static final String PROP_AP_UP = "riposte.ap.up";
+    private static final long AP_POLL_MS = 1000;
+    /** The keeper retries a failed raise every 5 s; three of those is enough to wait. */
+    private static final int AP_POLL_TRIES = 15;
+    private int apPolls;
     private static final String DEFAULT_AP_IFACE = "wlan1";
     /** Bench aid: with the property set, the RFCOMM bytes are recorded, one file per direction. */
     private static final String DUMP_PROP = "riposte.bt.dump";
@@ -309,6 +315,7 @@ final class CarPlayWireless implements Bridge.Wireless {
 
     @Override
     public void onApInfoRequested() {
+        apPolls = 0;
         main.post(this::raiseAp);
     }
 
@@ -321,8 +328,15 @@ final class CarPlayWireless implements Bridge.Wireless {
         String ssid = SystemProps.get(PROP_AP_SSID);
         String key = SystemProps.get(PROP_AP_KEY);
         if (!ssid.isEmpty() && !key.isEmpty()) {
+            // Told the phone to join an SSID that is not on air, the session times out a
+            // minute later; a short wait for the keeper is the cheaper path.
+            boolean up = "1".equals(SystemProps.get(PROP_AP_UP));
+            if (!up && apPolls++ < AP_POLL_TRIES) {
+                main.postDelayed(this::raiseAp, AP_POLL_MS);
+                return;
+            }
             String iface = SystemProps.get(PROP_AP_IFACE);
-            Log.i(TAG, "wireless: the OS access point " + ssid + " on " + iface);
+            Log.i(TAG, "wireless: the OS access point " + ssid + " on " + iface + (up ? "" : " (not up yet)"));
             bridge.apUp(ssid, key, Messages.AP_BAND_5GHZ, iface.isEmpty() ? DEFAULT_AP_IFACE : iface);
             return;
         }
