@@ -61,6 +61,9 @@ public final class Bridge implements FoxServer.Listener {
         /** The phone's call picture changed. */
         void onCallState(Messages.CallState state);
 
+        /** A stream of the phone started (playing true) or stopped. */
+        void onAudioState(Messages.AudioState state, boolean playing);
+
         /** The daemon wants the cabin microphone in this format, or no longer. */
         void onMic(Messages.MicStart format);
 
@@ -354,6 +357,15 @@ public final class Bridge implements FoxServer.Listener {
                 final Session l = session;
                 if (l != null) {
                     main.post(() -> l.onCallState(c));
+                }
+                return;
+            case Messages.AUDIO_STATE_START:
+            case Messages.AUDIO_STATE_STOP:
+                final Messages.AudioState a = Messages.audioState(f.payload);
+                final boolean playing = f.id == Messages.AUDIO_STATE_START;
+                final Session s2 = session;
+                if (s2 != null) {
+                    main.post(() -> s2.onAudioState(a, playing));
                 }
                 return;
             default:
