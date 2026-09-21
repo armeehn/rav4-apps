@@ -33,6 +33,10 @@ final class VideoSink {
     private static final int NAL_SPS = 7;
     private static final int NAL_PPS = 8;
     private static final long INPUT_WAIT_US = 20_000;
+    /** MediaFormat.KEY_PRIORITY: 0 is realtime, 1 is best effort. */
+    private static final int PRIORITY_REALTIME = 0;
+    private static final int DEFAULT_FRAME_RATE = 30;
+    private int frameRate = DEFAULT_FRAME_RATE;
     private static final long OUTPUT_WAIT_US = 10_000;
 
     private final Deque<byte[]> pending = new ArrayDeque<>();
@@ -85,6 +89,11 @@ final class VideoSink {
         start();
     }
 
+    /** The rate the phone was asked for: the decoder clocks itself for it. */
+    synchronized void setFrameRate(int fps) {
+        frameRate = fps;
+    }
+
     private SurfaceTexture offscreenTexture;
     private Surface offscreenSurface;
 
@@ -132,6 +141,13 @@ final class VideoSink {
         try {
             codec = MediaCodec.createDecoderByType(MIME);
             MediaFormat format = MediaFormat.createVideoFormat(MIME, width, height);
+            // A bare format clocks the video core for a default session; a live stream at
+            // 45 fps and above lags behind it. Realtime priority and the true rate keep the
+            // decoder ahead of the phone, low latency stops it holding frames for reordering.
+            format.setInteger(MediaFormat.KEY_FRAME_RATE, frameRate);
+            format.setInteger(MediaFormat.KEY_OPERATING_RATE, frameRate);
+            format.setInteger(MediaFormat.KEY_PRIORITY, PRIORITY_REALTIME);
+            format.setInteger(MediaFormat.KEY_LOW_LATENCY, 1);
             codec.configure(format, surface != null ? surface : offscreen(), null, 0);
             codec.start();
         } catch (IOException | IllegalStateException | IllegalArgumentException e) {

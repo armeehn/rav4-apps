@@ -163,6 +163,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         startForeground(NOTIFICATION_ID, notification());
 
         Messages.InitInfo init = new Messages.InitInfo();
+        videoSink.setFrameRate(init.fps);
         init.otgToHost = "echo host > " + USB_MODE_NODE + ";";
         init.otgToDevice = "echo peripheral > " + USB_MODE_NODE + ";";
         init.linkTypes = Messages.LINK_WIRED_CARPLAY | Messages.LINK_WIRELESS_CARPLAY;
