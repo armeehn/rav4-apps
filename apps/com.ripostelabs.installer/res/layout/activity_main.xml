@@ -50,7 +50,7 @@
                 android:layout_height="52dp"
                 android:minWidth="120dp"
                 android:background="@drawable/btn_accent"
-                android:textColor="#FFFFFFFF"
+                android:textColor="@color/on_accent"
                 android:textAllCaps="false"
                 android:fontFamily="sans-serif-medium"
                 android:text="@string/tab_install" />

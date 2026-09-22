@@ -79,7 +79,7 @@
             android:layout_marginTop="14dp"
             android:visibility="gone"
             android:background="@drawable/btn_accent"
-            android:textColor="@color/text"
+            android:textColor="@color/on_accent"
             android:textAllCaps="false"
             android:text="@string/grant" />
     </LinearLayout>

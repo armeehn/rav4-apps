@@ -100,7 +100,7 @@
                 android:layout_marginLeft="12dp"
                 android:background="@drawable/btn_fab"
                 android:src="@drawable/ic_add"
-                android:tint="#FFFFFFFF"
+                android:tint="@color/on_accent"
                 android:scaleType="fitCenter"
                 android:padding="13dp"
                 android:elevation="4dp"

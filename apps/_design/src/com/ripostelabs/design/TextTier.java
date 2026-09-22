@@ -48,6 +48,20 @@ final class TextTier {
         return muted;
     }
 
+    /** Label inks for an accent fill. */
+    static final int LIGHT_INK = 0xFFFFFFFF;
+    static final int DARK_INK = 0xFF000000;
+
+    /**
+     * The label colour for text or a glyph on an {@code accent} fill: white or black,
+     * whichever contrasts more. One of the two always clears 4.5:1 (the worst case, a
+     * mid-grey, still gives 4.6:1). White wins ties, so a dark accent keeps its white label.
+     * Example: #5B9DFF gives black, 7.7:1 (white was 2.7:1).
+     */
+    static int onAccent(int accent) {
+        return contrast(LIGHT_INK, accent) >= contrast(DARK_INK, accent) ? LIGHT_INK : DARK_INK;
+    }
+
     /** WCAG contrast ratio of two opaque colours, 1.0 to 21.0. */
     static double contrast(int a, int b) {
         double la = luminance(a) + 0.05;

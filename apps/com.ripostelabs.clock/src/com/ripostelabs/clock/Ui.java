@@ -11,6 +11,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.ripostelabs.design.Palette;
+
 /** Small helpers for building the shared design-system UI in code. */
 final class Ui {
     private Ui() {}
@@ -47,7 +49,7 @@ final class Ui {
         ImageButton b = new ImageButton(c);
         b.setImageResource(iconRes);
         b.setBackgroundResource(R.drawable.btn_fab);
-        b.setColorFilter(0xFFFFFFFF);
+        b.setColorFilter(Palette.onAccent(c));
         b.setScaleType(ImageView.ScaleType.FIT_CENTER);
         int pad = dp(c, sizeDp * 0.28f);
         b.setPadding(pad, pad, pad, pad);

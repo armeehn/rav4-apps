@@ -50,6 +50,6 @@
             android:paddingStart="24dp"
             android:paddingEnd="24dp"
             android:text="@string/connect"
-            android:textColor="@color/text" />
+            android:textColor="@color/on_accent" />
     </LinearLayout>
 </FrameLayout>

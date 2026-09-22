@@ -365,7 +365,7 @@ public class LampActivity extends Activity implements LampLink.Listener {
     private void renderPower() {
         powerBtn.setText(powerOn ? R.string.on : R.string.off);
         powerBtn.setBackgroundResource(powerOn ? R.drawable.btn_accent : R.drawable.btn_ghost);
-        powerBtn.setTextColor(Palette.color(this, powerOn ? R.color.bg : R.color.text));
+        powerBtn.setTextColor(powerOn ? Palette.onAccent(this) : Palette.color(this, R.color.text));
     }
 
     private void renderEffect() {

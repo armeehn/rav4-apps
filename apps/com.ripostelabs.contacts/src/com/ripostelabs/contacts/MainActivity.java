@@ -402,7 +402,7 @@ public class MainActivity extends Activity {
 
         ImageView iv = new ImageView(this);
         iv.setImageResource(icon);
-        iv.setColorFilter(accent ? 0xFFFFFFFF : cText);
+        iv.setColorFilter(accent ? Palette.onAccent(this) : cText);
         LinearLayout.LayoutParams ip = new LinearLayout.LayoutParams(dp(18), dp(18));
         ip.rightMargin = dp(9);
         pill.addView(iv, ip);
@@ -411,7 +411,7 @@ public class MainActivity extends Activity {
         tv.setText(label);
         tv.setTextSize(15);
         tv.setTypeface(Typeface.create("sans-serif-medium", 0));
-        tv.setTextColor(accent ? 0xFFFFFFFF : cText);
+        tv.setTextColor(accent ? Palette.onAccent(this) : cText);
         pill.addView(tv);
         return pill;
     }
