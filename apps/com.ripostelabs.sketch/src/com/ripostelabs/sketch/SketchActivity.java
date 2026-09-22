@@ -46,6 +46,11 @@ public class SketchActivity extends Activity {
     private static final int MIN_TAP_DP = 48;   // the panel's minimum tap target, as in the launcher
     private final int[] paletteColors = new int[7];
     private final View[] swatches = new View[7];
+    // What each swatch announces, in paletteColors order.
+    private static final int[] SWATCH_NAMES = {
+        R.string.colour_theme, R.string.colour_white, R.string.colour_black, R.string.colour_red,
+        R.string.colour_green, R.string.colour_blue, R.string.colour_yellow,
+    };
     private int accentColor, surfaceColor, strokeColor, text2Color;
 
     // Brush sizes in dp: small / medium / large.
@@ -105,6 +110,7 @@ public class SketchActivity extends Activity {
         for (int i = 0; i < paletteColors.length; i++) {
             final int idx = i;
             View sw = new View(this);
+            sw.setContentDescription(getString(SWATCH_NAMES[i]));
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
             lp.setMargins(margin, 0, margin, 0);
             sw.setLayoutParams(lp);
@@ -138,6 +144,9 @@ public class SketchActivity extends Activity {
                 g.setStroke(dp(1), strokeColor);
             }
             swatches[i].setBackground(g);
+
+            // The ring is visual only; selected state is what TalkBack reads out.
+            swatches[i].setSelected(sel);
         }
     }
 

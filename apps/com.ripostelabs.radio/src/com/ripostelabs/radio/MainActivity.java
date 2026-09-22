@@ -427,6 +427,9 @@ public class MainActivity extends Activity
             int f = getPreset(i);
             boolean active = f > 0 && f == curFreq;
             p.setText(f > 0 ? formatFreq(f, tabBand()) : getString(R.string.preset_empty));
+
+            // "— · —" six times over is all TalkBack could say about empty slots; name the slot.
+            p.setContentDescription(f > 0 ? null : getString(R.string.preset_empty_desc, i + 1));
             p.setTextColor(active ? cAccent : (f > 0 ? cText : cText3));
             p.setBackground(presetBg(active));
         }

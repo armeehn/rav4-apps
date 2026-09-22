@@ -60,7 +60,8 @@ import android.widget.TextView;
  *   <li>{@code accent_dim} — the accent at the resource's alpha, same reasoning.</li>
  *   <li>{@code scrim} — the background at the resource's alpha.</li>
  *   <li>{@code text3} — the muted text pushed a little further toward the background, which
- *       keeps three distinct text tiers on a palette of any lightness.</li>
+ *       keeps three distinct text tiers on a palette of any lightness, but never under 4.5:1
+ *       on any published surface ({@link TextTier}).</li>
  * </ul>
  *
  * <h3>Reading cost</h3>
@@ -95,9 +96,6 @@ public final class Palette {
     private static final String COL_CORNER_SCALE = "corner_scale";
     private static final String COL_MONO_TYPE = "mono_type";
     private static final String COL_HARD_EDGE = "hard_edge";
-
-    /** How far {@code text3} sits from {@code text2} toward the background. */
-    private static final float TEXT3_TOWARD_BACKGROUND = 0.45f;
 
     /** Null until the first read; stays null when there is no launcher to read. */
     private static volatile Snapshot cached;
@@ -149,8 +147,8 @@ public final class Palette {
                 return withAlphaOf(fallback, s.background);
 
             case "text3":
-                return blend(opaque(s.onSurfaceMuted), opaque(s.background),
-                        TEXT3_TOWARD_BACKGROUND);
+                return TextTier.third(opaque(s.onSurfaceMuted), opaque(s.background),
+                        opaque(s.surface), opaque(s.surfaceVariant));
             default:
                 return fallback;
         }
@@ -306,14 +304,6 @@ public final class Palette {
     /** The alpha of {@code from} with the RGB of {@code rgbSource}. */
     private static int withAlphaOf(int from, long rgbSource) {
         return (from & 0xFF000000) | ((int) rgbSource & 0x00FFFFFF);
-    }
-
-    /** {@code amount} of the way from {@code a} to {@code b}, per channel. */
-    private static int blend(int a, int b, float amount) {
-        int r = (int) (((a >> 16) & 0xFF) + ((((b >> 16) & 0xFF) - ((a >> 16) & 0xFF)) * amount));
-        int g = (int) (((a >> 8) & 0xFF) + ((((b >> 8) & 0xFF) - ((a >> 8) & 0xFF)) * amount));
-        int bl = (int) ((a & 0xFF) + (((b & 0xFF) - (a & 0xFF)) * amount));
-        return 0xFF000000 | (r << 16) | (g << 8) | bl;
     }
 
     private static final class Snapshot {

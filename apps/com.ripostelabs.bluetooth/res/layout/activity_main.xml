@@ -51,6 +51,7 @@
         <!-- On/off toggle -->
         <Switch
             android:id="@+id/toggle"
+            android:contentDescription="@string/app_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:minHeight="48dp"

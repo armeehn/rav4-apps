@@ -20,6 +20,8 @@
     <string name="brightness">Brightness</string>
     <string name="effects">Effects</string>
     <string name="effect">Effect</string>
+    <string name="prev_effect">Previous effect</string>
+    <string name="next_effect">Next effect</string>
     <string name="auto">Auto</string>
     <string name="speed">Speed</string>
     <string name="music">Music</string>
@@ -27,4 +29,12 @@
     <string name="sensitivity">Sensitivity</string>
     <string name="on">ON</string>
     <string name="off">OFF</string>
+    <string name="colour_red">Red</string>
+    <string name="colour_orange">Orange</string>
+    <string name="colour_yellow">Yellow</string>
+    <string name="colour_green">Green</string>
+    <string name="colour_cyan">Cyan</string>
+    <string name="colour_blue">Blue</string>
+    <string name="colour_purple">Purple</string>
+    <string name="colour_white">White</string>
 </resources>

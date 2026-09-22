@@ -10,7 +10,7 @@
     <color name="accent_dim">#335B9DFF</color>
     <color name="text">#FFF2F5FA</color>
     <color name="text2">#FFAAB3C2</color>
-    <color name="text3">#FF6B7484</color>
+    <color name="text3">#FF8590A3</color>
     <color name="ripple">#33FFFFFF</color>
     <color name="scrim">#CC000000</color>
     <!-- v0.5.1 semantic role. Published by the launcher, so a theme sets its own. -->
