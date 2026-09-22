@@ -16,6 +16,10 @@ import android.graphics.drawable.RippleDrawable;
 import android.graphics.drawable.VectorDrawable;
 import android.os.Looper;
 import android.util.TypedValue;
+import android.os.Build;
+import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -369,6 +373,32 @@ public final class Palette {
      * <p>Call once at the end of {@code onCreate}, after the view tree exists. It also starts
      * watching the palette, so the screen re-paints if the driver changes theme (v0.5.3).
      */
+    /**
+     * Hide the status and navigation bars for the whole activity, and keep them hidden when a
+     * swipe reveals them (BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE). API 30+; on anything older
+     * the theme's windowFullscreen still applies.
+     */
+    private static void hideSystemBars(Activity activity) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            return;
+        }
+        final Window window = activity.getWindow();
+        window.setDecorFitsSystemWindows(false);
+        hideNow(window);
+        // apply() runs from onCreate, before the decor view is attached, and the controller a
+        // detached window hands out forgets the request. Ask again once the view is up.
+        window.getDecorView().post(() -> hideNow(window));
+    }
+
+    private static void hideNow(Window window) {
+        final WindowInsetsController controller = window.getInsetsController();
+        if (controller == null) {
+            return;
+        }
+        controller.hide(WindowInsets.Type.systemBars());
+        controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+    }
+
     public static void apply(Activity activity) {
         if (activity == null) {
             return;
@@ -381,6 +411,11 @@ public final class Palette {
         if (bg != 0) {
             activity.getWindow().setBackgroundDrawable(new ColorDrawable(bg));
         }
+
+        // The launcher runs fullscreen; a suite app that does not flashes the Android clock,
+        // Wi-Fi and battery in and out over the car UI on every launch (UI audit, 2026-09-22).
+        // android:windowFullscreen no longer hides them on API 30+, so the controller does.
+        hideSystemBars(activity);
 
         // Not walked here: these screens build their view tree during onCreate, so a walk
         // at the call site would only see whatever existed by that line. The layout hook
