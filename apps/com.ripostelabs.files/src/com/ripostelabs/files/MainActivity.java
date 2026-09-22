@@ -567,7 +567,9 @@ public class MainActivity extends Activity {
             if (isDir) {
                 int n = 0;
                 try { String[] l = f.list(); n = l == null ? 0 : l.length; } catch (Exception ignored) {}
-                sub.setText("Folder  ·  " + n + " items");
+                sub.setText(getString(R.string.folder_items, n == 1
+                        ? getString(R.string.items_count_one)
+                        : getString(R.string.items_count, n)));
             } else {
                 sub.setText(human(f.length()) + "  ·  " + dateFmt.format(new Date(f.lastModified())));
             }

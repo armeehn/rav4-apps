@@ -211,7 +211,8 @@ public class MainActivity extends Activity
                 tracks.clear();
                 tracks.addAll(found);
                 adapter.notifyDataSetChanged();
-                count.setText(getString(R.string.tracks_count, tracks.size()));
+                count.setText(tracks.size() == 1 ? getString(R.string.tracks_count_one)
+                        : getString(R.string.tracks_count, tracks.size()));
                 emptyText.setText(R.string.empty_no_tracks);
                 showEmpty(tracks.isEmpty());
             });

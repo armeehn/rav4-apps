@@ -11,5 +11,6 @@
     <string name="pause">Pause</string>
     <string name="prev">Previous</string>
     <string name="next">Next</string>
+    <string name="tracks_count_one">1 track</string>
     <string name="tracks_count">%1$d tracks</string>
 </resources>

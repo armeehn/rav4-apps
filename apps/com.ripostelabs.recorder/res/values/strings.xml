@@ -4,6 +4,7 @@
     <string name="tap_to_record">Tap to record</string>
     <string name="recording">Recording…</string>
     <string name="recordings">Recordings</string>
+    <string name="recordings_count_one">1 recording</string>
     <string name="recordings_count">%1$d recordings</string>
     <string name="no_recordings">No recordings yet</string>
     <string name="empty_hint">Tap the microphone to capture your first recording</string>
