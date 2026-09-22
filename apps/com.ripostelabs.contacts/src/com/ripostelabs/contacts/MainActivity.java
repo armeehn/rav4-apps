@@ -266,7 +266,9 @@ public class MainActivity extends Activity {
         }
         adapter.notifyDataSetChanged();
 
-        int total = all.size();
+        // The header counts what is on screen: it read "3 contacts" over "No matching contacts"
+        // while a search was filtering the list.
+        int total = visible.size();
         count.setText(total == 1 ? getString(R.string.contacts_count_one)
                 : getString(R.string.contacts_count, total));
 
