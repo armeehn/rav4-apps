@@ -59,6 +59,11 @@ jobs:
       - name: Theme wiring
         run: scope/check-theme-wiring.sh
 
+      # "1 tracks" compiles, builds and ships: only a reader catches it. The rule that every
+      # count string carries a singular twin is checked here instead.
+      - name: Count strings
+        run: scope/check-plurals.sh
+
       # Unit tests for the logic that does not need Android. Runs after the build because a
       # compile failure there is the more useful error to see first.
       - name: Unit tests

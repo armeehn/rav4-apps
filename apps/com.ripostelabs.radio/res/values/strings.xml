@@ -37,5 +37,6 @@
     <string name="play">Play</string>
     <string name="stop">Stop</string>
     <string name="stream_error">Stream unavailable — try another station</string>
+    <string name="stations_count_one">1 station</string>
     <string name="stations_count">%1$d stations</string>
 </resources>

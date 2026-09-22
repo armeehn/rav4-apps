@@ -383,7 +383,8 @@ public class MainActivity extends Activity
                     if (playing < 0) stopPlayback();
                 }
                 adapter.notifyDataSetChanged();
-                count.setText(getString(R.string.recordings_count, recs.size()));
+                count.setText(recs.size() == 1 ? getString(R.string.recordings_count_one)
+                        : getString(R.string.recordings_count, recs.size()));
                 if (recs.isEmpty()) {
                     emptyText.setText(gate.granted() ? getString(R.string.no_recordings)
                             : getString(R.string.need_permission));

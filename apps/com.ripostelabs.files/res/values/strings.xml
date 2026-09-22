@@ -19,5 +19,7 @@
     <string name="create">Create</string>
     <string name="ok">OK</string>
     <string name="delete_confirm">Delete this item?</string>
+    <string name="folder_items">Folder  ·  %1$s</string>
+    <string name="items_count_one">1 item</string>
     <string name="items_count">%1$d items</string>
 </resources>

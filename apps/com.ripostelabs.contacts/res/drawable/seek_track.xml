@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Media seek track. The platform's is a 2 dp hairline; at arm's length on the 1920x720 panel
+     it reads as nothing at all, so the bar is 12 dp with fully rounded ends. The unplayed part
+     is accent_dim rather than a surface grey, which on the dark cards read as no bar at all. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/accent_dim" />
+            <corners android:radius="6dp" />
+            <size android:height="12dp" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape android:shape="rectangle">
+                <solid android:color="@color/accent" />
+                <corners android:radius="6dp" />
+                <size android:height="12dp" />
+            </shape>
+        </clip>
+    </item>
+</layer-list>

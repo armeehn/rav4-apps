@@ -10,4 +10,8 @@
     <string name="back">Back</string>
     <string name="open_browser">Open in browser</string>
     <string name="top_stories">Top Stories</string>
+    <string name="stories_count_one">1 story</string>
+    <string name="stories_count">%1$d stories</string>
+    <string name="loading_more">loading more…</string>
+    <string name="updated">updated %1$s</string>
 </resources>

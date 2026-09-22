@@ -143,7 +143,13 @@ public class RunActivity extends Activity {
 
     private void updateCount() {
         if (count == null) return;
-        count.setText(images.isEmpty() ? "" : getString(R.string.photo_count, images.size()));
+        if (images.isEmpty()) {
+            count.setText("");
+            return;
+        }
+
+        count.setText(images.size() == 1 ? getString(R.string.photo_count_one)
+                : getString(R.string.photo_count, images.size()));
     }
 
     private void showEmpty(boolean show) {
