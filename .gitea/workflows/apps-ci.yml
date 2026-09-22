@@ -61,6 +61,11 @@ jobs:
       - name: Check empty states
         run: scope/check-empty-states.sh
 
+      # 44 dp icons and 46 dp buttons shipped in GPS and Speedometer: a fixed dp size under
+      # the 48 dp touch floor builds and looks fine on a desk, and only bites in a car.
+      - name: Tap targets
+        run: scope/check-tap-targets.sh
+
       # Unit tests for the logic that does not need Android. Runs after the build because a
       # compile failure there is the more useful error to see first.
       - name: Unit tests
