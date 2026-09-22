@@ -89,7 +89,7 @@
                     android:textColor="@color/text"
                     android:textSize="16sp"
                     android:singleLine="true"
-                    android:imeOptions="actionDone"
+                    android:imeOptions="actionDone|flagNoExtractUi"
                     android:inputType="text|textCapSentences" />
             </LinearLayout>
 

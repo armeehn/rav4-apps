@@ -6,6 +6,7 @@ import android.text.format.DateFormat;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -186,6 +187,9 @@ class AlarmPanel extends LinearLayout {
 
         final EditText labelField = new EditText(getContext());
         labelField.setHint(R.string.label_hint);
+        // Without this the IME takes the whole panel for its own editor and the dialog
+        // vanishes behind it: the panel is 720 px tall, so the keyboard asks for extract mode.
+        labelField.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         labelField.setBackgroundResource(R.drawable.bg_field);
         labelField.setTextColor(Palette.color(getContext(), R.color.text));
         labelField.setHintTextColor(Palette.color(getContext(), R.color.text3));

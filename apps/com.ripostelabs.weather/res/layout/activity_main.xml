@@ -200,7 +200,7 @@
                 android:textColorHint="@color/text3"
                 android:textSize="17sp"
                 android:inputType="text"
-                android:imeOptions="actionSearch"
+                android:imeOptions="actionSearch|flagNoExtractUi"
                 android:maxLines="1"
                 android:hint="@string/hint_city" />
 

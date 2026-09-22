@@ -184,6 +184,9 @@ public class MainActivity extends Activity {
         field.setSelection(field.getText().length());
         field.setSingleLine(true);
         field.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        // Without this the IME takes the whole panel for its own editor and the dialog
+        // vanishes behind it: the panel is 720 px tall, so the keyboard asks for extract mode.
+        field.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         int pad = dp(20);
         field.setPadding(pad, dp(8), pad, dp(8));
         new AlertDialog.Builder(this)
