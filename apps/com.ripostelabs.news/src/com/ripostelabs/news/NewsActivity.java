@@ -67,6 +67,7 @@ public class NewsActivity extends Activity {
     private int selected = 0;                 // 0 = Top Stories, else 1..N -> SOURCES[selected-1]
     private int generation = 0;               // bumped on each load to discard stale threads
     private int pending = 0;                  // feeds still in flight for the current generation
+    private static final String STATUS_SEP = "  •  ";   // separator between status-line parts
 
     // Pack roles for code-built views, resolved through the launcher's palette in onCreate.
     // A literal here paints the fallback pack, and a colour filter is invisible to Palette.apply.
@@ -253,17 +254,24 @@ public class NewsActivity extends Activity {
     private void render() {
         List<Item> items = currentItems();
 
-        // Status line.
-        if (pending > 0) {
-            feedStatus.setText(getString(R.string.loading));
-        } else if (items.isEmpty()) {
-            feedStatus.setText(currentErrorSummary());
-        } else {
+        // Status line. Headlines on screen beat progress: Top Stories draws each feed as it
+        // arrives, so the old order left "Loading headlines…" sitting under a full page of
+        // stories until the slowest of the five landed. With items, the line is the count.
+        if (!items.isEmpty()) {
             String updated = new SimpleDateFormat("HH:mm", Locale.US).format(new Date());
-            String suffix = "";
+            String count = items.size() == 1
+                    ? getString(R.string.stories_count_one)
+                    : getString(R.string.stories_count, items.size());
+            String suffix = pending > 0 ? STATUS_SEP + getString(R.string.loading_more) : "";
             String errs = currentErrorSummary();
-            if (errs != null) suffix = "  •  " + errs;
-            feedStatus.setText(items.size() + " stories  •  updated " + updated + suffix);
+            if (errs != null) {
+                suffix = suffix + STATUS_SEP + errs;
+            }
+            feedStatus.setText(count + STATUS_SEP + getString(R.string.updated, updated) + suffix);
+        } else if (pending > 0) {
+            feedStatus.setText(getString(R.string.loading));
+        } else {
+            feedStatus.setText(currentErrorSummary());
         }
 
         headlineList.removeAllViews();
