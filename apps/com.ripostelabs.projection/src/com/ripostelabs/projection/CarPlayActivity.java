@@ -35,6 +35,8 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
     private ZlinkService service;
     private final StringBuilder log = new StringBuilder();
     private int lines;
+    /** Bench builds keep the protocol trace on screen; a car build never shows it. */
+    private final boolean bench = SystemProps.bench();
 
     private final ServiceConnection connection = new ServiceConnection() {
         @Override
@@ -44,7 +46,11 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
             if (videoSurface != null) {
                 service.setSurface(videoSurface);
             }
-            onStatus(service.bridge().isDaemonUp() ? "daemon linked" : "waiting for the daemon");
+            if (bench) {
+                onStatus(service.bridge().isDaemonUp() ? "daemon linked" : "waiting for the daemon");
+            } else {
+                status.setText(getString(R.string.carplay_waiting_phone));
+            }
             // A screen that returns mid-session has the picture already; no strip over it.
             if (service.bridge().state() == Messages.STATE_SESSION) {
                 status.setVisibility(View.GONE);
@@ -169,8 +175,17 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
 
     // ---- Bridge.Screen -----------------------------------------------------------------------
 
+    /**
+     * The daemon's own words are a protocol trace ("zlink: control 0x704"): a bench aid, and
+     * what the driver read on a product unit while waiting for the picture (UI sweep,
+     * 2026-09-22). On a bench build the rolling trace still shows; otherwise the strip carries
+     * one plain line about the phone, set from the session state.
+     */
     @Override
     public void onStatus(String line) {
+        if (!bench) {
+            return;
+        }
         if (lines >= STATUS_LINES) {
             int cut = log.indexOf("\n");
             log.delete(0, cut + 1);
@@ -185,6 +200,25 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
     public void onSessionState(int state, int linkType) {
         // The status strip only matters before the picture arrives.
         status.setVisibility(state == Messages.STATE_WAITING_LINK ? View.VISIBLE : View.GONE);
+        if (!bench) {
+            status.setText(waitingText(state));
+        }
+    }
+
+    /** What the driver is waiting for, in their words. */
+    private String waitingText(int state) {
+        switch (state) {
+            case Messages.STATE_WAIT_INIT:
+                return getString(R.string.carplay_starting);
+            case Messages.STATE_WAITING_LINK:
+                return getString(R.string.carplay_waiting_phone);
+            case Messages.STATE_WIRELESS_CARPLAY:
+                return getString(R.string.carplay_connecting);
+            case Messages.STATE_STOPPED:
+                return getString(R.string.carplay_disconnected);
+            default:
+                return getString(R.string.carplay_starting);
+        }
     }
 
     @Override
