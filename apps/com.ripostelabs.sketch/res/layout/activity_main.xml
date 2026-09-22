@@ -114,6 +114,7 @@
             android:padding="13dp"
             android:scaleType="fitCenter"
             android:background="@drawable/btn_accent"
+            android:tint="@color/on_accent"
             android:src="@drawable/ic_save"
             android:contentDescription="@string/lbl_save" />
     </LinearLayout>

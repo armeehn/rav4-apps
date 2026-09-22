@@ -338,7 +338,7 @@ public class MainActivity extends Activity {
             if (t.done) {
                 ring.setColor(cAccent);
                 ring.setStroke(dp(2), cAccent);
-                check.setColorFilter(0xFFFFFFFF);
+                check.setColorFilter(Palette.onAccent(MainActivity.this));
                 check.setImageAlpha(255);
             } else {
                 ring.setColor(0x00000000);

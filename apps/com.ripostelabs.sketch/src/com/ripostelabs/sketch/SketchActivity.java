@@ -189,7 +189,7 @@ public class SketchActivity extends Activity {
             g.setStroke(dp(1), sel ? accentColor : strokeColor);
             sizeChips[i].setBackground(g);
             sizeChips[i].setTextColor(sel
-                    ? Color.WHITE : Palette.color(this, R.color.text2));
+                    ? Palette.onAccent(this) : Palette.color(this, R.color.text2));
         }
     }
 

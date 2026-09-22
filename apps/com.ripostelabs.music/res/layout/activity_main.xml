@@ -144,7 +144,7 @@
                 android:layout_marginRight="8dp"
                 android:background="@drawable/btn_fab"
                 android:src="@drawable/ic_play"
-                android:tint="#FFFFFFFF"
+                android:tint="@color/on_accent"
                 android:scaleType="fitCenter"
                 android:padding="18dp"
                 android:contentDescription="@string/play" />

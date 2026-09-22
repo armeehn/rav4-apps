@@ -154,6 +154,15 @@ public final class Palette {
         }
     }
 
+    /**
+     * The label colour for text or a glyph on an accent fill: white or black, whichever
+     * reads on the accent in use ({@link TextTier#onAccent}). White on the default #5B9DFF
+     * was 2.7:1.
+     */
+    public static int onAccent(Context context) {
+        return TextTier.onAccent(opaque(colorByName(context, "accent")));
+    }
+
     /** Drops the cached palette; the next {@link #color} re-reads it. */
     public static void invalidate() {
         loaded = false;
@@ -473,6 +482,7 @@ public final class Palette {
     private static void walk(View v, int[][] map) {
         if (PAINTED_VIEWS.firstVisit(v)) {
             paint(v, map);
+            inkOnAccent(v);
         }
 
         // Always descend: a painted parent can have gained new children since.
@@ -540,6 +550,36 @@ public final class Palette {
             return;
         }
         i.setImageTintList(ColorStateList.valueOf(ink));
+    }
+
+    /**
+     * A label or vector glyph whose nearest fill is the accent takes {@link #onAccent}. XML
+     * writes one fixed ink for the default accent; a launcher accent can need the other.
+     */
+    private static void inkOnAccent(View v) {
+        int accent = colorByName(v.getContext(), "accent");
+        if (accent == 0 || groundOf(v) != accent) {
+            return;
+        }
+
+        int ink = TextTier.onAccent(accent);
+        if (v instanceof TextView) {
+            ((TextView) v).setTextColor(ink);
+            return;
+        }
+        if (v instanceof ImageView && ((ImageView) v).getDrawable() instanceof VectorDrawable) {
+            ((ImageView) v).setImageTintList(ColorStateList.valueOf(ink));
+        }
+    }
+
+    /** The nearest opaque fill behind {@code v}, or 0 when none. */
+    private static int groundOf(View v) {
+        for (int fill : groundsOf(v)) {
+            if (!IconRole.isClear(fill)) {
+                return fill;
+            }
+        }
+        return 0;
     }
 
     /** Background fills from {@code v} up to the window, nearest first; 0 where none. */

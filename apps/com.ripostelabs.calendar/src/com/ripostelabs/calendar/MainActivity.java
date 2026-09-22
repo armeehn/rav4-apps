@@ -165,6 +165,7 @@ public class MainActivity extends Activity {
         fab.setId(0x7f0f0001);
         fab.setImageResource(R.drawable.ic_add);
         fab.setBackgroundResource(R.drawable.btn_fab);
+        fab.setColorFilter(Palette.onAccent(this));
         fab.setScaleType(ImageView.ScaleType.CENTER);
         fab.setContentDescription(getString(R.string.new_event));
         fab.setElevation(dp(6));
@@ -324,7 +325,7 @@ public class MainActivity extends Activity {
 
         grantBtn = styled(R.style.Body);
         grantBtn.setText(R.string.grant);
-        grantBtn.setTextColor(Color.WHITE);
+        grantBtn.setTextColor(Palette.onAccent(this));
         grantBtn.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         grantBtn.setGravity(Gravity.CENTER);
         grantBtn.setPadding(dp(24), dp(12), dp(24), dp(12));

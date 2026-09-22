@@ -152,9 +152,9 @@ public class MainActivity extends Activity {
     private void selectTab(boolean install) {
         showingInstall = install;
         tabInstall.setBackgroundResource(install ? R.drawable.btn_accent : R.drawable.btn_ghost);
-        tabInstall.setTextColor(install ? 0xFFFFFFFF : cText2);
+        tabInstall.setTextColor(install ? Palette.onAccent(this) : cText2);
         tabApps.setBackgroundResource(install ? R.drawable.btn_ghost : R.drawable.btn_accent);
-        tabApps.setTextColor(install ? cText2 : 0xFFFFFFFF);
+        tabApps.setTextColor(install ? cText2 : Palette.onAccent(this));
         section.setText(install ? R.string.section_available : R.string.section_installed);
         apkList.setVisibility(install ? View.VISIBLE : View.GONE);
         appList.setVisibility(install ? View.GONE : View.VISIBLE);

@@ -109,7 +109,7 @@ public class RingActivity extends Activity {
         slp.rightMargin = Ui.dp(this, 16);
         buttons.addView(snooze, slp);
 
-        TextView dismiss = Ui.pill(this, getString(R.string.dismiss), true, 0xFFFFFFFF);
+        TextView dismiss = Ui.pill(this, getString(R.string.dismiss), true, Palette.onAccent(this));
         dismiss.setOnClickListener(v -> dismiss());
         buttons.addView(dismiss);
 
