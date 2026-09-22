@@ -59,7 +59,7 @@ public class WeatherActivity extends Activity {
     // Design-system palette (mirrors res/values/colors.xml) for code-built cards.
     private static final String C_TEXT = "#FFF2F5FA";   // @color/text
     private static final String C_TEXT2 = "#FFAAB3C2";  // @color/text2
-    private static final String C_TEXT3 = "#FF6B7484";  // @color/text3
+    private static final String C_TEXT3 = "#FF8590A3";  // @color/text3
     private static final String C_WHITE = "#FFFFFFFF";
 
     @Override
