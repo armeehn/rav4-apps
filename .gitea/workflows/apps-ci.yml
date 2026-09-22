@@ -66,6 +66,14 @@ jobs:
       - name: Tap targets
         run: scope/check-tap-targets.sh
 
+      # An ImageView wired as a button and a bare Switch both shipped unlabelled: silent under
+      # TalkBack and unreachable by any UI driver except by pixel (a11y audit, 2026-09-22).
+      # The device half, scope/a11y-audit.py, needs an emulator; its rules are self-tested here.
+      - name: Accessibility labels
+        run: |
+          scope/check-a11y-labels.sh
+          python3 -B scope/test_a11y.py
+
       # Unit tests for the logic that does not need Android. Runs after the build because a
       # compile failure there is the more useful error to see first.
       - name: Unit tests
