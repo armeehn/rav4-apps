@@ -53,6 +53,7 @@ public class RunActivity extends Activity {
     private View empty;
     private Button grantBtn;
     private View emptyHint;
+    private TextView emptyText;
     private TextView count;
     private int cornerPx;
 
@@ -77,6 +78,7 @@ public class RunActivity extends Activity {
         empty = findViewById(R.id.empty);
         grantBtn = findViewById(R.id.grant);
         emptyHint = findViewById(R.id.empty_hint);
+        emptyText = findViewById(R.id.empty_text);
         count = findViewById(R.id.count);
 
         cornerPx = (int) TypedValue.applyDimension(
@@ -159,6 +161,8 @@ public class RunActivity extends Activity {
         int needPerm = show && !gate.granted() ? View.VISIBLE : View.GONE;
         grantBtn.setVisibility(needPerm);
         emptyHint.setVisibility(needPerm);
+        // "No photos found" under a Grant button states a fact that is not the reason.
+        emptyText.setText(gate.granted() ? R.string.empty_no_images : R.string.need_permission_title);
         if (show) updateCount();
     }
 
