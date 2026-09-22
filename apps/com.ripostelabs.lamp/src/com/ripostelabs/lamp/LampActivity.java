@@ -55,6 +55,12 @@ public class LampActivity extends Activity implements LampLink.Listener {
         0xFF0000, 0xFF8C00, 0xFFE000, 0x00FF40, 0x00E0FF, 0x2040FF, 0xC000FF, 0xFFFFFF,
     };
 
+    // What each swatch announces: a bare coloured View is "button" and nothing else.
+    private static final int[] SWATCH_NAMES = {
+        R.string.colour_red, R.string.colour_orange, R.string.colour_yellow, R.string.colour_green,
+        R.string.colour_cyan, R.string.colour_blue, R.string.colour_purple, R.string.colour_white,
+    };
+
     private LampLink link;
     private SharedPreferences prefs;
 
@@ -172,8 +178,10 @@ public class LampActivity extends Activity implements LampLink.Listener {
     private void buildSwatches() {
         float density = getResources().getDisplayMetrics().density;
         int gap = (int) (8 * density);
-        for (final int c : SWATCHES) {
+        for (int i = 0; i < SWATCHES.length; i++) {
+            final int c = SWATCHES[i];
             View v = new View(this);
+            v.setContentDescription(getString(SWATCH_NAMES[i]));
             GradientDrawable d = new GradientDrawable();
             d.setColor(0xFF000000 | c);
             d.setCornerRadius(14 * density * Palette.cornerScale(this));

@@ -7,4 +7,11 @@
     <string name="lbl_undo">Undo</string>
     <string name="lbl_clear">Clear</string>
     <string name="lbl_save">Save</string>
+    <string name="colour_theme">Theme colour</string>
+    <string name="colour_white">White</string>
+    <string name="colour_black">Black</string>
+    <string name="colour_red">Red</string>
+    <string name="colour_green">Green</string>
+    <string name="colour_blue">Blue</string>
+    <string name="colour_yellow">Yellow</string>
 </resources>
