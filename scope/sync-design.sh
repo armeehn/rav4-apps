@@ -6,13 +6,14 @@
 #   - values/colors.xml, values/styles.xml and res/font/* are copied outright — app-local
 #     additions belong in separate *_app.xml files, never in the shared copies;
 #   - the shape drawables every app needs are copied to all apps (styles.xml references
-#     btn_ghost from EmptyStateAction; AppTheme itself sets no buttonStyle);
+#     btn_ghost from EmptyStateAction and seek_track/seek_thumb from SeekControl, and a
+#     missing one fails the aapt link of every app; AppTheme itself sets no buttonStyle);
 #   - any other pack drawable an app already carries (icons) is refreshed from the master.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 SRC="apps/_design/res"
 
-SHAPES="bg_card.xml bg_card_grad.xml bg_field.xml btn_accent.xml btn_fab.xml btn_ghost.xml btn_icon.xml"
+SHAPES="bg_card.xml bg_card_grad.xml bg_field.xml btn_accent.xml btn_fab.xml btn_ghost.xml btn_icon.xml seek_track.xml seek_thumb.xml"
 
 for d in apps/com.ripostelabs.*; do
     [ -f "$d/AndroidManifest.xml" ] || continue   # a build artefact left by another branch, not an app

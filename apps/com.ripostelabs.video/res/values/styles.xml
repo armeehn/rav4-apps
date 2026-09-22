@@ -82,6 +82,24 @@
         <item name="android:stateListAnimator">@null</item>
         <item name="android:visibility">gone</item>
     </style>
+    <!-- Media seek bar (UI audit, 2026-09-22): a 24 px thumb on a 1920 px panel is not
+         hittable while driving. The view is 48 dp tall so the whole row is the touch target,
+         the track is 12 dp so the eye finds it, and the thumb is a 28 dp disc.
+
+           [.............. 48 dp touch target ..............]
+           [    (o)==========:::::::::::::::::::::::        ]
+           [   28 dp thumb        12 dp track               ]
+    -->
+    <style name="SeekControl">
+        <item name="android:layout_height">48dp</item>
+        <item name="android:minHeight">12dp</item>
+        <item name="android:maxHeight">12dp</item>
+        <item name="android:progressDrawable">@drawable/seek_track</item>
+        <item name="android:thumb">@drawable/seek_thumb</item>
+        <item name="android:splitTrack">false</item>
+        <item name="android:paddingLeft">14dp</item>
+        <item name="android:paddingRight">14dp</item>
+    </style>
     <style name="Overline">
         <item name="android:textColor">@color/text3</item>
         <item name="android:textSize">11sp</item>

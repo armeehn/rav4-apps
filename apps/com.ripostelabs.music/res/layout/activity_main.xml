@@ -179,14 +179,11 @@
 
             <SeekBar
                 android:id="@+id/seek"
+                style="@style/SeekControl"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginLeft="8dp"
-                android:layout_marginRight="8dp"
-                android:progressTint="@color/accent"
-                android:thumbTint="@color/accent"
-                android:progressBackgroundTint="@color/surface2" />
+                android:layout_marginRight="8dp" />
 
             <TextView
                 android:id="@+id/dur_time"

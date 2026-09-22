@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Media seek thumb: 28 dp of visible grab handle inside the 48 dp touch target SeekControl
+     gives it. The platform thumb is a 12 dp dot, which is a miss waiting to happen in a car. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="@color/accent" />
+    <size android:width="28dp" android:height="28dp" />
+</shape>
