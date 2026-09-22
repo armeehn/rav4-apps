@@ -222,14 +222,16 @@ public class SketchActivity extends Activity {
             fos.flush();
             fos.close();
         } catch (Exception e) {
-            toast("Save failed: " + e.getMessage());
+            toast("Could not save the drawing");
             return;
         }
 
         // Best-effort: also publish to the shared gallery so it shows in Photos.
         boolean inGallery = publishToGallery(bmp, name);
 
-        toast("Saved: " + out.getAbsolutePath() + (inGallery ? "  (+gallery)" : ""));
+        // The file name is what a driver can look for; the absolute path and the "(+gallery)"
+        // marker were a developer's note printed at them.
+        toast(inGallery ? "Saved to Photos as " + name : "Saved as " + name);
     }
 
     /** Insert a copy into MediaStore.Images (API 29+). Returns true on success. */
