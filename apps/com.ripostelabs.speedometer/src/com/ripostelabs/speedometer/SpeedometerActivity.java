@@ -277,7 +277,7 @@ public class SpeedometerActivity extends Activity {
         bigSpeed.setText(String.valueOf(Math.round(disp)));
 
         statusView.setText(loc.getProvider() != null
-                ? loc.getProvider().toUpperCase(Locale.US) + " fix" : "Fix acquired");
+                ? "Fix from " + providerLabel(loc.getProvider()) : "Fix acquired");
     }
 
     // ---------------------------------------------------------------- stats + units
@@ -371,5 +371,22 @@ public class SpeedometerActivity extends Activity {
 
     private void hideNotice() {
         if (noticeBox.getVisibility() != View.GONE) noticeBox.setVisibility(View.GONE);
+    }
+
+    /**
+     * A LocationManager provider id is an Android constant, not a word: the panel read
+     * "FUSED fix" and "Fix 15:00 • fused". Say where the position came from instead.
+     */
+    private static String providerLabel(String provider) {
+        if (LocationManager.GPS_PROVIDER.equals(provider)) {
+            return "satellites";
+        }
+        if (LocationManager.NETWORK_PROVIDER.equals(provider)) {
+            return "network";
+        }
+        if (LocationManager.PASSIVE_PROVIDER.equals(provider)) {
+            return "another app";
+        }
+        return "several sources";
     }
 }
