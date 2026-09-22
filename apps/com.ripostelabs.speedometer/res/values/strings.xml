@@ -13,5 +13,5 @@
     <string name="open_settings">Location settings</string>
     <string name="gps_off">GPS is off — tap settings</string>
     <string name="perm_needed">Location permission required</string>
-    <string name="perm_hint">Grant ACCESS_FINE_LOCATION to read your speed.</string>
+    <string name="perm_hint">Allow location access to read your speed.</string>
 </resources>

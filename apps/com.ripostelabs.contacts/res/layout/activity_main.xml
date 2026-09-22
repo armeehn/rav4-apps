@@ -69,7 +69,7 @@
                 android:textColor="@color/text"
                 android:textSize="15sp"
                 android:singleLine="true"
-                android:imeOptions="actionSearch"
+                android:imeOptions="actionSearch|flagNoExtractUi"
                 android:inputType="textPersonName" />
         </LinearLayout>
 

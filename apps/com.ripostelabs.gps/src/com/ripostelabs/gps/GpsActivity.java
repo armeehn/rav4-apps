@@ -146,7 +146,7 @@ public class GpsActivity extends Activity {
                         @Override public void onDenied() {
                             conditionView.setText("Permission denied");
                             statusView.setText("Location permission required");
-                            coordsView.setText("Grant ACCESS_FINE_LOCATION to see position");
+                            coordsView.setText("Allow location access to see your position");
                         }
                     });
         }
@@ -226,7 +226,7 @@ public class GpsActivity extends Activity {
     private final LocationListener locListener = new LocationListener() {
         @Override public void onLocationChanged(Location location) { renderLocation(location); }
         @Override public void onProviderEnabled(String provider) {
-            statusView.setText(provider.toUpperCase(Locale.US) + " enabled");
+            statusView.setText("Position from " + providerLabel(provider) + " is on");
         }
         @Override public void onProviderDisabled(String provider) {
             if (LocationManager.GPS_PROVIDER.equals(provider)) {
@@ -252,7 +252,7 @@ public class GpsActivity extends Activity {
             cond = compass(loc.getBearing()) + "  " + Math.round(loc.getBearing()) + "°";
         } else {
             cond = loc.getProvider() != null
-                    ? loc.getProvider().toUpperCase(Locale.US) + " fix"
+                    ? "Fix from " + providerLabel(loc.getProvider())
                     : "Fix acquired";
         }
         conditionView.setText(cond);
@@ -263,7 +263,7 @@ public class GpsActivity extends Activity {
         chipAcc.setText(loc.hasAccuracy() ? "±" + Math.round(loc.getAccuracy()) + " m" : "±-- m");
 
         statusView.setText("Fix " + time(loc.getTime())
-                + (loc.getProvider() != null ? " • " + loc.getProvider() : ""));
+                + (loc.getProvider() != null ? " • " + providerLabel(loc.getProvider()) : ""));
 
         updateDetail(loc);
     }
@@ -464,5 +464,22 @@ public class GpsActivity extends Activity {
             case GnssStatus.CONSTELLATION_IRNSS:   return "I";
             default:                               return "U";
         }
+    }
+
+    /**
+     * A LocationManager provider id is an Android constant, not a word: the panel read
+     * "FUSED fix" and "Fix 15:00 • fused". Say where the position came from instead.
+     */
+    private static String providerLabel(String provider) {
+        if (LocationManager.GPS_PROVIDER.equals(provider)) {
+            return "satellites";
+        }
+        if (LocationManager.NETWORK_PROVIDER.equals(provider)) {
+            return "network";
+        }
+        if (LocationManager.PASSIVE_PROVIDER.equals(provider)) {
+            return "another app";
+        }
+        return "several sources";
     }
 }

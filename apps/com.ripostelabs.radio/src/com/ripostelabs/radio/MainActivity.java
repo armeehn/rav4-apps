@@ -164,7 +164,7 @@ public class MainActivity extends Activity
 
         slider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar sb, int progress, boolean fromUser) {
-                if (fromUser) freqDisplay.setText(formatFreq(sliderToFreq(progress)));
+                if (fromUser) freqDisplay.setText(formatFreq(sliderToFreq(progress), tabBand()));
             }
             @Override public void onStartTrackingTouch(SeekBar sb) { dragging = true; }
             @Override public void onStopTrackingTouch(SeekBar sb) {
@@ -173,7 +173,7 @@ public class MainActivity extends Activity
                 int freq = sliderToFreq(sb.getProgress());
                 curFreq = freq;
                 tuner.tune(freq, isFm());
-                freqDisplay.setText(formatFreq(freq));
+                freqDisplay.setText(formatFreq(freq, tabBand()));
             }
         });
 
@@ -260,7 +260,7 @@ public class MainActivity extends Activity
         }
         boolean fmNow = curBand <= 2;
         String unit = getString(fmNow ? R.string.unit_mhz : R.string.unit_khz);
-        citizen().setMetadata(formatFreq(curFreq) + " " + unit,
+        citizen().setMetadata(formatFreq(curFreq, fmNow ? Band.FM : Band.AM) + " " + unit,
                 fmNow ? "FM" + (curBand + 1) : "AM", 0);
         citizen().setState(!tunerPaused, 0);
     }
@@ -369,7 +369,7 @@ public class MainActivity extends Activity
         freqMin.setText(fmNow ? "87.5" : "530");
         freqMax.setText(fmNow ? "107.9" : "1710");
         if (!dragging) {
-            freqDisplay.setText(formatFreq(curFreq));
+            freqDisplay.setText(formatFreq(curFreq, fmNow ? Band.FM : Band.AM));
             int min = fmNow ? FM_MIN : AM_MIN, max = fmNow ? FM_MAX : AM_MAX,
                 step = fmNow ? FM_STEP : AM_STEP;
             slider.setMax((max - min) / step);
@@ -405,8 +405,13 @@ public class MainActivity extends Activity
         return (fm ? FM_MIN : AM_MIN) + progress * (fm ? FM_STEP : AM_STEP);
     }
 
-    private String formatFreq(int freq) {
-        if (isFm()) return String.format(Locale.US, "%d.%02d", freq / 100, freq % 100);
+    /** Which band a frequency is drawn in: FM is MHz with two decimals, AM is whole kHz. */
+    private enum Band { FM, AM }
+
+    private Band tabBand() { return isFm() ? Band.FM : Band.AM; }
+
+    private String formatFreq(int freq, Band band) {
+        if (band == Band.FM) return String.format(Locale.US, "%d.%02d", freq / 100, freq % 100);
         return String.valueOf(freq);
     }
 
@@ -421,7 +426,7 @@ public class MainActivity extends Activity
             TextView p = presetViews.get(i);
             int f = getPreset(i);
             boolean active = f > 0 && f == curFreq;
-            p.setText(f > 0 ? formatFreq(f) : getString(R.string.preset_empty));
+            p.setText(f > 0 ? formatFreq(f, tabBand()) : getString(R.string.preset_empty));
             p.setTextColor(active ? cAccent : (f > 0 ? cText : cText3));
             p.setBackground(presetBg(active));
         }

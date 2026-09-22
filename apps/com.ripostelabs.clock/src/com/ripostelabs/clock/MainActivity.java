@@ -129,8 +129,10 @@ public class MainActivity extends Activity {
 
             item.setOnClickListener(v -> select(idx));
 
+            // 92 dp left 72 dp of label width, one glyph short of "STOPWATCH" at Overline's
+            // letter spacing, so the rail broke the word across two lines (UI audit 2026-09-22).
             LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(
-                    Ui.dp(this, 92), ViewGroup.LayoutParams.WRAP_CONTENT);
+                    Ui.dp(this, 104), ViewGroup.LayoutParams.WRAP_CONTENT);
             ilp.topMargin = Ui.dp(this, 6);
             ilp.bottomMargin = Ui.dp(this, 6);
             rail.addView(item, ilp);

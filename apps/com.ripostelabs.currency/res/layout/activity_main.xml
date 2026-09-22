@@ -67,6 +67,7 @@
 
             <EditText
                 android:id="@+id/amount"
+                android:imeOptions="flagNoExtractUi"
                 android:layout_width="0dp"
                 android:layout_height="64dp"
                 android:layout_weight="1"

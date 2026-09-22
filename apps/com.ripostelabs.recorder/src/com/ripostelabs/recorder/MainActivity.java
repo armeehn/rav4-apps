@@ -19,6 +19,7 @@ import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
@@ -304,6 +305,9 @@ public class MainActivity extends Activity
     private void promptName(final File file) {
         final EditText input = new EditText(this);
         input.setInputType(InputType.TYPE_CLASS_TEXT);
+        // Without this the IME takes the whole panel for its own editor and the dialog
+        // vanishes behind it: the panel is 720 px tall, so the keyboard asks for extract mode.
+        input.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         input.setText(defaultName(file));
         input.setSelectAllOnFocus(true);
 

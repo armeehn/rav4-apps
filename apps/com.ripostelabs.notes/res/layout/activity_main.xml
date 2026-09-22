@@ -78,7 +78,7 @@
                 android:textColor="@color/text"
                 android:textSize="15sp"
                 android:singleLine="true"
-                android:imeOptions="actionSearch"
+                android:imeOptions="actionSearch|flagNoExtractUi"
                 android:inputType="text" />
         </LinearLayout>
 
@@ -208,6 +208,7 @@
 
                 <EditText
                     android:id="@+id/editor"
+                    android:imeOptions="flagNoExtractUi"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@android:color/transparent"

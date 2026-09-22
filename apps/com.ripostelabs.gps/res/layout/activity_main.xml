@@ -212,8 +212,8 @@
 
                 <ImageButton
                     android:id="@+id/refreshBtn"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:background="@drawable/btn_icon"
                     android:src="@drawable/ic_refresh"
                     android:scaleType="centerInside"
@@ -221,8 +221,8 @@
 
                 <ImageButton
                     android:id="@+id/settingsBtn"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
                     android:layout_marginStart="6dp"
                     android:background="@drawable/btn_icon"
                     android:src="@drawable/ic_settings"

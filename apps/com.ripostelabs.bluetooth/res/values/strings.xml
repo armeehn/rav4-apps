@@ -30,6 +30,7 @@
     <string name="empty_scan_hint">Tap Scan to look for nearby devices</string>
     <string name="empty_none_found">No nearby devices found</string>
 
+    <string name="need_permission_title">Bluetooth locked</string>
     <string name="need_permission">Bluetooth permission is needed to manage devices</string>
     <string name="grant">Grant access</string>
 

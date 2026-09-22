@@ -59,6 +59,8 @@ public class ListActivity extends Activity {
     private View empty;
     private Button grantBtn;
     private TextView count;
+    private TextView emptyText;
+    private TextView emptyHint;
     private RowAdapter adapter;
 
     @Override
@@ -80,6 +82,8 @@ public class ListActivity extends Activity {
         setContentView(R.layout.activity_list);
         list = findViewById(R.id.list);
         empty = findViewById(R.id.empty);
+        emptyText = findViewById(R.id.empty_text);
+        emptyHint = findViewById(R.id.empty_hint);
         grantBtn = findViewById(R.id.grant);
         gate = PermissionGate.of(this, new String[]{ perm() }, grantBtn, new PermissionGate.Listener() {
             @Override public void onGranted() { loadVideos(); }
@@ -166,6 +170,10 @@ public class ListActivity extends Activity {
         empty.setVisibility(show ? View.VISIBLE : View.GONE);
         list.setVisibility(show ? View.GONE : View.VISIBLE);
         grantBtn.setVisibility(show && !gate.granted() ? View.VISIBLE : View.GONE);
+        // "No videos found" under a Grant button states a fact that is not the reason.
+        boolean granted = gate.granted();
+        emptyText.setText(granted ? R.string.empty_no_videos : R.string.need_permission_title);
+        emptyHint.setText(granted ? R.string.empty_hint : R.string.need_permission);
         int n = videos.size();
         count.setText(n == 0 ? "" : (n == 1 ? "1 video" : n + " videos"));
     }

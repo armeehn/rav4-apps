@@ -189,7 +189,7 @@ public class WeatherActivity extends Activity {
                 final String label = buildLabel(c);
                 ui.post(() -> load(lat, lon, label));
             } catch (Exception e) {
-                ui.post(() -> statusView.setText("Search failed: " + e.getMessage()));
+                ui.post(() -> statusView.setText("Could not search for that city"));
             }
         }).start();
     }
@@ -220,7 +220,7 @@ public class WeatherActivity extends Activity {
                 final JSONObject root = new JSONObject(httpGet(url));
                 ui.post(() -> render(root, label));
             } catch (Exception e) {
-                ui.post(() -> statusView.setText("Load failed: " + e.getMessage()));
+                ui.post(() -> statusView.setText("No connection — could not load the forecast"));
             }
         }).start();
     }
@@ -244,10 +244,13 @@ public class WeatherActivity extends Activity {
             conditionView.setText(wmoText(code));
             chipFeels.setText(fmt(feels) + tUnit);
             chipHum.setText(fmt(hum) + "%");
-            chipWind.setText(fmt(wind) + wUnit.trim() + " " + compass(windDir));
+            chipWind.setText(fmt(wind) + " " + wUnit.trim() + " " + compass(windDir));
 
+            // Open-Meteo answers with a tz database id ("America/Los_Angeles"); the city in it
+            // is the part a driver reads.
             String tz = root.optString("timezone", "");
-            statusView.setText("Updated " + nowLabel() + (tz.isEmpty() ? "" : "  •  " + tz));
+            String zone = tz.substring(tz.lastIndexOf('/') + 1).replace('_', ' ');
+            statusView.setText("Updated " + nowLabel() + (tz.isEmpty() ? "" : "  •  " + zone));
             if (label == null && cityView.getText().toString().equals("—")) {
                 cityView.setText("Current location");
             }
@@ -260,7 +263,7 @@ public class WeatherActivity extends Activity {
             Palette.apply(dailyRow);
             Palette.apply(hourlyRow);
         } catch (Exception e) {
-            statusView.setText("Parse error: " + e.getMessage());
+            statusView.setText("Could not read the forecast");
         }
     }
 

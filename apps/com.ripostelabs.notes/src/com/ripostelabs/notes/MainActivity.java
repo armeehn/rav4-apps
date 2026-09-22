@@ -295,7 +295,9 @@ public class MainActivity extends Activity {
         }
         adapter.notifyDataSetChanged();
 
-        int total = all.size();
+        // The header counts what is on screen: it read "3 notes" over "No matching notes"
+        // while a search was filtering the list.
+        int total = visible.size();
         count.setText(total == 1 ? getString(R.string.notes_count_one)
                 : getString(R.string.notes_count, total));
 

@@ -56,7 +56,7 @@
             <Button
                 android:id="@+id/unitBtn"
                 android:layout_width="wrap_content"
-                android:layout_height="46dp"
+                android:layout_height="48dp"
                 android:minWidth="96dp"
                 android:paddingStart="20dp"
                 android:paddingEnd="20dp"
@@ -177,7 +177,7 @@
             <Button
                 android:id="@+id/resetBtn"
                 android:layout_width="wrap_content"
-                android:layout_height="46dp"
+                android:layout_height="48dp"
                 android:paddingStart="20dp"
                 android:paddingEnd="20dp"
                 android:drawableStart="@drawable/ic_refresh"

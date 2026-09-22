@@ -49,7 +49,7 @@ class ClockPanel extends LinearLayout {
         int pad = Ui.dp(getContext(), 32);
         setPadding(pad, pad, pad, pad);
 
-        tzLabel = Ui.text(getContext(), R.style.Overline, "Local • " + TimeZone.getDefault().getID());
+        tzLabel = Ui.text(getContext(), R.style.Overline, "Local • " + zoneName());
         tzLabel.setGravity(Gravity.CENTER);
         addView(tzLabel);
 
@@ -133,5 +133,11 @@ class ClockPanel extends LinearLayout {
 
     void onHide() {
         ui.removeCallbacks(tick);
+    }
+
+    /** "America/Vancouver" -> "Vancouver": a tz database id is not a name a driver reads. */
+    private static String zoneName() {
+        String id = TimeZone.getDefault().getID();
+        return id.substring(id.lastIndexOf('/') + 1).replace('_', ' ');
     }
 }

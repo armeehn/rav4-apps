@@ -78,6 +78,7 @@ public class MainActivity extends Activity {
     private final ArrayList<String> bonding = new ArrayList<>();
 
     private boolean scanning = false;
+    private boolean scanFinished = false;   // a scan that ended empty is not a scan never run
     private boolean syncingToggle = false;
 
     // resolved palette
@@ -136,7 +137,7 @@ public class MainActivity extends Activity {
                 // graceful degradation: explain, offer a retry
                 content.setVisibility(View.GONE);
                 empty.setVisibility(View.VISIBLE);
-                emptyText.setText(R.string.app_name);
+                emptyText.setText(R.string.need_permission_title);
                 emptyHint.setText(R.string.need_permission);
             }
         });
@@ -321,6 +322,7 @@ public class MainActivity extends Activity {
                     break;
                 case BluetoothAdapter.ACTION_DISCOVERY_FINISHED:
                     scanning = false;
+                    scanFinished = true;
                     renderScanChrome();
                     renderScan();
                     break;
@@ -440,7 +442,11 @@ public class MainActivity extends Activity {
         ArrayList<BluetoothDevice> devs = new ArrayList<>(discovered.values());
         if (devs.isEmpty()) {
             scanEmpty.setVisibility(View.VISIBLE);
-            scanEmpty.setText(scanning ? R.string.scanning : R.string.empty_scan_hint);
+            if (scanning) {
+                scanEmpty.setText(R.string.scanning);
+            } else {
+                scanEmpty.setText(scanFinished ? R.string.empty_none_found : R.string.empty_scan_hint);
+            }
         } else {
             scanEmpty.setVisibility(View.GONE);
             for (BluetoothDevice d : devs) {

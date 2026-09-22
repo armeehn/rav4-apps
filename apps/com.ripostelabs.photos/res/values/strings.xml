@@ -3,6 +3,7 @@
     <!-- was "XDemonstrate" in the OEM build -->
     <string name="app_name">Photos</string>
     <string name="empty_no_images">No photos found</string>
+    <string name="need_permission_title">Photos locked</string>
     <string name="need_permission">Storage permission is needed to show photos</string>
     <string name="grant">Grant</string>
     <string name="photo_count_one">1 photo</string>

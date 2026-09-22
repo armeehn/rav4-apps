@@ -26,6 +26,7 @@ import android.text.format.Formatter;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -350,6 +351,9 @@ public class MainActivity extends Activity {
         final EditText in = new EditText(this);
         in.setMinimumHeight(dp(MIN_TAP_DP));   // the View-level minimum; TextView.setMinHeight is ignored inside an AlertDialog
         in.setInputType(InputType.TYPE_CLASS_TEXT);
+        // Without this the IME takes the whole panel for its own editor and the dialog
+        // vanishes behind it: the panel is 720 px tall, so the keyboard asks for extract mode.
+        in.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         in.setText(f.getName());
         in.setSelectAllOnFocus(true);
         in.setTextColor(cText);
@@ -376,6 +380,9 @@ public class MainActivity extends Activity {
         final EditText in = new EditText(this);
         in.setMinimumHeight(dp(MIN_TAP_DP));   // the View-level minimum; TextView.setMinHeight is ignored inside an AlertDialog
         in.setInputType(InputType.TYPE_CLASS_TEXT);
+        // Without this the IME takes the whole panel for its own editor and the dialog
+        // vanishes behind it: the panel is 720 px tall, so the keyboard asks for extract mode.
+        in.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
         in.setHint("Folder name");
         in.setTextColor(cText);
         AlertDialog.Builder b = new AlertDialog.Builder(this, android.R.style.Theme_Material_Dialog_Alert);
