@@ -146,7 +146,7 @@ public class GpsActivity extends Activity {
                         @Override public void onDenied() {
                             conditionView.setText("Permission denied");
                             statusView.setText("Location permission required");
-                            coordsView.setText("Grant ACCESS_FINE_LOCATION to see position");
+                            coordsView.setText("Allow location access to see your position");
                         }
                     });
         }
