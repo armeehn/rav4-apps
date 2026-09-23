@@ -93,4 +93,23 @@ abstract class Tuner {
     abstract boolean getDxLoc();
     /** RDS PS station name; empty until the MCU sends a PS frame. */
     abstract String getStationName();
+
+    /** RDS programme type code (0..31), 0 until the MCU sends a PTY frame (radio event 5). */
+    abstract int getPty();
+    /** APS: a preset scan (KEY_SCAN) is running; the vendor's "scanning" tip (radio event 0, bit 7). */
+    abstract boolean isScanning();
+    /** AMS: auto-store (KEY_AUTO_STORE) is sweeping the band (radio event 0, bit 6). */
+    abstract boolean isAutoStoring();
+    /** The band plan the MCU was configured with; see {@link RadioZone}. */
+    abstract int getZone();
+    /** The MCU's own 42-slot station list (FM banks 0..17, AM 18..41), 0 = empty. */
+    abstract int[] getStationList();
+
+    /**
+     * The MCU's preset banks, the vendor radio's cmd 100/101 (`02 64 slot` recalls a slot,
+     * `02 65 slot` stores the current station there; MainActivity.java:614-619, FreqView.java:160-167).
+     * slot is 0..41 into {@link #getStationList()}; see {@link RadioZone#stationSlot}.
+     */
+    abstract void selectPreset(int slot);
+    abstract void storePreset(int slot);
 }

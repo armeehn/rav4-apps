@@ -43,16 +43,13 @@ public class MainActivity extends Activity
 
     // ---- Bands -------------------------------------------------------------
     private static final int TAB_FM = 0, TAB_AM = 1, TAB_NET = 2;
-    // FM range in 10 kHz units, AM in kHz (NA raster; the MCU snaps anyway).
-    private static final int FM_MIN = 8750, FM_MAX = 10790, FM_STEP = 20;
-    private static final int AM_MIN = 530, AM_MAX = 1710, AM_STEP = 10;
     private static final int PRESET_SLOTS = 6;
     /** How long a band request may lead the MCU before the tabs follow the hardware again. */
     private static final long BAND_SWITCH_GRACE_MS = 2000;
 
     private Tuner tuner;
     private int tab = TAB_FM;
-    private int curFreq = FM_MIN;
+    private int curFreq = RadioZone.of(RadioZone.DEFAULT_ZONE).fm.min;
     private int curBand = 0;            // getRadioBand(): 0..2 FM, >=3 AM
     private boolean modeLost = false;
     /** v0.8: the driver paused the tuner (wheel/card); distinct from losing the mode. */
@@ -200,6 +197,9 @@ public class MainActivity extends Activity
                 }
             });
             p.setOnLongClickListener(v -> {
+                // Both stores: the MCU's bank (vendor cmd 101) and ours, so a unit whose
+                // tuner never reports its list still shows the slot.
+                tuner.storePreset(RadioZone.stationSlot(curBand, slot));
                 savePreset(slot, curFreq);
                 refreshPresets();
                 Toast.makeText(this, getString(R.string.preset_saved, String.valueOf(slot + 1)),
@@ -366,14 +366,14 @@ public class MainActivity extends Activity
         if (freq > 0) curFreq = freq;
         bandLabel.setText(fmNow ? "FM" + (curBand + 1) : "AM");
         freqUnit.setText(fmNow ? R.string.unit_mhz : R.string.unit_khz);
-        freqMin.setText(fmNow ? "87.5" : "530");
-        freqMax.setText(fmNow ? "107.9" : "1710");
+        RadioZone.Plan plan = RadioZone.plan(tuner.getZone(), curBand);
+        Band drawn = fmNow ? Band.FM : Band.AM;
+        freqMin.setText(formatFreq(plan.min, drawn));
+        freqMax.setText(formatFreq(plan.max, drawn));
         if (!dragging) {
-            freqDisplay.setText(formatFreq(curFreq, fmNow ? Band.FM : Band.AM));
-            int min = fmNow ? FM_MIN : AM_MIN, max = fmNow ? FM_MAX : AM_MAX,
-                step = fmNow ? FM_STEP : AM_STEP;
-            slider.setMax((max - min) / step);
-            slider.setProgress(Math.max(0, Math.min(slider.getMax(), (curFreq - min) / step)));
+            freqDisplay.setText(formatFreq(curFreq, drawn));
+            slider.setMax(plan.steps());
+            slider.setProgress(Math.max(0, Math.min(slider.getMax(), (curFreq - plan.min) / plan.step)));
         }
 
         // RDS PS name arrives as radio event 6; re-polled here like everything else.
@@ -388,6 +388,11 @@ public class MainActivity extends Activity
                 if (sb.length() > 0) sb.append(" · ");
                 sb.append(getString(R.string.chip_rds));
             }
+            // The vendor's scanning / searching tips (RadioUIControllerLandscape.java:1307-1327).
+            if (tuner.isScanning() || tuner.isAutoStoring()) {
+                if (sb.length() > 0) sb.append(" · ");
+                sb.append(getString(tuner.isScanning() ? R.string.chip_scanning : R.string.chip_auto_store));
+            }
             chipStatus.setText(sb);
         }
         refreshPresets();
@@ -401,8 +406,7 @@ public class MainActivity extends Activity
     }
 
     private int sliderToFreq(int progress) {
-        boolean fm = isFm();
-        return (fm ? FM_MIN : AM_MIN) + progress * (fm ? FM_STEP : AM_STEP);
+        return RadioZone.plan(tuner.getZone(), curBand).atStep(progress);
     }
 
     /** Which band a frequency is drawn in: FM is MHz with two decimals, AM is whole kHz. */
@@ -418,7 +422,13 @@ public class MainActivity extends Activity
     // ---- Presets -----------------------------------------------------------
 
     private String presetKey(int slot) { return (isFm() ? "fm" : "am") + slot; }
-    private int getPreset(int slot) { return prefs.getInt(presetKey(slot), 0); }
+    /** The MCU's own bank first (its list is the vendor's presets), our saved slot when it is empty. */
+    private int getPreset(int slot) {
+        int[] list = tuner.getStationList();
+        int mcuSlot = RadioZone.stationSlot(curBand, slot);
+        if (mcuSlot < list.length && list[mcuSlot] > 0) return list[mcuSlot];
+        return prefs.getInt(presetKey(slot), 0);
+    }
     private void savePreset(int slot, int freq) { prefs.edit().putInt(presetKey(slot), freq).apply(); }
 
     private void refreshPresets() {

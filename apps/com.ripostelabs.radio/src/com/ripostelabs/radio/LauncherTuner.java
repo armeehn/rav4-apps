@@ -17,10 +17,12 @@ import android.util.Log;
  * against the contract written in the launcher's ITuner.aidl:
  *
  *   ITuner          claim 1, release 2, isClaimed 3, sendKey 4, tune 5, getState 6,
- *                   registerCallback 7, unregisterCallback 8
+ *                   registerCallback 7, unregisterCallback 8, selectPreset 9, storePreset 10
  *   ITunerCallback  onState(TunerState) 1, onSourceLost 2, onReclaim 3   (oneway)
  *   TunerState      band, freq, preset, stationName, stereo, rds, stMono, dxLoc, ta, af,
- *                   stationList[42]   (a typed object: non-null flag first)
+ *                   stationList[42], pty, scanning, autoStoring, zone
+ *                   (a typed object: non-null flag first; the four after the list were appended
+ *                   later, so they are read only when the parcel still has them)
  *
  * Unlike the vendor gateway there is nothing to poll: the launcher pushes every state fold
  * over onState, the getters read the last one, and each push becomes onRadioEvent().
@@ -44,6 +46,9 @@ final class LauncherTuner extends Tuner {
     private static final int TR_GET_STATE = 6;
     private static final int TR_REGISTER_CALLBACK = 7;
     private static final int TR_UNREGISTER_CALLBACK = 8;
+    private static final int TR_SELECT_PRESET = 9;
+    private static final int TR_STORE_PRESET = 10;
+    private static final int STATION_LIST_SIZE = 42;
 
     private static final int CB_ON_STATE = 1;
     private static final int CB_ON_SOURCE_LOST = 2;
@@ -55,6 +60,10 @@ final class LauncherTuner extends Tuner {
         int freq = -1;
         String stationName = "";
         boolean stereo, rds, stMono, dxLoc;
+        int[] stationList = new int[STATION_LIST_SIZE];
+        int pty;
+        boolean scanning, autoStoring;
+        int zone = RadioZone.DEFAULT_ZONE;
 
         /** Reads the parcel in TunerState.writeToParcel order, after the non-null flag. */
         static State read(Parcel p) {
@@ -70,7 +79,13 @@ final class LauncherTuner extends Tuner {
             s.dxLoc = p.readInt() != 0;
             p.readInt();                       // ta
             p.readInt();                       // af
-            p.createIntArray();                // stationList
+            int[] list = p.createIntArray();
+            if (list != null && list.length == STATION_LIST_SIZE) s.stationList = list;
+            if (p.dataAvail() <= 0) return s;  // a launcher from before the appended fields
+            s.pty = p.readInt();
+            s.scanning = p.readInt() != 0;
+            s.autoStoring = p.readInt() != 0;
+            s.zone = p.readInt();
             return s;
         }
     }
@@ -191,6 +206,19 @@ final class LauncherTuner extends Tuner {
     @Override boolean getStMono() { return state.stMono; }
     @Override boolean getDxLoc() { return state.dxLoc; }
     @Override String getStationName() { return state.stationName; }
+    @Override int getPty() { return state.pty; }
+    @Override boolean isScanning() { return state.scanning; }
+    @Override boolean isAutoStoring() { return state.autoStoring; }
+    @Override int getZone() { return state.zone; }
+    @Override int[] getStationList() { return state.stationList; }
+
+    @Override void selectPreset(int slot) {
+        transactVoid(TR_SELECT_PRESET, p -> p.writeInt(slot));
+    }
+
+    @Override void storePreset(int slot) {
+        transactVoid(TR_STORE_PRESET, p -> p.writeInt(slot));
+    }
 
     private boolean isClaimed() {
         IBinder s = service;
