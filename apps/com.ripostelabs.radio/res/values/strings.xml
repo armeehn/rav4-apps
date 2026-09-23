@@ -22,6 +22,8 @@
     <string name="preset_empty">— · —</string>
     <string name="preset_empty_desc">Empty preset %1$d, hold to save</string>
     <string name="preset_saved">Preset %1$s saved</string>
+    <string name="chip_scanning">scanning</string>
+    <string name="chip_auto_store">auto-store</string>
     <string name="status_connecting">connecting to tuner…</string>
     <string name="status_no_gateway">tuner gateway unavailable</string>
     <string name="status_mode_lost">audio taken by another source — tap any control</string>

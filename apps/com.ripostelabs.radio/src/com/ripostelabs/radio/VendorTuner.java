@@ -40,18 +40,33 @@ final class VendorTuner extends Tuner {
     private static final int TR_SEND_RADIO_KEY = 2;
     private static final int TR_SEND_USER_FREQ = 6;
     private static final int TR_GET_RADIO_FREQ = 12;
+    private static final int TR_GET_RADIO_FREQ_LIST = 13;
     private static final int TR_GET_RADIO_BAND = 14;
+    private static final int TR_GET_RADIO_PTY_NUM = 18;
     private static final int TR_GET_RDS_STATE = 16;
     // Named PTY in the stub, but it returns mRadioPSName: the RDS PS station name
     // from the MCU PS frame (EventService.java:2836-2842, getter :7510-7512).
     private static final int TR_GET_RADIO_PTY_NAME = 19;
     private static final int TR_GET_ST_MONO_STATE = 22;
     private static final int TR_GET_DX_LOC_STATE = 23;
+    private static final int TR_GET_AMS_STATE = 24;
+    private static final int TR_GET_APS_STATE = 25;
     private static final int TR_GET_STEREO_ICON = 26;
     private static final int TR_SET_RADIO_CALLBACK = 29;
     private static final int TR_SET_CUR_MODE_CALLBACK = 30;
     private static final int TR_EXIT_CUR_MODE = 31;
     private static final int TR_GET_VALID_MODE = 46;
+
+    // The gateway relays a raw MCU body from this broadcast (EvtModel.java:364-373 →
+    // EventService.sendCmdData); the vendor radio sends its preset cmds 100/101 this way.
+    private static final String ACTION_MCU_CMD = "com.szchoiceway.eventcenter.EventUtils.ACTION_MCU_CMD_EVENT";
+    private static final String EXTRA_MCU_CMD = "EventUtils.MCU_CMD_DATA";
+    private static final byte OP_RADIO_KEY = 0x02;
+    private static final byte CMD_PRESET_SELECT = 100;
+    private static final byte CMD_PRESET_STORE = 101;
+    /** The gateway keeps the zone in its own settings provider, unread here: the unit's plan is North America. */
+    private static final int ZONE_NORTH_AMERICA = 1;
+    private static final int STATION_LIST_SIZE = 42;
 
     // ICallbackfn transaction codes.
     private static final int CB_NOTIFY_EVT = 1;
@@ -208,6 +223,20 @@ final class VendorTuner extends Tuner {
     @Override boolean getDxLoc() { return transactBool(TR_GET_DX_LOC_STATE); }
     /** RDS PS station name; empty until the MCU sends a PS frame. */
     @Override String getStationName() { return transactString(TR_GET_RADIO_PTY_NAME); }
+    @Override int getPty() { return Math.max(0, transactInt(TR_GET_RADIO_PTY_NUM)); }
+    @Override boolean isScanning() { return transactBool(TR_GET_APS_STATE); }
+    @Override boolean isAutoStoring() { return transactBool(TR_GET_AMS_STATE); }
+    @Override int getZone() { return ZONE_NORTH_AMERICA; }
+    @Override int[] getStationList() { return transactIntArray(TR_GET_RADIO_FREQ_LIST); }
+
+    @Override void selectPreset(int slot) { sendMcuCmd(CMD_PRESET_SELECT, slot); }
+    @Override void storePreset(int slot) { sendMcuCmd(CMD_PRESET_STORE, slot); }
+
+    /** sendRadioCmd (vendor MainActivity.java:614-619): {02, cmd, arg} as a broadcast the gateway forwards. */
+    private void sendMcuCmd(byte cmd, int arg) {
+        byte[] body = {OP_RADIO_KEY, cmd, (byte) (arg & 0xFF)};
+        context.sendBroadcast(new Intent(ACTION_MCU_CMD).putExtra(EXTRA_MCU_CMD, body));
+    }
 
     // ---- Binder plumbing ---------------------------------------------------
 
@@ -250,6 +279,25 @@ final class VendorTuner extends Tuner {
 
     private boolean transactBool(int code) {
         return transactInt(code) == 1;
+    }
+
+    private int[] transactIntArray(int code) {
+        IBinder s = service;
+        if (s == null) return new int[STATION_LIST_SIZE];
+        Parcel data = Parcel.obtain();
+        Parcel reply = Parcel.obtain();
+        try {
+            data.writeInterfaceToken(DESCRIPTOR);
+            s.transact(code, data, reply, 0);
+            reply.readException();
+            int[] list = reply.createIntArray();
+            return list == null ? new int[STATION_LIST_SIZE] : list;
+        } catch (Exception e) {
+            return new int[STATION_LIST_SIZE];
+        } finally {
+            reply.recycle();
+            data.recycle();
+        }
     }
 
     private String transactString(int code) {
