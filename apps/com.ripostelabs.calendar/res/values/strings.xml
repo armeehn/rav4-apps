@@ -5,6 +5,16 @@
     <string name="prev_month">Previous month</string>
     <string name="next_month">Next month</string>
     <string name="new_event">New event</string>
+    <string name="event_title_hint">Title</string>
+    <string name="event_starts">Starts  %1$s</string>
+    <string name="event_ends">Ends  %1$s</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="event_saved">Event added</string>
+    <string name="event_failed">Could not add the event</string>
+    <string name="local_calendar">On this unit</string>
+    <string name="delete">Delete</string>
+    <string name="close">Close</string>
 
     <string name="agenda_none_title">Nothing scheduled</string>
     <string name="agenda_none_hint">No events on this day. Tap + to add one.</string>
