@@ -2,9 +2,12 @@ package com.ripostelabs.calendar;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.TimePickerDialog;
 import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Color;
@@ -15,11 +18,14 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.CalendarContract;
+import android.provider.CalendarContract.Calendars;
+import android.provider.CalendarContract.Events;
 import android.provider.CalendarContract.Instances;
 import android.text.format.DateFormat;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -35,7 +41,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 import com.ripostelabs.design.Palette;
 import com.ripostelabs.design.PermissionGate;
 
@@ -51,9 +59,16 @@ public class MainActivity extends Activity {
     private static final int MIN_TAP_DP = 48;   // the panel's minimum tap target, as in the launcher
 
 
-    /** READ_CALENDAR, asked and re-asked through the suite's one gate. */
+    /** READ + WRITE_CALENDAR (one permission group, one dialog), through the suite's one gate. */
     private PermissionGate gate;
     private static final int CELLS = 42; // 6 weeks x 7 days
+    private static final long HOUR_MS = 60L * 60L * 1000L;
+    private static final int LAST_HOUR = 23;
+
+    // The fallback calendar for a unit with no synced account. LOCAL rows are kept by the
+    // provider itself and never synced, so a CalDAV account added later sits beside it.
+    private static final String LOCAL_ACCOUNT = "Riposte";
+    private static final String LOCAL_NAME = "riposte_local";
 
     /** One calendar event instance. */
     private static final class Event {
@@ -112,7 +127,8 @@ public class MainActivity extends Activity {
 
         setContentView(buildRoot());
 
-        gate = PermissionGate.of(this, new String[]{Manifest.permission.READ_CALENDAR}, grantBtn,
+        gate = PermissionGate.of(this, new String[]{Manifest.permission.READ_CALENDAR,
+                        Manifest.permission.WRITE_CALENDAR}, grantBtn,
                 new PermissionGate.Listener() {
                     @Override public void onGranted() { reload(); }
                     @Override public void onDenied() { reload(); }
@@ -718,21 +734,146 @@ public class MainActivity extends Activity {
         reload();
     }
 
+    /**
+     * Adds an event in-app. Handing ACTION_INSERT to the system Calendar crashed it on Riposte
+     * OS 0.2: its manifest names event.EditEventActivity, which its dex does not contain.
+     */
     private void insertEvent() {
-        try {
-            Intent i = new Intent(Intent.ACTION_INSERT)
-                    .setData(CalendarContract.Events.CONTENT_URI);
-            Calendar s = (Calendar) selected.clone();
-            Calendar now = Calendar.getInstance();
-            s.set(Calendar.HOUR_OF_DAY, now.get(Calendar.HOUR_OF_DAY) + 1);
-            s.set(Calendar.MINUTE, 0);
-            i.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, s.getTimeInMillis());
-            i.putExtra(CalendarContract.EXTRA_EVENT_END_TIME,
-                    s.getTimeInMillis() + 60L * 60L * 1000L);
-            startActivity(i);
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, "No calendar app to add events", Toast.LENGTH_SHORT).show();
+        if (!gate.granted()) {
+            gate.request();
+            return;
         }
+
+        // Default slot: the next whole hour on the selected day, one hour long.
+        final Calendar begin = (Calendar) selected.clone();
+        Calendar now = Calendar.getInstance();
+        begin.set(Calendar.HOUR_OF_DAY, Math.min(now.get(Calendar.HOUR_OF_DAY) + 1, LAST_HOUR));
+        begin.set(Calendar.MINUTE, 0);
+        begin.set(Calendar.SECOND, 0);
+        begin.set(Calendar.MILLISECOND, 0);
+        final Calendar end = (Calendar) begin.clone();
+        end.setTimeInMillis(begin.getTimeInMillis() + HOUR_MS);
+
+        final EditText title = new EditText(this);
+        title.setHint(R.string.event_title_hint);
+        title.setSingleLine(true);
+        final TextView from = timeButton();
+        final TextView to = timeButton();
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        int pad = dp(20);
+        box.setPadding(pad, dp(8), pad, dp(8));
+        box.addView(title);
+        box.addView(from);
+        box.addView(to);
+
+        // Moving the start keeps the duration; the end is picked on its own.
+        from.setOnClickListener(v -> pickTime(begin, () -> {
+            end.setTimeInMillis(begin.getTimeInMillis() + HOUR_MS);
+            from.setText(getString(R.string.event_starts, timeStr(begin.getTimeInMillis())));
+            to.setText(getString(R.string.event_ends, timeStr(end.getTimeInMillis())));
+        }));
+        to.setOnClickListener(v -> pickTime(end, () ->
+                to.setText(getString(R.string.event_ends, timeStr(end.getTimeInMillis())))));
+        from.setText(getString(R.string.event_starts, timeStr(begin.getTimeInMillis())));
+        to.setText(getString(R.string.event_ends, timeStr(end.getTimeInMillis())));
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.new_event)
+                .setView(box)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, (d, w) -> saveEvent(
+                        title.getText().toString().trim(),
+                        begin.getTimeInMillis(), end.getTimeInMillis()))
+                .show();
+    }
+
+    private TextView timeButton() {
+        TextView t = styled(R.style.Body);
+        t.setMinHeight(dp(MIN_TAP_DP));
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        return t;
+    }
+
+    private void pickTime(final Calendar c, final Runnable after) {
+        new TimePickerDialog(this, (tp, h, m) -> {
+            c.set(Calendar.HOUR_OF_DAY, h);
+            c.set(Calendar.MINUTE, m);
+            after.run();
+        }, c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE),
+                DateFormat.is24HourFormat(this)).show();
+    }
+
+    /** Writes off the UI thread, then reloads. Never throws: a failure is a toast. */
+    private void saveEvent(final String title, final long begin, final long endIn) {
+        final long end = endIn > begin ? endIn : begin + HOUR_MS;
+        new Thread(() -> {
+            boolean ok = false;
+            try {
+                long cal = writableCalendar();
+                if (cal != CalendarPick.NONE) {
+                    ContentValues v = new ContentValues();
+                    v.put(Events.CALENDAR_ID, cal);
+                    v.put(Events.TITLE, title.isEmpty() ? getString(R.string.new_event) : title);
+                    v.put(Events.DTSTART, begin);
+                    v.put(Events.DTEND, end);
+                    v.put(Events.EVENT_TIMEZONE, TimeZone.getDefault().getID());
+                    ok = getContentResolver().insert(Events.CONTENT_URI, v) != null;
+                }
+            } catch (RuntimeException e) {
+                ok = false;  // SecurityException or a missing provider: report, do not crash
+            }
+            final boolean saved = ok;
+            ui.post(() -> {
+                Toast.makeText(this, saved ? R.string.event_saved : R.string.event_failed,
+                        Toast.LENGTH_SHORT).show();
+                reload();
+            });
+        }).start();
+    }
+
+    /** The best writable calendar, creating the local one when the unit has none. */
+    private long writableCalendar() {
+        String[] proj = {Calendars._ID, Calendars.CALENDAR_ACCESS_LEVEL, Calendars.VISIBLE,
+                Calendars.ACCOUNT_TYPE, Calendars.IS_PRIMARY};
+        List<CalendarPick.Candidate> all = new ArrayList<>();
+        try (Cursor c = getContentResolver().query(Calendars.CONTENT_URI, proj, null, null, null)) {
+            while (c != null && c.moveToNext()) {
+                boolean local = CalendarContract.ACCOUNT_TYPE_LOCAL.equals(c.getString(3));
+                all.add(new CalendarPick.Candidate(c.getLong(0), c.getInt(1),
+                        c.getInt(2) != 0, local, !c.isNull(4) && c.getInt(4) != 0));
+            }
+        }
+
+        long id = CalendarPick.choose(all);
+        if (id != CalendarPick.NONE) {
+            return id;
+        }
+        return createLocalCalendar();
+    }
+
+    // Only a sync adapter may insert a calendar; a LOCAL account may act as its own.
+    private long createLocalCalendar() {
+        Uri uri = Calendars.CONTENT_URI.buildUpon()
+                .appendQueryParameter(CalendarContract.CALLER_IS_SYNCADAPTER, "true")
+                .appendQueryParameter(Calendars.ACCOUNT_NAME, LOCAL_ACCOUNT)
+                .appendQueryParameter(Calendars.ACCOUNT_TYPE, CalendarContract.ACCOUNT_TYPE_LOCAL)
+                .build();
+        ContentValues v = new ContentValues();
+        v.put(Calendars.ACCOUNT_NAME, LOCAL_ACCOUNT);
+        v.put(Calendars.ACCOUNT_TYPE, CalendarContract.ACCOUNT_TYPE_LOCAL);
+        v.put(Calendars.NAME, LOCAL_NAME);
+        v.put(Calendars.CALENDAR_DISPLAY_NAME, getString(R.string.local_calendar));
+        v.put(Calendars.CALENDAR_COLOR, forceOpaque(cAccent));
+        v.put(Calendars.CALENDAR_ACCESS_LEVEL, Calendars.CAL_ACCESS_OWNER);
+        v.put(Calendars.OWNER_ACCOUNT, LOCAL_ACCOUNT);
+        v.put(Calendars.VISIBLE, 1);
+        v.put(Calendars.SYNC_EVENTS, 1);
+        v.put(Calendars.CALENDAR_TIME_ZONE, TimeZone.getDefault().getID());
+
+        Uri made = getContentResolver().insert(uri, v);
+        return made == null ? CalendarPick.NONE : ContentUris.parseId(made);
     }
 
     private void viewEvent(long eventId) {
