@@ -4,11 +4,9 @@ import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
-import android.content.ActivityNotFoundException;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
-import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -600,7 +598,7 @@ public class MainActivity extends Activity {
         rowWrap.addView(texts, lp(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         rowWrap.setClickable(true);
-        rowWrap.setOnClickListener(v -> viewEvent(e.eventId));
+        rowWrap.setOnClickListener(v -> viewEvent(e));
         return rowWrap;
     }
 
@@ -876,13 +874,30 @@ public class MainActivity extends Activity {
         return made == null ? CalendarPick.NONE : ContentUris.parseId(made);
     }
 
-    private void viewEvent(long eventId) {
-        try {
-            Uri uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId);
-            startActivity(new Intent(Intent.ACTION_VIEW).setData(uri));
-        } catch (ActivityNotFoundException e) {
-            Toast.makeText(this, "No app to open this event", Toast.LENGTH_SHORT).show();
-        }
+    /** In-app details: the system Calendar's EventInfoActivity crashes on Riposte OS 0.2 too. */
+    private void viewEvent(final Event e) {
+        String when = e.allDay ? getString(R.string.all_day)
+                : timeStr(e.begin) + " - " + timeStr(e.end);
+        String where = e.location == null || e.location.isEmpty()
+                ? getString(R.string.no_location) : e.location;
+        new AlertDialog.Builder(this)
+                .setTitle(e.title == null ? "" : e.title)
+                .setMessage(when + "\n" + where)
+                .setNegativeButton(R.string.delete, (d, w) -> deleteEvent(e.eventId))
+                .setPositiveButton(R.string.close, null)
+                .show();
+    }
+
+    private void deleteEvent(final long eventId) {
+        new Thread(() -> {
+            try {
+                Uri uri = ContentUris.withAppendedId(Events.CONTENT_URI, eventId);
+                getContentResolver().delete(uri, null, null);
+            } catch (RuntimeException ignored) {
+                // Read-only calendar or revoked grant: the row simply stays.
+            }
+            ui.post(this::reload);
+        }).start();
     }
 
     // ---- Date helpers ----------------------------------------------------
