@@ -373,16 +373,19 @@ public final class Palette {
      * watching the palette, so the screen re-paints if the driver changes theme (v0.5.3).
      */
     /**
-     * Hide the status and navigation bars for the whole activity, and keep them hidden when a
-     * swipe reveals them (BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE). API 30+; on anything older
-     * the theme's windowFullscreen still applies.
+     * Hide the status bar for the whole activity, and keep it hidden when a swipe reveals it
+     * (BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE). API 30+; on anything older the theme's
+     * windowFullscreen still applies.
+     *
+     * <p>The navigation bar stays. The car service draws it as a system window that reserves
+     * the navigationBars inset, and the decor keeps fitting that inset, so content ends above
+     * the bar instead of under it. With no such window the inset is 0 and content fills.
      */
     private static void hideSystemBars(Activity activity) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             return;
         }
         final Window window = activity.getWindow();
-        window.setDecorFitsSystemWindows(false);
         hideNow(window);
         // apply() runs from onCreate, before the decor view is attached, and the controller a
         // detached window hands out forgets the request. Ask again once the view is up.
@@ -394,7 +397,7 @@ public final class Palette {
         if (controller == null) {
             return;
         }
-        controller.hide(WindowInsets.Type.systemBars());
+        controller.hide(WindowInsets.Type.statusBars());
         controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
     }
 
