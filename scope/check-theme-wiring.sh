@@ -122,5 +122,15 @@ if [ "$said_apps" != "$want_apps" ]; then
     fail=1
 fi
 
+# The car service draws the navigation bar as a system window that reserves the
+# navigationBars inset (device-reveng #316). An app that hides it or lays out edge to edge
+# draws under the 96 px bar: the calendar's "+" sat at y 603-693 behind it. The design pack
+# hides the status bar only and leaves the decor fitting the remaining insets.
+DESIGN_PALETTE=apps/_design/src/com/ripostelabs/design/Palette.java
+if grep -qE 'Type\.(systemBars|navigationBars)\(\)|setDecorFitsSystemWindows\(false\)' "$DESIGN_PALETTE"; then
+    echo "FAIL $DESIGN_PALETTE: hides the navigation bar or ignores its inset"
+    fail=1
+fi
+
 [ "$fail" -eq 0 ] && echo "OK: theme wiring, audio citizenship and API levels all intact"
 exit "$fail"
