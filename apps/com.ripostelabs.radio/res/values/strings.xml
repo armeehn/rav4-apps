@@ -18,6 +18,11 @@
     <string name="scan">SCAN</string>
     <string name="st_mono">ST/MONO</string>
     <string name="dx_loc">DX/LOC</string>
+    <!-- What the two toggles are set to. Local: seek stops on strong stations only. -->
+    <string name="mode_stereo">STEREO</string>
+    <string name="mode_mono">MONO</string>
+    <string name="mode_distant">DISTANT</string>
+    <string name="mode_local">LOCAL</string>
     <string name="presets_hint">Presets — tap to tune, hold to save</string>
     <string name="preset_empty">— · —</string>
     <string name="preset_empty_desc">Empty preset %1$d, hold to save</string>
@@ -28,7 +33,7 @@
     <string name="status_no_gateway">tuner gateway unavailable</string>
     <string name="status_mode_lost">audio taken by another source — tap any control</string>
     <string name="status_paused">paused — play resumes the tuner</string>
-    <string name="chip_stereo">ST</string>
+    <string name="chip_stereo">stereo</string>
     <string name="chip_rds">RDS</string>
 
     <!-- Streaming (NET) -->
