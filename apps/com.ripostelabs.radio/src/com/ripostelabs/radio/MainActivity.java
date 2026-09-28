@@ -366,6 +366,11 @@ public class MainActivity extends Activity
         if (freq > 0) curFreq = freq;
         bandLabel.setText(fmNow ? "FM" + (curBand + 1) : "AM");
         freqUnit.setText(fmNow ? R.string.unit_mhz : R.string.unit_khz);
+
+        // The toggles say what they are set to, as the vendor's setRadioState did
+        // (RadioUIController.java:1029-1048): "DX/LOC" alone told the driver nothing.
+        ((TextView) findViewById(R.id.btn_st_mono)).setText(tuner.getStMono() ? R.string.mode_stereo : R.string.mode_mono);
+        ((TextView) findViewById(R.id.btn_dx_loc)).setText(tuner.getDxLoc() ? R.string.mode_local : R.string.mode_distant);
         RadioZone.Plan plan = RadioZone.plan(tuner.getZone(), curBand);
         Band drawn = fmNow ? Band.FM : Band.AM;
         freqMin.setText(formatFreq(plan.min, drawn));
