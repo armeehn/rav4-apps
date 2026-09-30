@@ -172,8 +172,8 @@ public final class Bridge implements FoxServer.Listener {
         control.send(Messages.KEY, Messages.key(keyCode, down));
     }
 
-    public void night(boolean on) {
-        int id = on ? Messages.NIGHT_START : Messages.NIGHT_STOP;
+    public void night(Messages.DayNight mode) {
+        int id = Messages.nightId(mode);
         control.send(id, Messages.idOnly(id));
     }
 

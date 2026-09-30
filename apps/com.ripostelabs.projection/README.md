@@ -222,4 +222,6 @@ on that port, only a file-transfer id for it, so the card shows no cover.
 | Touch: panel pixels straight to the daemon | works |
 | Wired (USB, iAP2 gadget + NCM) | not tried yet: needs the port in host mode |
 | Now playing: title, artist, album, duration, play state and position from port 1555 (`zlink/Metadata`, `MetadataLink`) | decoder unit-tested with hand-built iAP2 vectors; no phone has sent one yet |
-| Siri, calls, mic | not started |
+| Call state to the launcher: `0x710` edges become `PHONE_CALL_ON/OFF` and `MAIN_AUDIO_START/STOP`, closed on session drop (`zlink/LauncherStatus`) | unit-tested; no call placed yet |
+| Night: the launcher's `cmd uimode night` reaches the service's configuration, sent as `0x705`/`0x706` at session start and on change | unit-tested; not seen on the phone yet |
+| Siri, call audio, mic | not started |

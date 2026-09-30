@@ -21,11 +21,13 @@ import android.view.Surface;
 import com.ripostelabs.design.MediaCitizen;
 import com.ripostelabs.projection.aa.Messages.AudioConfig;
 import com.ripostelabs.projection.zlink.Bridge;
+import com.ripostelabs.projection.zlink.LauncherStatus;
 import com.ripostelabs.projection.zlink.Messages;
 import com.ripostelabs.projection.zlink.Metadata;
 import com.ripostelabs.projection.zlink.MetadataLink;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Keeps the daemon's servers open from boot to shutdown, so the OEM projection daemon on
@@ -53,10 +55,6 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     private static final String EXTRA_PHONE_MODE = "phoneMode";
     private static final String STATUS_CONNECTED = "CONNECTED";
     private static final String STATUS_DISCONNECT = "DISCONNECT";
-    private static final String STATUS_CALL_ON = "PHONE_CALL_ON";
-    private static final String STATUS_CALL_OFF = "PHONE_CALL_OFF";
-    private static final String STATUS_MAIN_AUDIO_START = "MAIN_AUDIO_START";
-    private static final String STATUS_MAIN_AUDIO_STOP = "MAIN_AUDIO_STOP";
     private static final String MODE_WIRELESS = "carplay_wireless";
     private static final String MODE_WIRED = "carplay_wired";
     /** Android media key codes; the OEM gateway forwarded these raw to the daemon in mode 32. */
@@ -127,9 +125,8 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     private MediaCitizen citizen;
     private MicSource mic;
     private boolean hasFocus;
-    private boolean callOn;
-    private boolean mainAudio;
-    private boolean night;
+    private final LauncherStatus launcher = new LauncherStatus();
+    private Messages.DayNight night = Messages.DayNight.DAY;
 
     /** The phone's track from the daemon's metadata port onto the launcher's now-playing card. */
     private final MetadataLink metadata = new MetadataLink(LOOPBACK, Metadata.PORT, new MetadataLink.Listener() {
@@ -264,13 +261,14 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         Log.i(TAG, "zlink: session " + (up ? "up" : "down") + ", launcher told");
         if (up) {
             // The daemon starts a session in day; tell it where the unit is right now.
-            night = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
-                    == Configuration.UI_MODE_NIGHT_YES;
+            night = LauncherStatus.dayNight(getResources().getConfiguration().uiMode);
             bridge.night(night);
             metadata.start();
         }
         if (!up) {
             metadata.stop();
+            // A phone that leaves mid-call never sends call off; close it for the launcher.
+            statuses(launcher.onSessionDown());
         }
         if (!up && hasFocus) {
             citizen.releaseFocus();
@@ -302,14 +300,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
 
     @Override
     public void onCallState(Messages.CallState state) {
-        if (state.callOn != callOn) {
-            callOn = state.callOn;
-            status(callOn ? STATUS_CALL_ON : STATUS_CALL_OFF, null);
-        }
-        if (state.mainAudio != mainAudio) {
-            mainAudio = state.mainAudio;
-            status(mainAudio ? STATUS_MAIN_AUDIO_START : STATUS_MAIN_AUDIO_STOP, null);
-        }
+        statuses(launcher.onCallState(state));
     }
 
     @Override
@@ -329,10 +320,16 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        boolean dark = (newConfig.uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
-        if (dark != night) {
-            night = dark;
-            bridge.night(dark);
+        Messages.DayNight mode = LauncherStatus.dayNight(newConfig.uiMode);
+        if (mode != night) {
+            night = mode;
+            bridge.night(mode);
+        }
+    }
+
+    private void statuses(List<String> list) {
+        for (String s : list) {
+            status(s, null);
         }
     }
 
