@@ -3,6 +3,7 @@ package com.ripostelabs.design;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
 import android.media.AudioManager;
@@ -257,11 +258,25 @@ public final class MediaCitizen {
 
     /** What the launcher's now-playing card shows. Nulls are tolerated. */
     public void setMetadata(String title, String artist, long durationMs) {
-        session.setMetadata(new MediaMetadata.Builder()
+        setMetadata(title, artist, null, durationMs, null);
+    }
+
+    /**
+     * The same, with the album and its cover. The launcher's card and media screen draw the
+     * art; a null album or art is left out rather than sent empty.
+     */
+    public void setMetadata(String title, String artist, String album, long durationMs, Bitmap art) {
+        MediaMetadata.Builder b = new MediaMetadata.Builder()
                 .putString(MediaMetadata.METADATA_KEY_TITLE, title == null ? "" : title)
                 .putString(MediaMetadata.METADATA_KEY_ARTIST, artist == null ? "" : artist)
-                .putLong(MediaMetadata.METADATA_KEY_DURATION, Math.max(0, durationMs))
-                .build());
+                .putLong(MediaMetadata.METADATA_KEY_DURATION, Math.max(0, durationMs));
+        if (album != null) {
+            b.putString(MediaMetadata.METADATA_KEY_ALBUM, album);
+        }
+        if (art != null) {
+            b.putBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART, art);
+        }
+        session.setMetadata(b.build());
     }
 
     /**
