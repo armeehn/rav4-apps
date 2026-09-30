@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ContentUris;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -62,6 +63,7 @@ public class ListActivity extends Activity {
     private TextView emptyText;
     private TextView emptyHint;
     private RowAdapter adapter;
+    private Button continueBtn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +92,7 @@ public class ListActivity extends Activity {
             @Override public void onDenied() { showEmpty(true); }
         });
         count = findViewById(R.id.count);
+        continueBtn = findViewById(R.id.continue_btn);
 
         int max = (int) (Runtime.getRuntime().maxMemory() / 8);
         cache = new LruCache<Long, Bitmap>(max) {
@@ -99,17 +102,57 @@ public class ListActivity extends Activity {
         adapter = new RowAdapter();
         list.setAdapter(adapter);
 
-        list.setOnItemClickListener((AdapterView<?> p, View vw, int pos, long id) -> {
-            String[] arr = new String[videos.size()];
-            for (int i = 0; i < arr.length; i++) arr[i] = videos.get(i).uri.toString();
-            Intent v = new Intent(this, PlayerActivity.class);
-            v.putExtra("uris", arr);
-            v.putExtra("index", pos);
-            v.putExtra("title", videos.get(pos).title);
-            startActivity(v);
-        });
+        list.setOnItemClickListener((AdapterView<?> p, View vw, int pos, long id) -> play(pos, 0));
 
         gate.request();   // granted → loadVideos() at once
+    }
+
+    private void play(int pos, long startMs) {
+        Intent v = new Intent(this, PlayerActivity.class);
+        v.putExtra("uris", uriStrings());
+        v.putExtra("index", pos);
+        v.putExtra("title", videos.get(pos).title);
+        v.putExtra(ResumeSpot.EXTRA_START, startMs);
+        startActivity(v);
+    }
+
+    private String[] uriStrings() {
+        String[] arr = new String[videos.size()];
+        for (int i = 0; i < arr.length; i++) {
+            arr[i] = videos.get(i).uri.toString();
+        }
+        return arr;
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (continueBtn != null) {
+            showContinue();
+        }
+    }
+
+    /**
+     * Offer the video the player saved last, from where it stopped, when it is still in the
+     * library and not already watched to the credits.
+     */
+    private void showContinue() {
+        continueBtn.setVisibility(View.GONE);
+        SharedPreferences prefs = getSharedPreferences(ResumeSpot.PREFS, MODE_PRIVATE);
+
+        int row = ResumeSpot.indexOf(uriStrings(), prefs.getString(ResumeSpot.KEY_URI, null));
+        if (row == ResumeSpot.GONE) {
+            return;
+        }
+        Item it = videos.get(row);
+        long at = ResumeSpot.seekTo(prefs.getLong(ResumeSpot.KEY_POS, 0), it.durationMs);
+        if (at == ResumeSpot.WATCHED) {
+            return;
+        }
+
+        continueBtn.setText(getString(R.string.continue_at, it.title, fmtDuration(at)));
+        continueBtn.setOnClickListener(v -> play(row, at));
+        continueBtn.setVisibility(View.VISIBLE);
     }
 
     private String perm() {
@@ -162,6 +205,7 @@ public class ListActivity extends Activity {
                 videos.addAll(found);
                 showEmpty(videos.isEmpty());
                 adapter.notifyDataSetChanged();
+                showContinue();
             });
         });
     }
