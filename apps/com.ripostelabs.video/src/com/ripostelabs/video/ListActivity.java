@@ -29,6 +29,7 @@ import android.widget.TextView;
 import com.ripostelabs.design.PermissionGate;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import com.ripostelabs.design.Palette;
@@ -50,7 +51,22 @@ public class ListActivity extends Activity {
         String title;
         long durationMs;
         long id;
+        /** File path, for the folder view. */
+        String path;
     }
+
+    /** What the list shows: every video, the folders, or one folder's videos. */
+    private enum Browse {
+        VIDEOS,
+        FOLDERS,
+        FOLDER,
+    }
+
+    private Browse browse = Browse.VIDEOS;
+    private List<Folders.Folder> folderList = new ArrayList<>();
+    /** The folder shown under {@link Browse#FOLDER}. */
+    private Folders.Folder openFolder;
+    private Button btnBrowse;
 
     private final ArrayList<Item> videos = new ArrayList<>();
     private final ExecutorService io = Executors.newFixedThreadPool(4);
@@ -102,16 +118,23 @@ public class ListActivity extends Activity {
         adapter = new RowAdapter();
         list.setAdapter(adapter);
 
-        list.setOnItemClickListener((AdapterView<?> p, View vw, int pos, long id) -> play(pos, 0));
+        list.setOnItemClickListener((AdapterView<?> p, View vw, int pos, long id) -> onRow(pos));
+        btnBrowse = findViewById(R.id.btn_browse);
+        btnBrowse.setOnClickListener(v -> showBrowse(browse == Browse.VIDEOS ? Browse.FOLDERS : Browse.VIDEOS));
 
         gate.request();   // granted → loadVideos() at once
     }
 
     private void play(int pos, long startMs) {
+        play(uriStrings(), pos, videos.get(pos).title, startMs);
+    }
+
+    /** Open the player on {@code uris}, the playlist its loop modes walk. */
+    private void play(String[] uris, int pos, String title, long startMs) {
         Intent v = new Intent(this, PlayerActivity.class);
-        v.putExtra("uris", uriStrings());
+        v.putExtra("uris", uris);
         v.putExtra("index", pos);
-        v.putExtra("title", videos.get(pos).title);
+        v.putExtra("title", title);
         v.putExtra(ResumeSpot.EXTRA_START, startMs);
         startActivity(v);
     }
@@ -122,6 +145,92 @@ public class ListActivity extends Activity {
             arr[i] = videos.get(i).uri.toString();
         }
         return arr;
+    }
+
+    /**
+     * A tap on list row {@code pos}: open a folder, or play. Inside a folder the playlist is
+     * that folder, so "repeat all" loops it, as stock's folder play did.
+     */
+    private void onRow(int pos) {
+        if (browse == Browse.FOLDERS) {
+            openFolder = folderList.get(pos);
+            showBrowse(Browse.FOLDER);
+            return;
+        }
+        if (browse != Browse.FOLDER || openFolder == null) {
+            play(pos, 0);
+            return;
+        }
+
+        String[] uris = new String[openFolder.rows.length];
+        for (int i = 0; i < uris.length; i++) {
+            uris[i] = videos.get(openFolder.rows[i]).uri.toString();
+        }
+        play(uris, pos, videos.get(openFolder.rows[pos]).title, 0);
+    }
+
+    /** The video behind list row {@code pos} in the video views. */
+    private Item videoAt(int pos) {
+        return videos.get(browse == Browse.FOLDER && openFolder != null ? openFolder.rows[pos] : pos);
+    }
+
+    /** Rebuild the folder level after a load; a folder that went with its stick closes. */
+    private void regroup() {
+        String[] paths = new String[videos.size()];
+        for (int i = 0; i < paths.length; i++) {
+            paths[i] = videos.get(i).path;
+        }
+        folderList = Folders.group(paths);
+
+        String was = openFolder == null ? null : openFolder.path;
+        openFolder = null;
+        for (Folders.Folder f : folderList) {
+            if (f.path.equals(was)) {
+                openFolder = f;
+            }
+        }
+        if (openFolder == null && browse == Browse.FOLDER) {
+            browse = Browse.FOLDERS;
+        }
+    }
+
+    private void showBrowse(Browse b) {
+        browse = b;
+        btnBrowse.setText(b == Browse.VIDEOS ? R.string.browse_folders : R.string.browse_videos);
+        showCount();
+        adapter.notifyDataSetChanged();
+        list.setSelection(0);
+    }
+
+    /** "12 videos", "3 folders", or "Trips · USB · 2 videos" inside a folder. */
+    private void showCount() {
+        if (browse == Browse.FOLDERS) {
+            count.setText(getString(R.string.folders_count, folderList.size()));
+            return;
+        }
+        if (browse == Browse.FOLDER && openFolder != null) {
+            count.setText(openFolder.name + " · " + folderSummary(openFolder));
+            return;
+        }
+        int n = videos.size();
+        count.setText(n == 0 ? "" : (n == 1 ? "1 video" : n + " videos"));
+    }
+
+    /** "USB · 2 videos". */
+    private String folderSummary(Folders.Folder f) {
+        String where = getString(f.where == Folders.Where.USB ? R.string.where_usb : R.string.where_internal);
+        int n = f.rows.length;
+        return where + " · " + (n == 1 ? "1 video" : n + " videos");
+    }
+
+    /** Back inside a folder returns to the folders. */
+    @Override
+    public void onBackPressed() {
+        if (browse == Browse.FOLDER) {
+            showBrowse(Browse.FOLDERS);
+            return;
+        }
+        super.onBackPressed();
     }
 
     @Override
@@ -176,6 +285,7 @@ public class ListActivity extends Activity {
                     MediaStore.Video.Media.TITLE,
                     MediaStore.Video.Media.DISPLAY_NAME,
                     MediaStore.Video.Media.DURATION,
+                    MediaStore.Video.Media.DATA,
             };
             try (Cursor c = getContentResolver().query(
                     MediaStore.Video.Media.EXTERNAL_CONTENT_URI, proj, null, null,
@@ -196,6 +306,8 @@ public class ListActivity extends Activity {
                         }
                         it.title = (t == null || t.trim().isEmpty()) ? ("Video " + it.id) : t;
                         it.durationMs = durCol >= 0 ? c.getLong(durCol) : 0;
+                        int paCol = c.getColumnIndex(MediaStore.Video.Media.DATA);
+                        it.path = paCol >= 0 ? c.getString(paCol) : null;
                         found.add(it);
                     }
                 }
@@ -203,6 +315,7 @@ public class ListActivity extends Activity {
             ui.post(() -> {
                 videos.clear();
                 videos.addAll(found);
+                regroup();
                 showEmpty(videos.isEmpty());
                 adapter.notifyDataSetChanged();
                 showContinue();
@@ -218,8 +331,7 @@ public class ListActivity extends Activity {
         boolean granted = gate.granted();
         emptyText.setText(granted ? R.string.empty_no_videos : R.string.need_permission_title);
         emptyHint.setText(granted ? R.string.empty_hint : R.string.need_permission);
-        int n = videos.size();
-        count.setText(n == 0 ? "" : (n == 1 ? "1 video" : n + " videos"));
+        showCount();
     }
 
     static String fmtDuration(long ms) {
@@ -233,8 +345,16 @@ public class ListActivity extends Activity {
     }
 
     private final class RowAdapter extends BaseAdapter {
-        @Override public int getCount() { return videos.size(); }
-        @Override public Object getItem(int p) { return videos.get(p); }
+        @Override public int getCount() {
+            if (browse == Browse.FOLDERS) {
+                return folderList.size();
+            }
+            if (browse == Browse.FOLDER && openFolder != null) {
+                return openFolder.rows.length;
+            }
+            return videos.size();
+        }
+        @Override public Object getItem(int p) { return browse == Browse.FOLDERS ? folderList.get(p) : videoAt(p); }
         @Override public long getItemId(int p) { return p; }
 
         @Override
@@ -247,13 +367,19 @@ public class ListActivity extends Activity {
                 View frame = v.findViewById(R.id.thumb_frame);
                 frame.setClipToOutline(true);
             }
-            Item it = videos.get(position);
+            // A folder row wears its first video's thumbnail and a "USB · 3 videos" chip.
+            Folders.Folder folder = browse == Browse.FOLDERS ? folderList.get(position) : null;
+            Item it = folder != null ? videos.get(folder.rows[0]) : videoAt(position);
             TextView title = v.findViewById(R.id.title);
             TextView dur = v.findViewById(R.id.duration);
             final ImageView thumb = v.findViewById(R.id.thumb);
             title.setText(it.title);
             String d = fmtDuration(it.durationMs);
             dur.setText(d.isEmpty() ? "Video" : d);
+            if (folder != null) {
+                title.setText(folder.name);
+                dur.setText(folderSummary(folder));
+            }
 
             thumb.setImageDrawable(null);
             thumb.setTag(it.id);

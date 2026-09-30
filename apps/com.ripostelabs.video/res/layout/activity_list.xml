@@ -51,6 +51,14 @@
             android:singleLine="true"
             android:ellipsize="end"
             android:maxWidth="720dp" />
+
+        <Button
+            android:id="@+id/btn_browse"
+            style="@style/EmptyStateAction"
+            android:layout_marginTop="0dp"
+            android:layout_marginLeft="12dp"
+            android:visibility="visible"
+            android:text="@string/browse_folders" />
     </LinearLayout>
 
     <FrameLayout
