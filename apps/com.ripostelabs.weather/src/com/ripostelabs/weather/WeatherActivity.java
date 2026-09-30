@@ -52,7 +52,12 @@ public class WeatherActivity extends Activity {
     private final Handler ui = new Handler(Looper.getMainLooper());
 
     private TextView cityView, statusView, iconView, tempView, conditionView;
-    private TextView chipFeels, chipHum, chipWind;
+    private TextView chipFeels, chipHum, chipWind, chipAqi;
+    // RAV4-197: the cache the launcher's home card reads, and the unit the driver picked.
+    private WeatherStore store;
+    private TextView unitBtn;
+    private double lastLat = DEF_LAT, lastLon = DEF_LON;
+    private String lastLabel = DEF_NAME;
     private LinearLayout dailyRow, hourlyRow;
     private EditText cityInput;
 
@@ -77,6 +82,8 @@ public class WeatherActivity extends Activity {
         chipFeels = findViewById(R.id.chipFeels);
         chipHum = findViewById(R.id.chipHum);
         chipWind = findViewById(R.id.chipWind);
+        chipAqi = findViewById(R.id.chipAqi);
+        unitBtn = findViewById(R.id.unitBtn);
         dailyRow = findViewById(R.id.daily);
         hourlyRow = findViewById(R.id.hourly);
         cityInput = findViewById(R.id.cityInput);
@@ -93,6 +100,16 @@ public class WeatherActivity extends Activity {
             return false;
         });
         locBtn.setOnClickListener(v -> useDeviceLocation());
+
+        // RAV4-197: C/F flips the unit and re-fetches the same place in it.
+        store = new WeatherStore(this);
+        RefreshJob.schedule(this);
+        unitBtn.setText(store.unit().symbol());
+        unitBtn.setOnClickListener(v -> {
+            store.setUnit(store.unit().toggle());
+            unitBtn.setText(store.unit().symbol());
+            load(lastLat, lastLon, lastLabel);
+        });
 
         // First load: try device location, else default city.
         useDeviceLocation();
@@ -208,17 +225,21 @@ public class WeatherActivity extends Activity {
     private void load(final double lat, final double lon, final String label) {
         if (label != null) cityView.setText(label);
         statusView.setText(R.string.loading);
+        lastLat = lat;
+        lastLon = lon;
+        lastLabel = label;
+        final WeatherLogic.Unit unit = store.unit();
         new Thread(() -> {
             try {
-                String url = "https://api.open-meteo.com/v1/forecast"
-                        + "?latitude=" + lat + "&longitude=" + lon
-                        + "&current=temperature_2m,relative_humidity_2m,apparent_temperature,"
-                        + "wind_speed_10m,wind_direction_10m,weather_code"
-                        + "&hourly=temperature_2m,weather_code"
-                        + "&daily=weather_code,temperature_2m_max,temperature_2m_min"
-                        + "&forecast_days=7&timezone=auto";
-                final JSONObject root = new JSONObject(httpGet(url));
-                ui.post(() -> render(root, label));
+                final JSONObject root = WeatherFetch.forecast(lat, lon, unit);
+                // RAV4-197: air quality is a second API; a failure there only blanks its chip.
+                final Integer aqi = WeatherFetch.aqi(lat, lon);
+                store.save(WeatherFetch.reading(root, aqi, label != null ? label : zoneName(root),
+                        unit, System.currentTimeMillis()), lat, lon);
+                ui.post(() -> {
+                    render(root, label);
+                    chipAqi.setText(aqi == null ? "--" : aqi + " " + WeatherLogic.aqiBand(aqi));
+                });
             } catch (Exception e) {
                 ui.post(() -> statusView.setText("No connection — could not load the forecast"));
             }
@@ -249,7 +270,7 @@ public class WeatherActivity extends Activity {
             // Open-Meteo answers with a tz database id ("America/Los_Angeles"); the city in it
             // is the part a driver reads.
             String tz = root.optString("timezone", "");
-            String zone = tz.substring(tz.lastIndexOf('/') + 1).replace('_', ' ');
+            String zone = zoneName(root);
             statusView.setText("Updated " + nowLabel() + (tz.isEmpty() ? "" : "  •  " + zone));
             if (label == null && cityView.getText().toString().equals("—")) {
                 cityView.setText("Current location");
@@ -349,6 +370,12 @@ public class WeatherActivity extends Activity {
     }
 
     // ---------------------------------------------------------------- helpers
+
+    /** "America/Vancouver" → "Vancouver": the city part of Open-Meteo's tz id. */
+    private static String zoneName(JSONObject root) {
+        String tz = root.optString("timezone", "");
+        return tz.substring(tz.lastIndexOf('/') + 1).replace('_', ' ');
+    }
 
     private String httpGet(String urlStr) throws Exception {
         HttpURLConnection conn = null;

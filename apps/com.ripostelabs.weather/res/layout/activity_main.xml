@@ -177,6 +177,35 @@
                         android:textColor="@color/text"
                         android:text="--" />
                 </LinearLayout>
+
+                <!-- air quality (US AQI), RAV4-197 -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@drawable/bg_chip"
+                    android:paddingLeft="14dp"
+                    android:paddingRight="14dp"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp">
+
+                    <TextView
+                        style="@style/Overline"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="7dp"
+                        android:text="@string/aqi" />
+
+                    <TextView
+                        android:id="@+id/chipAqi"
+                        style="@style/Caption"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/text"
+                        android:text="--" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
@@ -223,6 +252,19 @@
                 android:src="@drawable/ic_location"
                 android:scaleType="centerInside"
                 android:contentDescription="@string/use_location" />
+
+            <!-- C / F, RAV4-197 -->
+            <TextView
+                android:id="@+id/unitBtn"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_marginStart="6dp"
+                android:background="@drawable/btn_icon"
+                android:gravity="center"
+                android:textColor="@color/text"
+                android:textSize="17sp"
+                android:text="°C"
+                android:contentDescription="@string/unit" />
         </LinearLayout>
     </LinearLayout>
 
