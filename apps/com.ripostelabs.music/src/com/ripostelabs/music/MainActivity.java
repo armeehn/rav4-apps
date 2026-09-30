@@ -36,6 +36,7 @@ import android.widget.Toast;
 import com.ripostelabs.design.PermissionGate;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -121,6 +122,19 @@ public class MainActivity extends Activity
     private BroadcastReceiver usbWatch;
     private TrackAdapter adapter;
 
+    /** What the list shows: every track, the folders, or one folder's tracks. */
+    private enum Browse {
+        TRACKS,
+        FOLDERS,
+        FOLDER,
+    }
+
+    private Browse browse = Browse.TRACKS;
+    private List<Folders.Folder> folderList = new ArrayList<>();
+    /** The folder shown under {@link Browse#FOLDER}. */
+    private Folders.Folder openFolder;
+    private Button btnBrowse;
+
     // resolved palette (from shared design system)
     private int cAccent, cAccentDim, cSurface2, cText, cText2;
 
@@ -192,7 +206,9 @@ public class MainActivity extends Activity
         list.setAdapter(adapter);
 
 
-        list.setOnItemClickListener((AdapterView<?> p, View vw, int pos, long id) -> playAt(pos));
+        list.setOnItemClickListener((AdapterView<?> p, View vw, int pos, long id) -> onRow(pos));
+        btnBrowse = findViewById(R.id.btn_browse);
+        btnBrowse.setOnClickListener(v -> showBrowse(browse == Browse.TRACKS ? Browse.FOLDERS : Browse.TRACKS));
 
         btnPlay.setOnClickListener(v -> togglePlay());
         btnPrev.setOnClickListener(v -> playPrevious());
@@ -276,8 +292,8 @@ public class MainActivity extends Activity
             }
             ui.post(() -> {
                 adopt(found);
-                count.setText(tracks.size() == 1 ? getString(R.string.tracks_count_one)
-                        : getString(R.string.tracks_count, tracks.size()));
+                regroup();
+                showCount();
                 emptyText.setText(R.string.empty_no_tracks);
                 showEmpty(tracks.isEmpty());
             });
@@ -400,6 +416,83 @@ public class MainActivity extends Activity
     protected void onPause() {
         super.onPause();
         savePoint();
+    }
+
+    /** Rebuild the folder level after a reload; a folder that went with its stick closes. */
+    private void regroup() {
+        String[] paths = new String[tracks.size()];
+        for (int i = 0; i < paths.length; i++) {
+            paths[i] = tracks.get(i).path;
+        }
+        folderList = Folders.group(paths);
+
+        if (openFolder == null) {
+            return;
+        }
+        String was = openFolder.path;
+        openFolder = null;
+        for (Folders.Folder f : folderList) {
+            if (f.path.equals(was)) {
+                openFolder = f;
+            }
+        }
+        if (openFolder == null && browse == Browse.FOLDER) {
+            showBrowse(Browse.FOLDERS);
+        }
+    }
+
+    private void showBrowse(Browse b) {
+        browse = b;
+        btnBrowse.setText(b == Browse.TRACKS ? R.string.browse_folders : R.string.browse_tracks);
+        showCount();
+        adapter.notifyDataSetChanged();
+        list.setSelection(0);
+    }
+
+    /** "12 tracks", "3 folders", or "Jazz · USB · 2 tracks" inside a folder. */
+    private void showCount() {
+        if (browse == Browse.FOLDERS) {
+            count.setText(getString(R.string.folders_count, folderList.size()));
+            return;
+        }
+        if (browse == Browse.FOLDER && openFolder != null) {
+            count.setText(folderLine(openFolder));
+            return;
+        }
+        count.setText(tracks.size() == 1 ? getString(R.string.tracks_count_one)
+                : getString(R.string.tracks_count, tracks.size()));
+    }
+
+    private String folderLine(Folders.Folder f) {
+        String where = getString(f.where == Folders.Where.USB ? R.string.where_usb : R.string.where_internal);
+        String n = f.rows.length == 1 ? getString(R.string.tracks_count_one)
+                : getString(R.string.tracks_count, f.rows.length);
+        return f.name + " · " + where + " · " + n;
+    }
+
+    /** A tap on list row {@code pos}: open a folder, or play a track. */
+    private void onRow(int pos) {
+        if (browse == Browse.FOLDERS) {
+            openFolder = folderList.get(pos);
+            showBrowse(Browse.FOLDER);
+            return;
+        }
+        playAt(trackAt(pos));
+    }
+
+    /** The track index behind list row {@code pos} in the track views. */
+    private int trackAt(int pos) {
+        return browse == Browse.FOLDER && openFolder != null ? openFolder.rows[pos] : pos;
+    }
+
+    /** Back inside a folder returns to the folders, as stock's file list did. */
+    @Override
+    public void onBackPressed() {
+        if (browse == Browse.FOLDER) {
+            showBrowse(Browse.FOLDERS);
+            return;
+        }
+        super.onBackPressed();
     }
 
     /** Switch loop mode, from the button or the wheel, and say so: the wheel has no screen. */
@@ -674,9 +767,19 @@ public class MainActivity extends Activity
     }
 
     private final class TrackAdapter extends BaseAdapter {
-        @Override public int getCount() { return tracks.size(); }
-        @Override public Object getItem(int p) { return tracks.get(p); }
-        @Override public long getItemId(int p) { return tracks.get(p).id; }
+        @Override public int getCount() {
+            if (browse == Browse.FOLDERS) {
+                return folderList.size();
+            }
+            if (browse == Browse.FOLDER && openFolder != null) {
+                return openFolder.rows.length;
+            }
+            return tracks.size();
+        }
+        @Override public Object getItem(int p) {
+            return browse == Browse.FOLDERS ? folderList.get(p) : tracks.get(trackAt(p));
+        }
+        @Override public long getItemId(int p) { return p; }
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
@@ -734,10 +837,20 @@ public class MainActivity extends Activity
                 col.addView(artist, arp);
             }
 
-            Track t = tracks.get(position);
-            title.setText(t.title);
-            artist.setText(t.artist);
-            boolean active = position == current;
+            boolean active;
+            if (browse == Browse.FOLDERS) {
+                Folders.Folder f = folderList.get(position);
+                avatar.setImageResource(R.drawable.ic_folder);
+                title.setText(f.name);
+                artist.setText(folderLine(f).substring(f.name.length() + 3));
+                active = openFolder == f;
+            } else {
+                Track t = tracks.get(trackAt(position));
+                avatar.setImageResource(R.drawable.ic_music);
+                title.setText(t.title);
+                artist.setText(t.artist);
+                active = trackAt(position) == current;
+            }
 
             // avatar badge: a circle, or a hard-edged square when the theme asks for it
             GradientDrawable badge = new GradientDrawable();

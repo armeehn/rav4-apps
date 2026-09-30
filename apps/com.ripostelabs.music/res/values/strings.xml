@@ -16,6 +16,11 @@
     <string name="mode_folder">Repeat folder</string>
     <string name="mode_shuffle">Shuffle</string>
     <string name="cover_art">Cover art</string>
+    <string name="browse_folders">Folders</string>
+    <string name="browse_tracks">All tracks</string>
+    <string name="folders_count">%1$d folders</string>
+    <string name="where_usb">USB</string>
+    <string name="where_internal">Internal</string>
     <string name="tracks_count_one">1 track</string>
     <string name="tracks_count">%1$d tracks</string>
 </resources>
