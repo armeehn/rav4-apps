@@ -211,6 +211,8 @@ final class LauncherTuner extends Tuner {
     @Override boolean getDxLoc() { return state.dxLoc; }
     @Override String getStationName() { return state.stationName; }
     @Override int getPty() { return state.pty; }
+    /** TunerState carries no traffic flag yet; North America has no TA bulletins anyway. */
+    @Override boolean isTraffic() { return false; }
     @Override boolean isScanning() { return state.scanning; }
     @Override boolean isAutoStoring() { return state.autoStoring; }
     @Override int getZone() { return state.zone; }
