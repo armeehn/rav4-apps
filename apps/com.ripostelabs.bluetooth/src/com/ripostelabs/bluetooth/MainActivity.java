@@ -2,6 +2,7 @@ package com.ripostelabs.bluetooth;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothA2dp;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothClass;
@@ -23,6 +24,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -79,6 +81,11 @@ public class MainActivity extends Activity {
 
     private boolean scanning = false;
     private boolean scanFinished = false;   // a scan that ended empty is not a scan never run
+
+    /** RAV4-178: the device menu's last item, after Connect / Disconnect / Forget. */
+    private static final int DEVICE_MENU_SETTINGS = 3;
+    private static final long RENDER_AFTER_MS = 1500;
+    private static final int MIN_TAP_DP = 48;
     private boolean syncingToggle = false;
 
     // resolved palette
@@ -126,7 +133,7 @@ public class MainActivity extends Activity {
             }
         });
         btnScan.setOnClickListener(v -> onScanPressed());
-        btnSettings.setOnClickListener(v -> openBtSettings());
+        btnSettings.setOnClickListener(v -> settingsMenu());
         btnPair.setOnClickListener(v -> openBtSettings());
         gate = PermissionGate.of(this, neededPerms(), grant, new PermissionGate.Listener() {
             @Override public void onGranted() {
@@ -537,10 +544,111 @@ public class MainActivity extends Activity {
         row.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 if (discoverable) bondDevice(d);
-                else openBtSettings(); // connect/disconnect needs system perms → defer
+                else deviceMenu(d);
             }
         });
         return row;
+    }
+
+    /**
+     * RAV4-178: Connect / Disconnect / Forget for one paired phone, as stock's device page had.
+     * The launcher runs them on its car kit ([CarKit]); Android's settings stay one item away.
+     */
+    private void deviceMenu(final BluetoothDevice d) {
+        String[] items = {
+                getString(R.string.dev_connect),
+                getString(R.string.dev_disconnect),
+                getString(R.string.dev_forget),
+                getString(R.string.settings),
+        };
+        new AlertDialog.Builder(this)
+                .setTitle(deviceName(d))
+                .setItems(items, (dlg, which) -> {
+                    if (which == DEVICE_MENU_SETTINGS) {
+                        openBtSettings();
+                        return;
+                    }
+                    CarKit.Op op = CarKit.Op.values()[which];
+                    if (op == CarKit.Op.FORGET) {
+                        confirmForget(d);
+                        return;
+                    }
+                    sendToCarKit(op, d);
+                })
+                .show();
+    }
+
+    /** Forget cannot be undone from the car: the phone has to pair again. */
+    private void confirmForget(final BluetoothDevice d) {
+        new AlertDialog.Builder(this)
+                .setTitle(getString(R.string.dev_forget_title, deviceName(d)))
+                .setMessage(R.string.dev_forget_hint)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.dev_forget, (dlg, w) -> sendToCarKit(CarKit.Op.FORGET, d))
+                .show();
+    }
+
+    private void sendToCarKit(CarKit.Op op, BluetoothDevice d) {
+        Intent i = new Intent(CarKit.ACTION)
+                .setPackage(CarKit.LAUNCHER_PKG)
+                .putExtra(CarKit.EXTRA_OP, op.name())
+                .putExtra(CarKit.EXTRA_ADDRESS, d.getAddress());
+        sendBroadcast(i);
+        Toast.makeText(this, R.string.dev_sent, Toast.LENGTH_SHORT).show();
+        // The bond list and link states move by broadcast; redraw once they have had a moment.
+        pairedList.postDelayed(this::render, RENDER_AFTER_MS);
+    }
+
+    /** RAV4-178: the gear opens the car's own name and, below it, Android's settings. */
+    private void settingsMenu() {
+        String[] items = { getString(R.string.car_name), getString(R.string.settings) };
+        new AlertDialog.Builder(this)
+                .setItems(items, (dlg, which) -> {
+                    if (which == 0) {
+                        editCarName();
+                        return;
+                    }
+                    openBtSettings();
+                })
+                .show();
+    }
+
+    /** The name phones see when they search for the car (BluetoothAdapter.setName). */
+    private void editCarName() {
+        if (adapter == null) {
+            return;
+        }
+        final EditText field = new EditText(this);
+        field.setSingleLine(true);
+        field.setMinHeight(dp(MIN_TAP_DP));
+        try {
+            field.setText(adapter.getName());
+        } catch (SecurityException e) {
+            requestPerms();
+            return;
+        }
+        field.setSelectAllOnFocus(true);
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.car_name)
+                .setMessage(R.string.car_name_hint)
+                .setView(field)
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, (dlg, w) -> saveCarName(field.getText().toString()))
+                .show();
+    }
+
+    private void saveCarName(String raw) {
+        String name = CarKit.cleanName(raw);
+        if (name == null) {
+            return;
+        }
+        boolean ok;
+        try {
+            ok = adapter.setName(name);
+        } catch (SecurityException e) {
+            ok = false;
+        }
+        Toast.makeText(this, ok ? R.string.car_name_saved : R.string.car_name_failed, Toast.LENGTH_SHORT).show();
     }
 
     private void bondDevice(BluetoothDevice d) {

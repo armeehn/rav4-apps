@@ -44,4 +44,18 @@
     <string name="type_device">Device</string>
 
     <string name="paired_count">%1$d paired</string>
+
+    <!-- RAV4-178: the paired-phone menu and the car's name -->
+    <string name="dev_connect">Connect</string>
+    <string name="dev_disconnect">Disconnect</string>
+    <string name="dev_forget">Forget</string>
+    <string name="dev_forget_title">Forget %1$s?</string>
+    <string name="dev_forget_hint">The phone will need to pair with the car again.</string>
+    <string name="dev_sent">Sent to the car</string>
+    <string name="car_name">Car name</string>
+    <string name="car_name_hint">What phones see when they search for the car.</string>
+    <string name="car_name_saved">Car name saved</string>
+    <string name="car_name_failed">Could not rename the car</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
 </resources>
