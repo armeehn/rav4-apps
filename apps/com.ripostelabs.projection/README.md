@@ -201,10 +201,16 @@ in `src/.../zlink/` plus `ZlinkService`, `CarPlayActivity` and `CarPlayWireless`
  daemon ──1666──▶ audio     0x202: 24-byte header + PCM ──▶ AudioTrack behind MediaCitizen
  daemon ◀─1999──▶ bluetooth the iPhone's iAP2 RFCOMM bytes, relayed raw both ways
  frame = ff ff ff 10 | u32 length | u32 id | payload      (all big-endian)
+
+ app ────1555──▶ daemon     metadata: the app dials in; now playing ──▶ MediaCitizen card
+ frame = u32 id | u32 length | body                       (little-endian; body = iAP2 params)
 ```
 
 Everything here was learned on the bench by black-box capture and an id sweep read back from
 the daemon's own log names (device-reveng RAV4-92 has the record); no OEM code was read.
+Port 1555 is the one exception: its layout (ids 6..10 CarPlay, iAP2 parameter lists) comes
+from the vendor gps app's reader, the daemon's only client on the stock unit. Artwork is not
+on that port, only a file-transfer id for it, so the card shows no cover.
 
 | Step | Status (bench, 2026-09-20) |
 |---|---|
@@ -215,4 +221,5 @@ the daemon's own log names (device-reveng RAV4-92 has the record); no OEM code w
 | Audio: 44.1 kHz stereo PCM | frames decoded, playback unverified (no speaker on the bench) |
 | Touch: panel pixels straight to the daemon | works |
 | Wired (USB, iAP2 gadget + NCM) | not tried yet: needs the port in host mode |
+| Now playing: title, artist, album, duration, play state and position from port 1555 (`zlink/Metadata`, `MetadataLink`) | decoder unit-tested with hand-built iAP2 vectors; no phone has sent one yet |
 | Siri, calls, mic | not started |

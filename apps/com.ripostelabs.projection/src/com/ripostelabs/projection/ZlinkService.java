@@ -22,6 +22,8 @@ import com.ripostelabs.design.MediaCitizen;
 import com.ripostelabs.projection.aa.Messages.AudioConfig;
 import com.ripostelabs.projection.zlink.Bridge;
 import com.ripostelabs.projection.zlink.Messages;
+import com.ripostelabs.projection.zlink.Metadata;
+import com.ripostelabs.projection.zlink.MetadataLink;
 
 import java.io.IOException;
 
@@ -62,6 +64,8 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     private static final int KEY_NEXT = 87;
     private static final int KEY_PREVIOUS = 88;
     private static final String CITIZEN_TAG = "carplay";
+    /** The daemon's metadata port is on the same unit. */
+    private static final String LOOPBACK = "127.0.0.1";
 
     /** The SoC's USB role switch on this head unit (QCM6125 "trinket"), run by the daemon as root. */
     private static final String USB_MODE_NODE = "/sys/devices/platform/soc/4e00000.ssusb/mode";
@@ -126,6 +130,19 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     private boolean callOn;
     private boolean mainAudio;
     private boolean night;
+
+    /** The phone's track from the daemon's metadata port onto the launcher's now-playing card. */
+    private final MetadataLink metadata = new MetadataLink(LOOPBACK, Metadata.PORT, new MetadataLink.Listener() {
+        @Override
+        public void onNowPlaying(Metadata.NowPlaying np) {
+            main.post(() -> showTrack(np));
+        }
+
+        @Override
+        public void onLog(String line) {
+            Log.i(TAG, "zlink: " + line);
+        }
+    });
 
     /** The wheel's media keys and the launcher's card act on the phone through the daemon. */
     private final MediaCitizen.Transport transport = new MediaCitizen.Transport() {
@@ -211,6 +228,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         if (wireless != null) {
             wireless.stop();
         }
+        metadata.stop();
         if (bridge != null) {
             bridge.stop();
         }
@@ -249,6 +267,10 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
             night = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
                     == Configuration.UI_MODE_NIGHT_YES;
             bridge.night(night);
+            metadata.start();
+        }
+        if (!up) {
+            metadata.stop();
         }
         if (!up && hasFocus) {
             citizen.releaseFocus();
@@ -267,6 +289,15 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
             return;
         }
         citizen.setState(playing, 0);
+    }
+
+    /** Title and artist always; the play state only when the phone said it, with its position. */
+    private void showTrack(Metadata.NowPlaying np) {
+        citizen.setMetadata(np.title, np.artist, np.durationMs);
+        if (np.status == Metadata.UNKNOWN) {
+            return;
+        }
+        citizen.setState(np.playing(), np.elapsedMs);
     }
 
     @Override
