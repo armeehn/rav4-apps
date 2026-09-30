@@ -203,9 +203,9 @@ public final class Bridge implements FoxServer.Listener {
         status("debug sent 0x" + Integer.toHexString(id) + " on " + target.name);
     }
 
-    /** One frame of cabin microphone PCM, in the format the daemon asked for. */
-    public void mic(int sampleRate, int channels, int bits, byte[] pcm, int len) {
-        audio.send(Messages.MIC_DATA, Messages.micData(sampleRate, channels, bits, pcm, len));
+    /** One encoded MIC_DATA payload from {@link MicLink}, back on the audio channel. */
+    public void mic(byte[] micData) {
+        audio.send(Messages.MIC_DATA, micData);
     }
 
     // ---- wireless bootstrap ------------------------------------------------------------------
