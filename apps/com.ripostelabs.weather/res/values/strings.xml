@@ -8,4 +8,6 @@
     <string name="daily_title">Daily forecast</string>
     <string name="hourly_title">Next hours</string>
     <string name="feels">Feels</string>
+    <string name="aqi">AQI</string>
+    <string name="unit">Switch between Celsius and Fahrenheit</string>
 </resources>
