@@ -9,17 +9,15 @@ import android.media.MediaRecorder;
 import android.os.Process;
 import android.util.Log;
 
+import com.ripostelabs.projection.zlink.MicLink;
+
 /**
  * The cabin microphone for Siri and calls: PCM from {@link AudioRecord} in the format the
  * daemon asked for, handed to a sink in frames of {@link #FRAME_MS}. Voice-communication
  * source, so the platform's own echo cancellation and noise suppression apply where the
  * HAL has them; the daemon runs its own AEC on top.
  */
-final class MicSource {
-
-    interface Sink {
-        void onMic(byte[] pcm, int len);
-    }
+final class MicSource implements MicLink.Recorder {
 
     private static final String TAG = "Projection";
     private static final int FRAME_MS = 20;
@@ -40,18 +38,19 @@ final class MicSource {
         return context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
     }
 
-    synchronized void start(int sampleRate, int channels, Sink sink) {
-        stop();
+    @Override
+    public synchronized boolean open(int sampleRate, int channels, MicLink.Pcm sink) {
+        close();
         if (!permitted(context)) {
             Log.w(TAG, "mic: RECORD_AUDIO not granted");
-            return;
+            return false;
         }
         int channelMask = channels == 2 ? AudioFormat.CHANNEL_IN_STEREO : AudioFormat.CHANNEL_IN_MONO;
         int frame = sampleRate * FRAME_MS / 1000 * channels * BYTES_PER_SAMPLE;
         int min = AudioRecord.getMinBufferSize(sampleRate, channelMask, AudioFormat.ENCODING_PCM_16BIT);
         if (min <= 0) {
             Log.w(TAG, "mic: unsupported " + sampleRate + "/" + channels);
-            return;
+            return false;
         }
         try {
             record = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, sampleRate, channelMask,
@@ -60,7 +59,7 @@ final class MicSource {
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
             Log.w(TAG, "mic: record failed: " + e.getMessage());
             record = null;
-            return;
+            return false;
         }
         running = true;
         final AudioRecord r = record;
@@ -75,7 +74,7 @@ final class MicSource {
                 if (n <= 0) {
                     continue;
                 }
-                sink.onMic(buf, n);
+                sink.onPcm(buf, n);
                 // One line a second with the loudest sample: a recorder the policy silences
                 // (a foreground service started from the background) reads all zeros.
                 peak = Math.max(peak, peak(buf, n));
@@ -88,6 +87,7 @@ final class MicSource {
         }, "carplay-mic");
         pump.start();
         Log.i(TAG, "mic: recording " + sampleRate + " Hz x" + channels);
+        return true;
     }
 
     private static int peak(byte[] pcm, int len) {
@@ -99,7 +99,8 @@ final class MicSource {
         return peak;
     }
 
-    synchronized void stop() {
+    @Override
+    public synchronized void close() {
         running = false;
         if (pump != null) {
             pump.interrupt();

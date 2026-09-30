@@ -23,6 +23,7 @@ import com.ripostelabs.projection.aa.Messages.AudioConfig;
 import com.ripostelabs.projection.zlink.Bridge;
 import com.ripostelabs.projection.zlink.LauncherStatus;
 import com.ripostelabs.projection.zlink.Messages;
+import com.ripostelabs.projection.zlink.MicLink;
 import com.ripostelabs.projection.zlink.Metadata;
 import com.ripostelabs.projection.zlink.MetadataLink;
 
@@ -123,7 +124,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     private Bridge bridge;
     private CarPlayWireless wireless;
     private MediaCitizen citizen;
-    private MicSource mic;
+    private MicLink mic;
     private boolean hasFocus;
     private final LauncherStatus launcher = new LauncherStatus();
     private Messages.DayNight night = Messages.DayNight.DAY;
@@ -191,7 +192,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         bridge.setSession(this);
         videoSink.setOnStarved(bridge::requestKeyFrame);
         citizen = MediaCitizen.attach(this, CITIZEN_TAG, transport);
-        mic = new MicSource(this);
+        mic = new MicLink(new MicSource(this), bridge::mic);
         registerReceiver(requests, new IntentFilter(STATUS_ACTION), Context.RECEIVER_EXPORTED);
         if (SystemProps.bench()) {
             registerReceiver(debugSend, new IntentFilter(DEBUG_ACTION), Context.RECEIVER_EXPORTED);
@@ -305,10 +306,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
 
     @Override
     public void onMic(final Messages.MicStart format) {
-        final int rate = format.sampleRate;
-        final int channels = Math.max(1, format.channels);
-        final int bits = format.bits;
-        mic.start(rate, channels, (pcm, len) -> bridge.mic(rate, channels, bits, pcm, len));
+        mic.start(format);
     }
 
     @Override

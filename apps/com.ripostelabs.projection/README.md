@@ -224,4 +224,4 @@ on that port, only a file-transfer id for it, so the card shows no cover.
 | Now playing: title, artist, album, duration, play state and position from port 1555 (`zlink/Metadata`, `MetadataLink`) | decoder unit-tested with hand-built iAP2 vectors; no phone has sent one yet |
 | Call state to the launcher: `0x710` edges become `PHONE_CALL_ON/OFF` and `MAIN_AUDIO_START/STOP`, closed on session drop (`zlink/LauncherStatus`) | unit-tested; no call placed yet |
 | Night: the launcher's `cmd uimode night` reaches the service's configuration, sent as `0x705`/`0x706` at session start and on change | unit-tested; not seen on the phone yet |
-| Siri, call audio, mic | not started |
+| Mic for Siri and calls: `0x402` MicStart opens `AudioRecord` (VOICE_COMMUNICATION, 16-bit, the asked rate and channels, 16 kHz mono when unset) and streams `0x404` MIC_DATA in 20 ms frames; closed on `0x403`, session drop and service end (`zlink/MicLink`) | lifecycle and frames unit-tested; no Siri press yet |
