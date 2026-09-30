@@ -7,6 +7,11 @@
     <string name="need_permission_title">Videos locked</string>
     <string name="need_permission">Storage permission is needed to show videos</string>
     <string name="grant">Grant access</string>
+    <string name="browse_folders">Folders</string>
+    <string name="browse_videos">All videos</string>
+    <string name="folders_count">%1$d folders</string>
+    <string name="where_usb">USB</string>
+    <string name="where_internal">Internal</string>
     <string name="mode_all">Repeat all</string>
     <string name="mode_one">Repeat one</string>
     <string name="mode_shuffle">Shuffle</string>
