@@ -105,6 +105,8 @@ abstract class Tuner {
 
     /** RDS programme type code (0..31), 0 until the MCU sends a PTY frame (radio event 5). */
     abstract int getPty();
+    /** A traffic announcement is playing (radio event 0 traffic bit); see {@link Traffic}. */
+    abstract boolean isTraffic();
     /** APS: a preset scan (KEY_SCAN) is running; the vendor's "scanning" tip (radio event 0, bit 7). */
     abstract boolean isScanning();
     /** AMS: auto-store (KEY_AUTO_STORE) is sweeping the band (radio event 0, bit 6). */

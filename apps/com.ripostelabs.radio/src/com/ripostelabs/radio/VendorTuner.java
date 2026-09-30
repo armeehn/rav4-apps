@@ -53,6 +53,7 @@ final class VendorTuner extends Tuner {
     private static final int TR_GET_AMS_STATE = 24;
     private static final int TR_GET_APS_STATE = 25;
     private static final int TR_GET_STEREO_ICON = 26;
+    private static final int TR_GET_TRAFFIC_STATE = 28;
     private static final int TR_SET_RADIO_CALLBACK = 29;
     private static final int TR_SET_CUR_MODE_CALLBACK = 30;
     private static final int TR_EXIT_CUR_MODE = 31;
@@ -202,6 +203,10 @@ final class VendorTuner extends Tuner {
     // ---- Commands ----------------------------------------------------------
 
     @Override void sendKey(int key) {
+        // The vendor radio's isNeedCancleSend: no key reaches the tuner during a bulletin.
+        if (Traffic.holds(Traffic.State.of(isTraffic()), key)) {
+            return;
+        }
         transactVoid(TR_SEND_RADIO_KEY, p -> p.writeInt(key));
     }
 
@@ -229,6 +234,7 @@ final class VendorTuner extends Tuner {
     /** RDS PS station name; empty until the MCU sends a PS frame. */
     @Override String getStationName() { return transactString(TR_GET_RADIO_PTY_NAME); }
     @Override int getPty() { return Math.max(0, transactInt(TR_GET_RADIO_PTY_NUM)); }
+    @Override boolean isTraffic() { return transactBool(TR_GET_TRAFFIC_STATE); }
     @Override boolean isScanning() { return transactBool(TR_GET_APS_STATE); }
     @Override boolean isAutoStoring() { return transactBool(TR_GET_AMS_STATE); }
     @Override int getZone() { return ZONE_NORTH_AMERICA; }

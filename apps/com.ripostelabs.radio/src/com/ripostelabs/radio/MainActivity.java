@@ -409,7 +409,12 @@ public class MainActivity extends Activity
 
         if (!modeLost && !tunerPaused) {
             StringBuilder sb = new StringBuilder();
-            if (tuner.getStereoIcon()) sb.append(getString(R.string.chip_stereo));
+            // A traffic bulletin holds every tuner key (see Traffic), so say why first.
+            if (tuner.isTraffic()) sb.append(getString(R.string.chip_traffic));
+            if (tuner.getStereoIcon()) {
+                if (sb.length() > 0) sb.append(" · ");
+                sb.append(getString(R.string.chip_stereo));
+            }
             if (tuner.getRdsState()) {
                 if (sb.length() > 0) sb.append(" · ");
                 sb.append(getString(R.string.chip_rds));
