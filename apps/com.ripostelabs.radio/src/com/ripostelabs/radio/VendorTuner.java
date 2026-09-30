@@ -39,6 +39,7 @@ final class VendorTuner extends Tuner {
     private static final int TR_SEND_MODE = 1;
     private static final int TR_SEND_RADIO_KEY = 2;
     private static final int TR_SEND_USER_FREQ = 6;
+    private static final int TR_SEND_SETUP = 10;
     private static final int TR_GET_RADIO_FREQ = 12;
     private static final int TR_GET_RADIO_FREQ_LIST = 13;
     private static final int TR_GET_RADIO_BAND = 14;
@@ -207,6 +208,13 @@ final class VendorTuner extends Tuner {
     /** Direct tune. FM freq in 10 kHz units (9130 = 91.30 MHz), AM in kHz. */
     @Override void tune(int freq, boolean isFm) {
         transactVoid(TR_SEND_USER_FREQ, p -> { p.writeInt(freq); p.writeInt(isFm ? 1 : 0); });
+    }
+
+    @Override boolean canSetup() { return true; }
+
+    /** sendSetup(byte, byte), IEventService ordinal 10: the gateway sends `05 index value`. */
+    @Override void setup(int index, int value) {
+        transactVoid(TR_SEND_SETUP, p -> { p.writeByte((byte) index); p.writeByte((byte) value); });
     }
 
     // ---- Getters -----------------------------------------------------------
