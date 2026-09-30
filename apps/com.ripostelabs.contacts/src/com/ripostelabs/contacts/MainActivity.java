@@ -55,6 +55,10 @@ import com.ripostelabs.design.Palette;
  */
 public class MainActivity extends Activity {
 
+    /** The launcher's no-UI dial trampoline (RAV4-162): ACTION_CALL tel: dials on the car kit. */
+    private static final String LAUNCHER_PKG = "com.ripostelabs.carlauncher";
+    private static final String LAUNCHER_DIAL = LAUNCHER_PKG + ".service.DialActivity";
+
     /** READ_CONTACTS, asked and re-asked through the suite's one gate. */
     private PermissionGate gate;
 
@@ -375,7 +379,7 @@ public class MainActivity extends Activity {
 
         if (phone != null) {
             detailActions.addView(makeAction(R.drawable.ic_phone, getString(R.string.action_call),
-                    true, v -> launch(Intent.ACTION_DIAL, "tel:" + Uri.encode(phone))));
+                    true, v -> call(phone)));
             detailActions.addView(makeAction(R.drawable.ic_message, getString(R.string.action_message),
                     false, v -> launchSendTo("smsto:" + Uri.encode(phone))));
         }
@@ -435,7 +439,7 @@ public class MainActivity extends Activity {
             card.setFocusable(true);
             card.setOnClickListener(v -> {
                 if (isEmail) launchSendTo("mailto:" + Uri.encode(e.value));
-                else launch(Intent.ACTION_DIAL, "tel:" + Uri.encode(e.value));
+                else call(e.value);
             });
             LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -483,6 +487,23 @@ public class MainActivity extends Activity {
     }
 
     // ---------------- intents ----------------
+
+    /**
+     * RAV4-162: Call places the call on the car kit. The launcher's DialActivity takes
+     * ACTION_CALL and dials on the paired phone; it needs CALL_PHONE, which the 0.2 image grants.
+     * An older launcher, or no grant, falls back to opening a dialer with the number in it.
+     */
+    private void call(String number) {
+        String tel = "tel:" + Uri.encode(number);
+        Intent car = new Intent(Intent.ACTION_CALL, Uri.parse(tel)).setClassName(LAUNCHER_PKG, LAUNCHER_DIAL);
+        try {
+            startActivity(car);
+            return;
+        } catch (ActivityNotFoundException | SecurityException e) {
+            // no car-kit dialer here: the plain dialer path below
+        }
+        launch(Intent.ACTION_DIAL, tel);
+    }
 
     private void launch(String action, String uri) {
         try {

@@ -17,6 +17,9 @@
         <provider android:authorities="com.ripostelabs.carlauncher.theme" />
     </queries>
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- RAV4-162: Call dials on the car kit through the launcher's DialActivity, which
+         only takes ACTION_CALL from an app holding CALL_PHONE. The 0.2 image grants it. -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
 
     <application
         android:icon="@mipmap/ic_launcher"
