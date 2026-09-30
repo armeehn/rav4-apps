@@ -2,7 +2,13 @@ package com.ripostelabs.music;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ContentUris;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.database.ContentObserver;
 import android.database.Cursor;
 import android.graphics.drawable.GradientDrawable;
 import android.media.MediaPlayer;
@@ -51,11 +57,24 @@ public class MainActivity extends Activity
         final String artist;
         final long duration;
         final Uri uri;
-        Track(long id, String title, String artist, long duration, Uri uri) {
+        /** File path, to tell which volume (USB stick) the track sits on. */
+        final String path;
+        Track(long id, String title, String artist, long duration, Uri uri, String path) {
             this.id = id; this.title = title; this.artist = artist;
-            this.duration = duration; this.uri = uri;
+            this.duration = duration; this.uri = uri; this.path = path;
         }
     }
+
+    /** Prefs file and keys for the resume point (track id and position). */
+    private static final String PREFS_RESUME = "resume";
+    private static final String KEY_TRACK = "track_id";
+    private static final String KEY_POS = "position_ms";
+
+    /** How often the playing position is saved, so a hard ACC cut loses at most this much. */
+    private static final long SAVE_EVERY_MS = 5_000;
+
+    /** A stick mounting fires a burst of MediaStore changes; reload once they settle. */
+    private static final long RELOAD_SETTLE_MS = 1_000;
 
     private final ArrayList<Track> tracks = new ArrayList<>();
     private final ExecutorService io = Executors.newSingleThreadExecutor();
@@ -84,6 +103,13 @@ public class MainActivity extends Activity
     private int skips = 0;
     private boolean prepared = false;
     private boolean userSeeking = false;
+    /** Where the next prepared track starts, in ms (the resume point); 0 is the top. */
+    private long startFrom = 0;
+    /** The saved resume point is applied once, on the first library load of a fresh start. */
+    private boolean resumePending = false;
+    private SharedPreferences resume;
+    private ContentObserver libraryWatch;
+    private BroadcastReceiver usbWatch;
     private TrackAdapter adapter;
 
     // resolved palette (from shared design system)
@@ -97,6 +123,22 @@ public class MainActivity extends Activity
                 posTime.setText(fmt(pos));
             }
             ui.postDelayed(this, 500);
+        }
+    };
+
+    /** Saves the position while playing: ACC off cuts power without an onPause. */
+    private final Runnable saver = new Runnable() {
+        @Override public void run() {
+            if (player != null && prepared && player.isPlaying()) {
+                savePoint();
+            }
+            ui.postDelayed(this, SAVE_EVERY_MS);
+        }
+    };
+
+    private final Runnable reload = () -> {
+        if (gate.granted()) {
+            loadTracks();
         }
     };
 
@@ -157,6 +199,13 @@ public class MainActivity extends Activity
         });
 
         ui.postDelayed(tick, 500);
+        ui.postDelayed(saver, SAVE_EVERY_MS);
+
+        // Stock parity: opening the player picks up the last track where it stopped
+        // (musicplayer/MainActivity.java:70-85). A recreate keeps its own state instead.
+        resume = getSharedPreferences(PREFS_RESUME, MODE_PRIVATE);
+        resumePending = savedInstanceState == null;
+        watchLibrary();
 
         gate.request();   // granted → loadTracks() at once
     }
@@ -182,6 +231,7 @@ public class MainActivity extends Activity
                     MediaStore.Audio.Media.TITLE,
                     MediaStore.Audio.Media.ARTIST,
                     MediaStore.Audio.Media.DURATION,
+                    MediaStore.Audio.Media.DATA,
             };
             String sel = MediaStore.Audio.Media.IS_MUSIC + " != 0";
             try (Cursor c = getContentResolver().query(
@@ -192,6 +242,7 @@ public class MainActivity extends Activity
                     int tiCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
                     int arCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
                     int duCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
+                    int paCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
                     while (c.moveToNext()) {
                         long id = c.getLong(idCol);
                         String ti = c.getString(tiCol);
@@ -201,22 +252,137 @@ public class MainActivity extends Activity
                         if (ar == null || ar.isEmpty() || "<unknown>".equals(ar)) ar = "Unknown artist";
                         Uri uri = ContentUris.withAppendedId(
                                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
-                        found.add(new Track(id, ti, ar, du, uri));
+                        found.add(new Track(id, ti, ar, du, uri, c.getString(paCol)));
                     }
                 }
             } catch (Exception e) {
                 // ignore; treated as empty
             }
             ui.post(() -> {
-                tracks.clear();
-                tracks.addAll(found);
-                adapter.notifyDataSetChanged();
+                adopt(found);
                 count.setText(tracks.size() == 1 ? getString(R.string.tracks_count_one)
                         : getString(R.string.tracks_count, tracks.size()));
                 emptyText.setText(R.string.empty_no_tracks);
                 showEmpty(tracks.isEmpty());
             });
         });
+    }
+
+    /**
+     * Swap in a freshly loaded library. The current track is followed by id, since a rescan
+     * re-sorts rows; if it has gone (its USB stick was pulled) playback stops. On the first load
+     * of a fresh start the saved resume point is played.
+     */
+    private void adopt(ArrayList<Track> found) {
+        long playingId = current >= 0 && current < tracks.size() ? tracks.get(current).id : ResumePoint.NONE;
+
+        tracks.clear();
+        tracks.addAll(found);
+        long[] ids = new long[tracks.size()];
+        for (int i = 0; i < ids.length; i++) {
+            ids[i] = tracks.get(i).id;
+        }
+
+        current = ResumePoint.indexOf(ids, playingId);
+        if (playingId != ResumePoint.NONE && current == ResumePoint.GONE) {
+            stopGone();
+        }
+        adapter.notifyDataSetChanged();
+
+        if (!resumePending) {
+            return;
+        }
+        resumePending = false;
+
+        int saved = ResumePoint.indexOf(ids, resume.getLong(KEY_TRACK, ResumePoint.NONE));
+        if (saved == ResumePoint.GONE) {
+            return;
+        }
+        playAt(saved, ResumePoint.seekTo(resume.getLong(KEY_POS, 0), tracks.get(saved).duration));
+    }
+
+    /** The playing track left the library: stop, and clear the card and the launcher's session. */
+    private void stopGone() {
+        if (player != null) {
+            try { player.reset(); } catch (Exception ignored) {}
+        }
+        prepared = false;
+        if (citizen != null) {
+            citizen.setIdle();
+            citizen.releaseFocus();
+        }
+        nowTitle.setText(R.string.nothing_playing);
+        nowArtist.setText("");
+        seek.setProgress(0);
+        posTime.setText(fmt(0));
+        durTime.setText(fmt(0));
+        btnPlay.setImageResource(R.drawable.ic_play);
+    }
+
+    /** Reload the list when MediaStore changes or a volume mounts or ejects (USB stick). */
+    private void watchLibrary() {
+        libraryWatch = new ContentObserver(ui) {
+            @Override public void onChange(boolean selfChange) { reloadSoon(); }
+        };
+        getContentResolver().registerContentObserver(
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, libraryWatch);
+
+        usbWatch = new BroadcastReceiver() {
+            @Override public void onReceive(Context c, Intent i) {
+                stopIfOn(i);
+                reloadSoon();
+            }
+        };
+        IntentFilter f = new IntentFilter();
+        f.addAction(Intent.ACTION_MEDIA_MOUNTED);
+        f.addAction(Intent.ACTION_MEDIA_EJECT);
+        f.addAction(Intent.ACTION_MEDIA_UNMOUNTED);
+        f.addAction(Intent.ACTION_MEDIA_REMOVED);
+        f.addDataScheme("file");
+        registerReceiver(usbWatch, f);
+    }
+
+    /** A volume is going away: stop now if the playing track is on it. */
+    private void stopIfOn(Intent i) {
+        if (Intent.ACTION_MEDIA_MOUNTED.equals(i.getAction()) || i.getData() == null) {
+            return;
+        }
+        if (current < 0 || current >= tracks.size()) {
+            return;
+        }
+        if (!ResumePoint.onVolume(tracks.get(current).path, i.getData().getPath())) {
+            return;
+        }
+        stopGone();
+        current = ResumePoint.GONE;
+        adapter.notifyDataSetChanged();
+    }
+
+    private void reloadSoon() {
+        ui.removeCallbacks(reload);
+        ui.postDelayed(reload, RELOAD_SETTLE_MS);
+    }
+
+    /** Remember the current track and position for the next start. */
+    private void savePoint() {
+        if (current < 0 || current >= tracks.size()) {
+            return;
+        }
+
+        long pos = 0;
+        if (player != null && prepared) {
+            try { pos = player.getCurrentPosition(); } catch (Exception ignored) {}
+        }
+        resume.edit()
+                .putLong(KEY_TRACK, tracks.get(current).id)
+                .putLong(KEY_POS, pos)
+                .apply();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        savePoint();
     }
 
     private void showEmpty(boolean show) {
@@ -272,6 +438,10 @@ public class MainActivity extends Activity
     }
 
     private void playAt(int index) {
+        playAt(index, 0);
+    }
+
+    private void playAt(int index, long fromMs) {
         if (index < 0 || index >= tracks.size()) return;
 
         // Focus BEFORE prepareAsync. Refused focus means something else owns the cabin (a call,
@@ -283,6 +453,7 @@ public class MainActivity extends Activity
         }
 
         current = index;
+        startFrom = fromMs;
         Track t = tracks.get(index);
         prepared = false;
         try {
@@ -317,6 +488,14 @@ public class MainActivity extends Activity
         prepared = true;
         int dur = mp.getDuration();
         if (dur > 0) { seek.setMax(dur); durTime.setText(fmt(dur)); }
+
+        // The resume point: seek before start so the first audible frame is the right one.
+        if (startFrom > 0) {
+            mp.seekTo((int) startFrom);
+            seek.setProgress((int) startFrom);
+            posTime.setText(fmt(startFrom));
+            startFrom = 0;
+        }
         mp.start();
         btnPlay.setImageResource(R.drawable.ic_pause);
         publishState();
@@ -379,6 +558,10 @@ public class MainActivity extends Activity
     protected void onDestroy() {
         super.onDestroy();
         ui.removeCallbacks(tick);
+        ui.removeCallbacks(saver);
+        ui.removeCallbacks(reload);
+        getContentResolver().unregisterContentObserver(libraryWatch);
+        unregisterReceiver(usbWatch);
         if (citizen != null) {
             citizen.release();
             citizen = null;
