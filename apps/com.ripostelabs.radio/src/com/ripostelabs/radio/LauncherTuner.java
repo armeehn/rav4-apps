@@ -192,6 +192,10 @@ final class LauncherTuner extends Tuner {
         transactVoid(TR_SEND_KEY, p -> p.writeInt(key));
     }
 
+    /** ITuner has no setup verb yet, so PTY seek stays on the vendor path. */
+    @Override boolean canSetup() { return false; }
+    @Override void setup(int index, int value) {}
+
     @Override void tune(int freq, boolean isFm) {
         transactVoid(TR_TUNE, p -> { p.writeInt(freq); p.writeInt(isFm ? 1 : 0); });
     }

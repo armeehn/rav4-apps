@@ -40,6 +40,8 @@ abstract class Tuner {
     // RDS toggles (RadioUIController.java:647 btnAF, :690 btnTA). Constants only:
     // the transport row has no spare slot, so nothing sends them yet.
     static final int KEY_AF = 21;
+    /** Seek to the next station of the PTY set with setup 3 (PTYView.java:110-114). */
+    static final int KEY_PTY_SEEK = 22;
     static final int KEY_TA = 23;
     /** Next preset bank, FM1 > FM2 > FM3 (vendor MainActivity.java:701, :733). */
     static final int KEY_BAND_CYCLE = 24;
@@ -82,6 +84,11 @@ abstract class Tuner {
     abstract void releaseAudio();
 
     abstract void sendKey(int key);
+
+    /** True when this backend can send `05 i v` setup rows; the launcher's ITuner cannot yet. */
+    abstract boolean canSetup();
+    /** `05 index value` (vendor sendSetup). A no-op where {@link #canSetup} is false. */
+    abstract void setup(int index, int value);
     /** Direct tune. FM freq in 10 kHz units (9130 = 91.30 MHz), AM in kHz. */
     abstract void tune(int freq, boolean isFm);
 

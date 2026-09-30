@@ -31,6 +31,10 @@
     <string name="keypad_cancel">Cancel</string>
     <string name="keypad_delete">⌫</string>
     <string name="keypad_delete_desc">Delete the last digit</string>
+    <!-- RDS programme type seek -->
+    <string name="pty">PTY</string>
+    <string name="pty_desc">Seek by programme type</string>
+    <string name="pty_title">Seek the next station playing</string>
     <string name="presets_hint">Presets — tap to tune, hold to save</string>
     <string name="preset_empty">— · —</string>
     <string name="preset_empty_desc">Empty preset %1$d, hold to save</string>

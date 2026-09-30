@@ -10,6 +10,8 @@ import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -156,6 +158,7 @@ public class MainActivity extends Activity
         setCtl(R.id.band_label, Tuner.KEY_BAND_CYCLE);
         bandLabel.setContentDescription(getString(R.string.bank_next_desc, RadioZone.bankLabel(curBand)));
         findViewById(R.id.btn_keypad).setOnClickListener(v -> showKeypad());
+        findViewById(R.id.btn_pty).setOnClickListener(v -> showPtyPicker());
 
         setCtl(R.id.btn_seek_down, Tuner.KEY_SEEK_DOWN);
         setCtl(R.id.btn_step_down, Tuner.KEY_STEP_DOWN);
@@ -395,10 +398,14 @@ public class MainActivity extends Activity
             slider.setProgress(Math.max(0, Math.min(slider.getMax(), (curFreq - plan.min) / plan.step)));
         }
 
-        // RDS PS name arrives as radio event 6; re-polled here like everything else.
-        String ps = fmNow ? tuner.getStationName().trim() : "";
+        // RDS PS name (radio event 6) and programme type (event 5), e.g. "CBC · News".
+        String ps = fmNow ? joinRds(tuner.getStationName().trim(), Pty.name(tuner.getPty())) : "";
         stationName.setText(ps);
         stationName.setVisibility(TextUtils.isEmpty(ps) ? View.GONE : View.VISIBLE);
+
+        // PTY seek needs RDS on and a backend that can send setup rows (the vendor gateway).
+        boolean ptyOk = fmNow && tuner.canSetup() && tuner.getRdsState();
+        findViewById(R.id.btn_pty).setVisibility(ptyOk ? View.VISIBLE : View.GONE);
 
         if (!modeLost && !tunerPaused) {
             StringBuilder sb = new StringBuilder();
@@ -534,6 +541,40 @@ public class MainActivity extends Activity
                 .setNegativeButton(R.string.keypad_cancel, null)
                 .setPositiveButton(R.string.keypad_tune, (d, w) -> tuneTyped(entry[0], band))
                 .show();
+    }
+
+    /** Station name and programme type on one line, either may be empty. */
+    private static String joinRds(String ps, String pty) {
+        if (ps.isEmpty()) {
+            return pty;
+        }
+        return pty.isEmpty() ? ps : ps + " · " + pty;
+    }
+
+    // ---- PTY ---------------------------------------------------------------
+
+    /**
+     * The vendor's PTY view as a list: pick a type and the tuner seeks to the next station
+     * sending it (`05 03 n`, 20 ms, `02 16`). Cancel clears the type (`05 03 00`).
+     */
+    private void showPtyPicker() {
+        String[] names = new String[Pty.COUNT - 1];
+        for (int code = 1; code < Pty.COUNT; code++) {
+            names[code - 1] = Pty.name(code);
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.pty_title)
+                .setItems(names, (d, which) -> seekPty(which + 1))
+                .setNegativeButton(R.string.keypad_cancel, (d, w) -> tuner.setup(Pty.SETUP_INDEX, Pty.NONE))
+                .show();
+    }
+
+    private void seekPty(int code) {
+        onTunerInteraction();
+        tuner.setup(Pty.SETUP_INDEX, code);
+        new Handler(Looper.getMainLooper()).postDelayed(
+                () -> tuner.sendKey(Tuner.KEY_PTY_SEEK), Pty.SEEK_DELAY_MS);
     }
 
     /** Snap the typed value to the zone's grid and tune it (`0C fH fL band`). */
