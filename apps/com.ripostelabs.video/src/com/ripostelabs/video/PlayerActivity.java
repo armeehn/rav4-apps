@@ -11,11 +11,14 @@ import android.os.Looper;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ImageButton;
 import android.widget.MediaController;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.VideoView;
 
 import java.util.ArrayList;
+import java.util.Random;
 import com.ripostelabs.design.Palette;
 
 /**
@@ -28,6 +31,9 @@ public class PlayerActivity extends Activity {
 
     /** How often the position is saved while playing: ACC off cuts power without an onPause. */
     private static final long SAVE_EVERY_MS = 5_000;
+
+    /** Prefs key of the loop mode, kept across restarts like stock's SAVE_LAST_VIDEO_LOOP_MODE. */
+    private static final String KEY_MODE = "loop_mode";
 
     private VideoView video;
     private MediaController controller;
@@ -46,6 +52,9 @@ public class PlayerActivity extends Activity {
     /** True only while a duck — not the driver — is what stopped playback. */
     private boolean pausedByDuck = false;
     private SharedPreferences resume;
+    private LoopMode mode = LoopMode.ALL;
+    private final Random random = new Random();
+    private ImageButton btnMode;
     private final Handler ui = new Handler(Looper.getMainLooper());
 
     private final Runnable saver = new Runnable() {
@@ -102,7 +111,7 @@ public class PlayerActivity extends Activity {
 
         // playlist prev/next wiring for MediaController's skip buttons
         controller.setPrevNextListeners(
-                v -> playAt(index + 1),
+                v -> playAt(mode == LoopMode.SHUFFLE ? mode.next(index, uris.size(), random) : index + 1),
                 v -> playAt(index - 1));
 
         video.setMediaController(controller);
@@ -117,7 +126,7 @@ public class PlayerActivity extends Activity {
         video.setOnCompletionListener(mp -> {
             // Watched to the end: the saved point moves past the end guard, so no Continue.
             savePoint(mp.getDuration());
-            if (index < uris.size() - 1) playAt(index + 1);
+            playAt(mode.next(index, uris.size(), random));
         });
         video.setOnErrorListener((MediaPlayer mp, int what, int extra) -> {
             // skip a broken file rather than dying
@@ -132,11 +141,40 @@ public class PlayerActivity extends Activity {
         });
 
         resume = getSharedPreferences(ResumeSpot.PREFS, MODE_PRIVATE);
+        mode = LoopMode.parse(resume.getString(KEY_MODE, null));
+        btnMode = findViewById(R.id.mode);
+        btnMode.setOnClickListener(v -> setMode(mode.onButton()));
+        showMode();
         playAt(index);
 
         // "Continue" from the list: start the first video where it was left.
         resumePos = (int) getIntent().getLongExtra(ResumeSpot.EXTRA_START, 0);
         ui.postDelayed(saver, SAVE_EVERY_MS);
+    }
+
+    /** Switch loop mode, from the button or the wheel, and say so: the wheel has no screen. */
+    private void setMode(LoopMode m) {
+        mode = m;
+        resume.edit().putString(KEY_MODE, m.name()).apply();
+        showMode();
+        Toast.makeText(this, modeLabel(m), Toast.LENGTH_SHORT).show();
+    }
+
+    private void showMode() {
+        btnMode.setImageResource(mode == LoopMode.ONE ? R.drawable.ic_repeat_one
+                : mode == LoopMode.SHUFFLE ? R.drawable.ic_shuffle : R.drawable.ic_repeat);
+        btnMode.setContentDescription(getString(modeLabel(mode)));
+    }
+
+    private static int modeLabel(LoopMode m) {
+        switch (m) {
+            case ONE:
+                return R.string.mode_one;
+            case SHUFFLE:
+                return R.string.mode_shuffle;
+            default:
+                return R.string.mode_all;
+        }
     }
 
     /** Remember the playing video and position for the list's Continue button. */
@@ -195,6 +233,14 @@ public class PlayerActivity extends Activity {
 
                 @Override public void onStop() { if (video != null) { video.pause(); publish(); } }
 
+                @Override public void onCustomAction(String action) {
+                    if (MediaCitizen.ACTION_REPEAT.equals(action)) {
+                        setMode(mode.onRepeatKey());
+                    } else if (MediaCitizen.ACTION_SHUFFLE.equals(action)) {
+                        setMode(mode.onShuffleKey());
+                    }
+                }
+
                 @Override public void onDuck(boolean duck) {
                     // VideoView exposes no volume control, so a duck request is honoured by
                     // pausing: a spoken direction the driver cannot hear is worse than a gap.
@@ -213,6 +259,8 @@ public class PlayerActivity extends Activity {
                     }
                 }
             });
+            citizen.offer(MediaCitizen.ACTION_REPEAT, getString(R.string.mode_all), R.drawable.ic_repeat);
+            citizen.offer(MediaCitizen.ACTION_SHUFFLE, getString(R.string.mode_shuffle), R.drawable.ic_shuffle);
         }
         return citizen;
     }

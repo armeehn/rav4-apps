@@ -7,6 +7,9 @@
     <string name="need_permission_title">Videos locked</string>
     <string name="need_permission">Storage permission is needed to show videos</string>
     <string name="grant">Grant access</string>
+    <string name="mode_all">Repeat all</string>
+    <string name="mode_one">Repeat one</string>
+    <string name="mode_shuffle">Shuffle</string>
     <string name="continue_at">Continue %1$s from %2$s</string>
     <string name="brake_required">Parking brake required</string>
 </resources>

@@ -48,4 +48,19 @@
         android:tint="#FFFFFFFF"
         android:background="@drawable/btn_icon"
         android:contentDescription="@string/app_name" />
+
+    <!-- Loop mode: all, one, shuffle (stock VideoPlayerService loop modes) -->
+    <ImageButton
+        android:id="@+id/mode"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|right"
+        android:layout_marginRight="16dp"
+        android:layout_marginTop="16dp"
+        android:padding="12dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_repeat"
+        android:tint="#FFFFFFFF"
+        android:background="@drawable/btn_icon"
+        android:contentDescription="@string/mode_all" />
 </FrameLayout>
