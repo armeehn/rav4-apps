@@ -191,6 +191,13 @@ public final class Messages {
     // ---- environment -------------------------------------------------------------------------
     public static final int NIGHT_START = 0x705;
     public static final int NIGHT_STOP = 0x706;
+
+    public enum DayNight { DAY, NIGHT }
+
+    /** CarPlay's dark map and UI follow {@link #NIGHT_START}; {@link #NIGHT_STOP} returns to day. */
+    public static int nightId(DayNight mode) {
+        return mode == DayNight.NIGHT ? NIGHT_START : NIGHT_STOP;
+    }
     public static final int VIDEO_RESIZE = 0xb02;
 
     /** What the head unit tells the daemon about itself once per link. */
