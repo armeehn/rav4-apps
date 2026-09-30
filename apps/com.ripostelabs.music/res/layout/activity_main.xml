@@ -5,29 +5,44 @@
     android:orientation="vertical"
     android:background="@color/bg">
 
-    <!-- Header -->
+    <!-- Header: title and count, with the folder view toggle on the right -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
         android:paddingLeft="24dp"
         android:paddingRight="24dp"
         android:paddingTop="16dp"
         android:paddingBottom="12dp">
 
-        <TextView
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            style="@style/H1"
-            android:text="@string/app_name" />
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/count"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            style="@style/Caption"
-            android:text="" />
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/H1"
+                android:text="@string/app_name" />
+
+            <TextView
+                android:id="@+id/count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                style="@style/Caption"
+                android:text="" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_browse"
+            style="@style/EmptyStateAction"
+            android:layout_marginTop="0dp"
+            android:visibility="visible"
+            android:text="@string/browse_folders" />
     </LinearLayout>
 
     <!-- List area (fills remaining space above the now-playing bar) -->
