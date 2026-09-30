@@ -10,6 +10,9 @@ import android.media.MediaMetadata;
 import android.media.session.MediaSession;
 import android.media.session.PlaybackState;
 import android.os.Build;
+import android.os.Bundle;
+
+import java.util.ArrayList;
 
 /**
  * v0.6.1–0.6.3 — makes an app a proper citizen of the car's audio system.
@@ -64,7 +67,21 @@ public final class MediaCitizen {
          * Ducking rather than pausing is what keeps a spoken direction from stopping the music.
          */
         void onDuck(boolean duck);
+
+        /**
+         * A custom action from the launcher, one of the {@code ACTION_*} names below. The wheel's
+         * repeat and shuffle keys arrive this way. Apps without loop modes ignore it.
+         */
+        default void onCustomAction(String action) {
+        }
     }
+
+    /**
+     * Custom actions the launcher sends for the wheel's repeat (MCU key 29) and shuffle (MCU key
+     * 30) keys. The launcher holds the same two strings; change both or neither.
+     */
+    public static final String ACTION_REPEAT = "com.ripostelabs.media.REPEAT";
+    public static final String ACTION_SHUFFLE = "com.ripostelabs.media.SHUFFLE";
 
     /** What the app wants the cabin's audio for. */
     public enum Focus {
@@ -83,6 +100,9 @@ public final class MediaCitizen {
     private final Context appContext;
     private final Transport transport;
     private final MediaSession session;
+
+    /** Custom actions listed in every published state, so a controller can see what is offered. */
+    private final ArrayList<PlaybackState.CustomAction> offered = new ArrayList<>();
 
     private AudioFocusRequest focusRequest;
     private boolean pausedByFocusLoss;
@@ -124,6 +144,11 @@ public final class MediaCitizen {
             @Override
             public void onStop() {
                 transport.onStop();
+            }
+
+            @Override
+            public void onCustomAction(String action, Bundle extras) {
+                transport.onCustomAction(action);
             }
         });
 
@@ -248,7 +273,11 @@ public final class MediaCitizen {
      */
     public void setState(boolean playing, long positionMs) {
         session.setActive(true);
-        session.setPlaybackState(new PlaybackState.Builder()
+        PlaybackState.Builder state = new PlaybackState.Builder();
+        for (PlaybackState.CustomAction a : offered) {
+            state.addCustomAction(a);
+        }
+        session.setPlaybackState(state
                 .setActions(PlaybackState.ACTION_PLAY
                         | PlaybackState.ACTION_PAUSE
                         | PlaybackState.ACTION_PLAY_PAUSE
@@ -267,6 +296,14 @@ public final class MediaCitizen {
      * vendor MCU handed the tuner's audio path to another source, say — where a mere
      * {@code setState(false, …)} would keep showing a pause card that lies.
      */
+    /**
+     * List a custom action (one of the {@code ACTION_*} names) in the published state. The label
+     * and icon are what a controller would show for it; call before the first {@link #setState}.
+     */
+    public void offer(String action, CharSequence label, int icon) {
+        offered.add(new PlaybackState.CustomAction.Builder(action, label, icon).build());
+    }
+
     public void setIdle() {
         session.setActive(false);
     }
