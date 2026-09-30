@@ -42,6 +42,15 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp" />
         </LinearLayout>
+
+        <!-- The last video, from where it stopped (stock resumed it after a restart). -->
+        <Button
+            android:id="@+id/continue_btn"
+            style="@style/EmptyStateAction"
+            android:layout_marginTop="0dp"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:maxWidth="720dp" />
     </LinearLayout>
 
     <FrameLayout

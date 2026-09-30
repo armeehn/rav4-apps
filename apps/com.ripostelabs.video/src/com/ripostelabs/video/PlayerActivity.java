@@ -1,10 +1,13 @@
 package com.ripostelabs.video;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import com.ripostelabs.design.MediaCitizen;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -23,6 +26,9 @@ import com.ripostelabs.design.Palette;
  */
 public class PlayerActivity extends Activity {
 
+    /** How often the position is saved while playing: ACC off cuts power without an onPause. */
+    private static final long SAVE_EVERY_MS = 5_000;
+
     private VideoView video;
     private MediaController controller;
     private final ArrayList<Uri> uris = new ArrayList<>();
@@ -39,6 +45,17 @@ public class PlayerActivity extends Activity {
     private int resumePos = 0;
     /** True only while a duck — not the driver — is what stopped playback. */
     private boolean pausedByDuck = false;
+    private SharedPreferences resume;
+    private final Handler ui = new Handler(Looper.getMainLooper());
+
+    private final Runnable saver = new Runnable() {
+        @Override public void run() {
+            if (video != null && video.isPlaying()) {
+                savePoint(video.getCurrentPosition());
+            }
+            ui.postDelayed(this, SAVE_EVERY_MS);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,6 +115,8 @@ public class PlayerActivity extends Activity {
             controller.show(3000);
         });
         video.setOnCompletionListener(mp -> {
+            // Watched to the end: the saved point moves past the end guard, so no Continue.
+            savePoint(mp.getDuration());
             if (index < uris.size() - 1) playAt(index + 1);
         });
         video.setOnErrorListener((MediaPlayer mp, int what, int extra) -> {
@@ -112,7 +131,23 @@ public class PlayerActivity extends Activity {
             else controller.show(3000);
         });
 
+        resume = getSharedPreferences(ResumeSpot.PREFS, MODE_PRIVATE);
         playAt(index);
+
+        // "Continue" from the list: start the first video where it was left.
+        resumePos = (int) getIntent().getLongExtra(ResumeSpot.EXTRA_START, 0);
+        ui.postDelayed(saver, SAVE_EVERY_MS);
+    }
+
+    /** Remember the playing video and position for the list's Continue button. */
+    private void savePoint(int positionMs) {
+        if (resume == null || index < 0 || index >= uris.size()) {
+            return;
+        }
+        resume.edit()
+                .putString(ResumeSpot.KEY_URI, uris.get(index).toString())
+                .putLong(ResumeSpot.KEY_POS, positionMs)
+                .apply();
     }
 
     private void playAt(int i) {
@@ -210,6 +245,7 @@ public class PlayerActivity extends Activity {
         super.onPause();
         if (video != null && video.isPlaying()) {
             resumePos = video.getCurrentPosition();
+            savePoint(resumePos);
             video.pause();
         }
     }
@@ -225,6 +261,7 @@ public class PlayerActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        ui.removeCallbacks(saver);
         if (video != null) video.stopPlayback();
         if (citizen != null) {
             citizen.release();
