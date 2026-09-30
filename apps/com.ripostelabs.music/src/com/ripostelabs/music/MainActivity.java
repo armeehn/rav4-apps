@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.drawable.GradientDrawable;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -57,12 +58,13 @@ public class MainActivity extends Activity
         final long id;
         final String title;
         final String artist;
+        final String album;
         final long duration;
         final Uri uri;
         /** File path, to tell which volume (USB stick) the track sits on. */
         final String path;
-        Track(long id, String title, String artist, long duration, Uri uri, String path) {
-            this.id = id; this.title = title; this.artist = artist;
+        Track(long id, String title, String artist, String album, long duration, Uri uri, String path) {
+            this.id = id; this.title = title; this.artist = artist; this.album = album;
             this.duration = duration; this.uri = uri; this.path = path;
         }
     }
@@ -90,6 +92,7 @@ public class MainActivity extends Activity
     private Button grantBtn;
 
     private TextView nowTitle, nowArtist, posTime, durTime;
+    private ImageView nowArt;
     private ImageButton btnPrev, btnPlay, btnNext, btnMode;
     private SeekBar seek;
 
@@ -176,6 +179,7 @@ public class MainActivity extends Activity
 
         nowTitle = findViewById(R.id.now_title);
         nowArtist = findViewById(R.id.now_artist);
+        nowArt = findViewById(R.id.now_art);
         posTime = findViewById(R.id.pos_time);
         durTime = findViewById(R.id.dur_time);
         btnPrev = findViewById(R.id.btn_prev);
@@ -240,6 +244,7 @@ public class MainActivity extends Activity
                     MediaStore.Audio.Media._ID,
                     MediaStore.Audio.Media.TITLE,
                     MediaStore.Audio.Media.ARTIST,
+                    MediaStore.Audio.Media.ALBUM,
                     MediaStore.Audio.Media.DURATION,
                     MediaStore.Audio.Media.DATA,
             };
@@ -251,6 +256,7 @@ public class MainActivity extends Activity
                     int idCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media._ID);
                     int tiCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE);
                     int arCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST);
+                    int alCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM);
                     int duCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION);
                     int paCol = c.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
                     while (c.moveToNext()) {
@@ -262,7 +268,7 @@ public class MainActivity extends Activity
                         if (ar == null || ar.isEmpty() || "<unknown>".equals(ar)) ar = "Unknown artist";
                         Uri uri = ContentUris.withAppendedId(
                                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id);
-                        found.add(new Track(id, ti, ar, du, uri, c.getString(paCol)));
+                        found.add(new Track(id, ti, ar, c.getString(alCol), du, uri, c.getString(paCol)));
                     }
                 }
             } catch (Exception e) {
@@ -323,6 +329,7 @@ public class MainActivity extends Activity
         }
         nowTitle.setText(R.string.nothing_playing);
         nowArtist.setText("");
+        nowArt.setVisibility(View.GONE);
         seek.setProgress(0);
         posTime.setText(fmt(0));
         durTime.setText(fmt(0));
@@ -541,7 +548,8 @@ public class MainActivity extends Activity
             return;
         }
         skips = 0;
-        citizen().setMetadata(t.title, t.artist, t.duration);
+        citizen().setMetadata(t.title, t.artist, t.album, t.duration, null);
+        showArt(t);
 
         nowTitle.setText(t.title);
         nowArtist.setText(t.artist);
@@ -551,6 +559,25 @@ public class MainActivity extends Activity
         durTime.setText(fmt(t.duration));
         btnPlay.setImageResource(R.drawable.ic_pause);
         adapter.notifyDataSetChanged();
+    }
+
+    /**
+     * Load the cover off the UI thread, then show it and republish the metadata with it, unless
+     * the driver has moved on to another track meanwhile.
+     */
+    private void showArt(Track t) {
+        nowArt.setVisibility(View.GONE);
+        io.execute(() -> {
+            Bitmap art = CoverArt.load(t.path);
+            ui.post(() -> {
+                if (art == null || current < 0 || current >= tracks.size() || tracks.get(current) != t) {
+                    return;
+                }
+                nowArt.setImageBitmap(art);
+                nowArt.setVisibility(View.VISIBLE);
+                citizen().setMetadata(t.title, t.artist, t.album, t.duration, art);
+            });
+        });
     }
 
     @Override
