@@ -23,6 +23,14 @@
     <string name="mode_mono">MONO</string>
     <string name="mode_distant">DISTANT</string>
     <string name="mode_local">LOCAL</string>
+    <!-- The band label cycles FM1 > FM2 > FM3 (AM1 > AM2), six presets each. -->
+    <string name="bank_next_desc">Preset bank %1$s, tap for the next bank</string>
+    <string name="keypad">123</string>
+    <string name="keypad_desc">Type a frequency</string>
+    <string name="keypad_tune">TUNE</string>
+    <string name="keypad_cancel">Cancel</string>
+    <string name="keypad_delete">⌫</string>
+    <string name="keypad_delete_desc">Delete the last digit</string>
     <string name="presets_hint">Presets — tap to tune, hold to save</string>
     <string name="preset_empty">— · —</string>
     <string name="preset_empty_desc">Empty preset %1$d, hold to save</string>

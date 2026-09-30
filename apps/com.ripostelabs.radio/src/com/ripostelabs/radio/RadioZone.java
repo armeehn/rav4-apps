@@ -40,6 +40,12 @@ final class RadioZone {
     /** First slot of the AM banks in the MCU's 42-entry list (`i += 18`, MainActivity.java:170-175). */
     private static final int AM_SLOT_OFFSET = 18;
 
+    /** Presets per bank: FM1..FM3 and AM1..AM2 hold 6 each (RadioUIControllerLandscape.java:1054-1061). */
+    static final int BANK_SLOTS = 6;
+
+    /** getRadioBand() value of AM1; 0..2 are FM1..FM3. */
+    private static final int FIRST_AM_BAND = 3;
+
     /** What the launcher sends the MCU when nothing is configured; also the vendor's SysVar default. */
     static final int DEFAULT_ZONE = 0;
 
@@ -70,8 +76,22 @@ final class RadioZone {
         return band >= 3 ? z.am : z.fm;
     }
 
-    /** Slot in the MCU's list for a preset position within a band: FM 0.., AM 18.. */
+    /**
+     * Slot in the MCU's list for a preset position within a bank, the vendor grid's
+     * `band * 6 + tune`: FM1 0-5, FM2 6-11, FM3 12-17, AM1 18-23, AM2 24-29.
+     */
     static int stationSlot(int band, int position) {
-        return band >= 3 ? AM_SLOT_OFFSET + position : position;
+        if (band >= FIRST_AM_BAND) {
+            return AM_SLOT_OFFSET + (band - FIRST_AM_BAND) * BANK_SLOTS + position;
+        }
+        return Math.max(0, band) * BANK_SLOTS + position;
+    }
+
+    /** The bank name the vendor shows, "FM%d" / "AM%d" (MainActivity.java:645-650). */
+    static String bankLabel(int band) {
+        if (band >= FIRST_AM_BAND) {
+            return "AM" + (band - FIRST_AM_BAND + 1);
+        }
+        return "FM" + (Math.max(0, band) + 1);
     }
 }

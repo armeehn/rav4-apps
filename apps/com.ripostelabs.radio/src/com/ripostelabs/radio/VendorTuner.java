@@ -61,9 +61,6 @@ final class VendorTuner extends Tuner {
     // EventService.sendCmdData); the vendor radio sends its preset cmds 100/101 this way.
     private static final String ACTION_MCU_CMD = "com.szchoiceway.eventcenter.EventUtils.ACTION_MCU_CMD_EVENT";
     private static final String EXTRA_MCU_CMD = "EventUtils.MCU_CMD_DATA";
-    private static final byte OP_RADIO_KEY = 0x02;
-    private static final byte CMD_PRESET_SELECT = 100;
-    private static final byte CMD_PRESET_STORE = 101;
     /** The gateway keeps the zone in its own settings provider, unread here: the unit's plan is North America. */
     private static final int ZONE_NORTH_AMERICA = 1;
     private static final int STATION_LIST_SIZE = 42;
@@ -229,12 +226,11 @@ final class VendorTuner extends Tuner {
     @Override int getZone() { return ZONE_NORTH_AMERICA; }
     @Override int[] getStationList() { return transactIntArray(TR_GET_RADIO_FREQ_LIST); }
 
-    @Override void selectPreset(int slot) { sendMcuCmd(CMD_PRESET_SELECT, slot); }
-    @Override void storePreset(int slot) { sendMcuCmd(CMD_PRESET_STORE, slot); }
+    @Override void selectPreset(int slot) { sendMcuCmd(RadioFrames.recall(slot)); }
+    @Override void storePreset(int slot) { sendMcuCmd(RadioFrames.store(slot)); }
 
-    /** sendRadioCmd (vendor MainActivity.java:614-619): {02, cmd, arg} as a broadcast the gateway forwards. */
-    private void sendMcuCmd(byte cmd, int arg) {
-        byte[] body = {OP_RADIO_KEY, cmd, (byte) (arg & 0xFF)};
+    /** sendRadioCmd (vendor MainActivity.java:614-619): the frame as a broadcast the gateway forwards. */
+    private void sendMcuCmd(byte[] body) {
         context.sendBroadcast(new Intent(ACTION_MCU_CMD).putExtra(EXTRA_MCU_CMD, body));
     }
 

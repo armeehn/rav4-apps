@@ -1,6 +1,7 @@
 package com.ripostelabs.radio;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -15,6 +16,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.GridLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -35,15 +37,19 @@ import com.ripostelabs.design.MediaCitizen;
  *
  * Tuner tab feature parity with the vendor app: in-app FM/AM band switch,
  * seek up/down, single-step up/down, preset scan, stereo/mono and DX/LOC
- * toggles, direct tuning via slider, six presets per band (tap to tune,
- * hold to save), live stereo/RDS indicators.
+ * toggles, direct tuning via slider or keypad, FM1-FM3 and AM1-AM2 banks of
+ * six presets (tap to tune, hold to save), live stereo/RDS indicators.
  */
 public class MainActivity extends Activity
         implements MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, Tuner.Listener {
 
     // ---- Bands -------------------------------------------------------------
     private static final int TAB_FM = 0, TAB_AM = 1, TAB_NET = 2;
-    private static final int PRESET_SLOTS = 6;
+    private static final int PRESET_SLOTS = RadioZone.BANK_SLOTS;
+    /** Keypad keys, row by row as a phone lays them out. */
+    private static final char[] KEYPAD_KEYS = {
+            '1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', FreqKeypad.DELETE};
+    private static final int KEYPAD_COLUMNS = 3;
     /** How long a band request may lead the MCU before the tabs follow the hardware again. */
     private static final long BAND_SWITCH_GRACE_MS = 2000;
 
@@ -144,6 +150,12 @@ public class MainActivity extends Activity
         tabFm.setOnClickListener(v -> selectTab(TAB_FM));
         tabAm.setOnClickListener(v -> selectTab(TAB_AM));
         tabNet.setOnClickListener(v -> selectTab(TAB_NET));
+
+        // The band label is the bank chip: key 24 steps FM1 > FM2 > FM3, as the vendor's
+        // band button does, and the preset row follows the bank the MCU reports.
+        setCtl(R.id.band_label, Tuner.KEY_BAND_CYCLE);
+        bandLabel.setContentDescription(getString(R.string.bank_next_desc, RadioZone.bankLabel(curBand)));
+        findViewById(R.id.btn_keypad).setOnClickListener(v -> showKeypad());
 
         setCtl(R.id.btn_seek_down, Tuner.KEY_SEEK_DOWN);
         setCtl(R.id.btn_step_down, Tuner.KEY_STEP_DOWN);
@@ -261,7 +273,7 @@ public class MainActivity extends Activity
         boolean fmNow = curBand <= 2;
         String unit = getString(fmNow ? R.string.unit_mhz : R.string.unit_khz);
         citizen().setMetadata(formatFreq(curFreq, fmNow ? Band.FM : Band.AM) + " " + unit,
-                fmNow ? "FM" + (curBand + 1) : "AM", 0);
+                RadioZone.bankLabel(curBand), 0);
         citizen().setState(!tunerPaused, 0);
     }
 
@@ -364,7 +376,9 @@ public class MainActivity extends Activity
         }
 
         if (freq > 0) curFreq = freq;
-        bandLabel.setText(fmNow ? "FM" + (curBand + 1) : "AM");
+        String bank = RadioZone.bankLabel(curBand);
+        bandLabel.setText(bank);
+        bandLabel.setContentDescription(getString(R.string.bank_next_desc, bank));
         freqUnit.setText(fmNow ? R.string.unit_mhz : R.string.unit_khz);
 
         // The toggles say what they are set to, as the vendor's setRadioState did
@@ -426,7 +440,14 @@ public class MainActivity extends Activity
 
     // ---- Presets -----------------------------------------------------------
 
-    private String presetKey(int slot) { return (isFm() ? "fm" : "am") + slot; }
+    /**
+     * Our own store, keyed by position across the band class: FM1 keeps "fm0".."fm5" from
+     * before the banks, FM2 is "fm6".., AM1 "am0".., AM2 "am6"..
+     */
+    private String presetKey(int slot) {
+        int first = RadioZone.stationSlot(isFm() ? 0 : 3, 0);
+        return (isFm() ? "fm" : "am") + (RadioZone.stationSlot(curBand, slot) - first);
+    }
     /** The MCU's own bank first (its list is the vendor's presets), our saved slot when it is empty. */
     private int getPreset(int slot) {
         int[] list = tuner.getStationList();
@@ -448,6 +469,83 @@ public class MainActivity extends Activity
             p.setTextColor(active ? cAccent : (f > 0 ? cText : cText3));
             p.setBackground(presetBg(active));
         }
+    }
+
+    // ---- Keypad ------------------------------------------------------------
+
+    /**
+     * Direct entry in the current band class, the vendor's KeyboardView: digits and one dot
+     * on FM, digits on AM. TUNE snaps to the zone's grid and tunes; nothing new on the wire.
+     */
+    private void showKeypad() {
+        FreqKeypad.Band band = isFm() ? FreqKeypad.Band.FM : FreqKeypad.Band.AM;
+        String[] entry = {""};
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(24), dp(16), dp(24), 0);
+
+        TextView display = new TextView(this);
+        display.setTextSize(40);
+        display.setTypeface(face(true));
+        display.setTextColor(cText);
+        display.setGravity(Gravity.CENTER);
+        display.setHint(isFm() ? "96.3" : "1010");
+        root.addView(display);
+
+        // Digits in a 4 x 3 grid; each key is a Ctl-sized cell, well over the 48 dp floor.
+        GridLayout grid = new GridLayout(this);
+        grid.setColumnCount(KEYPAD_COLUMNS);
+        for (char key : KEYPAD_KEYS) {
+            TextView k = new TextView(this);
+            boolean delete = key == FreqKeypad.DELETE;
+            k.setText(delete ? getString(R.string.keypad_delete) : String.valueOf(key));
+            if (delete) {
+                k.setContentDescription(getString(R.string.keypad_delete_desc));
+            }
+            if (key == '.' && band == FreqKeypad.Band.AM) {
+                k.setEnabled(false);
+                k.setTextColor(cText3);
+            } else {
+                k.setTextColor(cText);
+            }
+            k.setTextSize(24);
+            k.setTypeface(face(true));
+            k.setGravity(Gravity.CENTER);
+            k.setBackground(presetBg(false));
+            k.setOnClickListener(v -> {
+                entry[0] = FreqKeypad.type(entry[0], key, band);
+                display.setText(entry[0]);
+            });
+
+            GridLayout.LayoutParams lp = new GridLayout.LayoutParams();
+            lp.width = dp(120);
+            lp.height = dp(64);
+            lp.setMargins(dp(6), dp(6), dp(6), dp(6));
+            grid.addView(k, lp);
+        }
+        LinearLayout.LayoutParams gridLp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        gridLp.gravity = Gravity.CENTER_HORIZONTAL;
+        root.addView(grid, gridLp);
+
+        new AlertDialog.Builder(this)
+                .setView(root)
+                .setNegativeButton(R.string.keypad_cancel, null)
+                .setPositiveButton(R.string.keypad_tune, (d, w) -> tuneTyped(entry[0], band))
+                .show();
+    }
+
+    /** Snap the typed value to the zone's grid and tune it (`0C fH fL band`). */
+    private void tuneTyped(String text, FreqKeypad.Band band) {
+        int freq = FreqKeypad.freq(text, RadioZone.plan(tuner.getZone(), curBand), band);
+        if (freq == FreqKeypad.NONE) {
+            return;
+        }
+        onTunerInteraction();
+        curFreq = freq;
+        tuner.tune(freq, band == FreqKeypad.Band.FM);
+        refreshTuner();
     }
 
     /** Preset chip: a rounded dim pill normally, a bordered hard-edged square under Riposte. */

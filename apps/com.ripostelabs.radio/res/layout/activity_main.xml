@@ -89,7 +89,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginRight="24dp"
-                android:layout_marginBottom="20dp"
+                android:layout_marginBottom="12dp"
+                android:minHeight="48dp"
+                android:minWidth="48dp"
+                android:gravity="center"
+                android:paddingLeft="12dp"
+                android:paddingRight="12dp"
+                android:background="@drawable/bg_ctl"
                 style="@style/H2"
                 android:textColor="@color/accent"
                 android:text="FM1" />
@@ -113,6 +119,15 @@
                 style="@style/H2"
                 android:textColor="@color/text2"
                 android:text="@string/unit_mhz" />
+
+            <!-- Direct frequency entry (vendor KeyboardView) -->
+            <TextView
+                android:id="@+id/btn_keypad"
+                style="@style/Ctl"
+                android:layout_marginLeft="24dp"
+                android:layout_marginBottom="12dp"
+                android:contentDescription="@string/keypad_desc"
+                android:text="@string/keypad" />
         </LinearLayout>
 
         <!-- RDS station name (PS); gone until the tuner reports one -->
