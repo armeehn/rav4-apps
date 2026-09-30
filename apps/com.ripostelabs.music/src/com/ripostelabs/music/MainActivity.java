@@ -30,10 +30,12 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.ripostelabs.design.PermissionGate;
 
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import com.ripostelabs.design.MediaCitizen;
@@ -69,6 +71,7 @@ public class MainActivity extends Activity
     private static final String PREFS_RESUME = "resume";
     private static final String KEY_TRACK = "track_id";
     private static final String KEY_POS = "position_ms";
+    private static final String KEY_MODE = "loop_mode";
 
     /** How often the playing position is saved, so a hard ACC cut loses at most this much. */
     private static final long SAVE_EVERY_MS = 5_000;
@@ -87,7 +90,7 @@ public class MainActivity extends Activity
     private Button grantBtn;
 
     private TextView nowTitle, nowArtist, posTime, durTime;
-    private ImageButton btnPrev, btnPlay, btnNext;
+    private ImageButton btnPrev, btnPlay, btnNext, btnMode;
     private SeekBar seek;
 
     private MediaPlayer player;
@@ -107,6 +110,9 @@ public class MainActivity extends Activity
     private long startFrom = 0;
     /** The saved resume point is applied once, on the first library load of a fresh start. */
     private boolean resumePending = false;
+    /** Loop mode, kept across restarts like stock's SAVE_LAST_MUSIC_LOOP_MODE. */
+    private PlayOrder.Mode mode = PlayOrder.Mode.ALL;
+    private final Random random = new Random();
     private SharedPreferences resume;
     private ContentObserver libraryWatch;
     private BroadcastReceiver usbWatch;
@@ -175,6 +181,7 @@ public class MainActivity extends Activity
         btnPrev = findViewById(R.id.btn_prev);
         btnPlay = findViewById(R.id.btn_play);
         btnNext = findViewById(R.id.btn_next);
+        btnMode = findViewById(R.id.btn_mode);
         seek = findViewById(R.id.seek);
 
         adapter = new TrackAdapter();
@@ -184,8 +191,9 @@ public class MainActivity extends Activity
         list.setOnItemClickListener((AdapterView<?> p, View vw, int pos, long id) -> playAt(pos));
 
         btnPlay.setOnClickListener(v -> togglePlay());
-        btnPrev.setOnClickListener(v -> { if (!tracks.isEmpty()) playAt((current <= 0 ? tracks.size() : current) - 1); });
+        btnPrev.setOnClickListener(v -> playPrevious());
         btnNext.setOnClickListener(v -> playNext());
+        btnMode.setOnClickListener(v -> setMode(mode.onButton()));
 
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar sb, int progress, boolean fromUser) {
@@ -205,6 +213,8 @@ public class MainActivity extends Activity
         // (musicplayer/MainActivity.java:70-85). A recreate keeps its own state instead.
         resume = getSharedPreferences(PREFS_RESUME, MODE_PRIVATE);
         resumePending = savedInstanceState == null;
+        mode = PlayOrder.Mode.parse(resume.getString(KEY_MODE, null));
+        showMode();
         watchLibrary();
 
         gate.request();   // granted → loadTracks() at once
@@ -385,6 +395,56 @@ public class MainActivity extends Activity
         savePoint();
     }
 
+    /** Switch loop mode, from the button or the wheel, and say so: the wheel has no screen. */
+    private void setMode(PlayOrder.Mode m) {
+        mode = m;
+        resume.edit().putString(KEY_MODE, m.name()).apply();
+        showMode();
+        Toast.makeText(this, modeLabel(m), Toast.LENGTH_SHORT).show();
+    }
+
+    private void showMode() {
+        btnMode.setImageResource(modeIcon(mode));
+        btnMode.setContentDescription(getString(modeLabel(mode)));
+    }
+
+    private static int modeIcon(PlayOrder.Mode m) {
+        switch (m) {
+            case ONE:
+                return R.drawable.ic_repeat_one;
+            case FOLDER:
+                return R.drawable.ic_repeat_folder;
+            case SHUFFLE:
+                return R.drawable.ic_shuffle;
+            default:
+                return R.drawable.ic_repeat;
+        }
+    }
+
+    private static int modeLabel(PlayOrder.Mode m) {
+        switch (m) {
+            case ONE:
+                return R.string.mode_one;
+            case FOLDER:
+                return R.string.mode_folder;
+            case SHUFFLE:
+                return R.string.mode_shuffle;
+            default:
+                return R.string.mode_all;
+        }
+    }
+
+    /** Each row's folder, for folder loop. Rows are title-sorted, so a folder is not a run. */
+    private String[] folders() {
+        String[] out = new String[tracks.size()];
+        for (int i = 0; i < out.length; i++) {
+            String p = tracks.get(i).path;
+            int slash = p == null ? -1 : p.lastIndexOf('/');
+            out[i] = slash > 0 ? p.substring(0, slash) : null;
+        }
+        return out;
+    }
+
     private void showEmpty(boolean show) {
         empty.setVisibility(show ? View.VISIBLE : View.GONE);
         list.setVisibility(show ? View.GONE : View.VISIBLE);
@@ -411,12 +471,22 @@ public class MainActivity extends Activity
                     if (player != null && prepared && player.isPlaying()) togglePlay();
                 }
 
+                @Override public void onCustomAction(String action) {
+                    if (MediaCitizen.ACTION_REPEAT.equals(action)) {
+                        setMode(mode.onRepeatKey());
+                    } else if (MediaCitizen.ACTION_SHUFFLE.equals(action)) {
+                        setMode(mode.onShuffleKey());
+                    }
+                }
+
                 @Override public void onDuck(boolean duck) {
                     if (player == null) return;
                     float v = MediaCitizen.duckVolume(duck);
                     try { player.setVolume(v, v); } catch (Exception ignored) {}
                 }
             });
+            citizen.offer(MediaCitizen.ACTION_REPEAT, getString(R.string.mode_all), R.drawable.ic_repeat);
+            citizen.offer(MediaCitizen.ACTION_SHUFFLE, getString(R.string.mode_shuffle), R.drawable.ic_shuffle);
         }
         return citizen;
     }
@@ -434,7 +504,7 @@ public class MainActivity extends Activity
 
     private void playPrevious() {
         if (tracks.isEmpty()) return;
-        playAt((current - 1 + tracks.size()) % tracks.size());
+        playAt(PlayOrder.previous(mode, current, folders()));
     }
 
     private void playAt(int index) {
@@ -520,8 +590,12 @@ public class MainActivity extends Activity
     }
 
     private void playNext() {
+        playNext(PlayOrder.Cause.SKIP);
+    }
+
+    private void playNext(PlayOrder.Cause cause) {
         if (tracks.isEmpty()) return;
-        playAt((current + 1) % tracks.size());
+        playAt(PlayOrder.next(mode, current, folders(), cause, random));
     }
 
     /**
@@ -543,7 +617,7 @@ public class MainActivity extends Activity
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        playNext();
+        playNext(PlayOrder.Cause.ENDED);
     }
 
     private static String fmt(long ms) {
