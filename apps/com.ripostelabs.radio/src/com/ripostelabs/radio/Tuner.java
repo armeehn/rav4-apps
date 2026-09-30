@@ -41,6 +41,8 @@ abstract class Tuner {
     // the transport row has no spare slot, so nothing sends them yet.
     static final int KEY_AF = 21;
     static final int KEY_TA = 23;
+    /** Next preset bank, FM1 > FM2 > FM3 (vendor MainActivity.java:701, :733). */
+    static final int KEY_BAND_CYCLE = 24;
     static final int KEY_BAND_FM = 30;
     static final int KEY_BAND_AM = 31;
 
