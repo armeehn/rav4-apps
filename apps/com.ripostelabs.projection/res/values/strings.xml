@@ -32,6 +32,8 @@
     <string name="mic_strength_medium">Medium</string>
     <string name="mic_strength_full">Strong</string>
     <string name="mic_model">Model</string>
+    <string name="mic_model_auto">Automatic</string>
+    <string name="mic_model_auto_standard_state">Automatic: the standard model until a car-tuned one beats it on this car\'s own road noise</string>
     <string name="mic_model_standard">Standard</string>
     <string name="mic_model_car">Car-tuned (auto-updating)</string>
     <string name="mic_model_standard_state">Standard model: RNNoise as shipped</string>

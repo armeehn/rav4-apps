@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.ripostelabs.projection.ns.Model;
+import com.ripostelabs.projection.ns.ModelChoice;
 import com.ripostelabs.projection.ns.Strength;
 
 /**
@@ -20,12 +21,13 @@ final class MicPrefs {
     /** Best PESQ-WB of the three on speech in car-interior noise at 0, 5 and 10 dB SNR. */
     static final Strength DEFAULT_STRENGTH = Strength.MEDIUM;
 
-    /** The shipped model until a person picks Car-tuned. */
-    static final Model DEFAULT_MODEL = Model.STANDARD;
 
     private static final String FILE = "mic";
     private static final String KEY_STRENGTH = "ns_strength";
+    /** A person's pick; absent means automatic. */
     private static final String KEY_MODEL = "ns_model";
+    /** The estate's default from the last manifest (ModelUpdater). */
+    private static final String KEY_ESTATE = "ns_model_estate";
 
     private MicPrefs() {
     }
@@ -46,12 +48,26 @@ final class MicPrefs {
         prefs(context).edit().putString(KEY_STRENGTH, strength.name()).apply();
     }
 
+    /** The model the mic runs: a person's pick, else the estate's default, else standard. */
     static Model model(Context context) {
-        return Model.parse(prefs(context).getString(KEY_MODEL, null), DEFAULT_MODEL);
+        return ModelChoice.wanted(manual(context), Model.parse(prefs(context).getString(KEY_ESTATE, null), null));
+    }
+
+    /** A person's pick, or null for automatic. */
+    static Model manual(Context context) {
+        return Model.parse(prefs(context).getString(KEY_MODEL, null), null);
     }
 
     static void setModel(Context context, Model model) {
         prefs(context).edit().putString(KEY_MODEL, model.name()).apply();
+    }
+
+    static void setAutomatic(Context context) {
+        prefs(context).edit().remove(KEY_MODEL).apply();
+    }
+
+    static void setEstateDefault(Context context, Model model) {
+        prefs(context).edit().putString(KEY_ESTATE, model.name()).apply();
     }
 
     private static String enabledKey(Path path) {

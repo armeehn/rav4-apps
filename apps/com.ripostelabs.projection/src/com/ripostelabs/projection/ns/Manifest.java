@@ -25,6 +25,7 @@ public final class Manifest {
     /** A blob is 1.5 MB; anything far past that is not a model of this shape. */
     static final long MAX_SIZE = 8L * 1024 * 1024;
     private static final String NAME = "rnnoise";
+    private static final String CAR_TUNED = "car-tuned";
     private static final int SHA256_HEX = 64;
     private static final int PER_DAY = 100;
     private static final Pattern VERSION = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})\\.(\\d{1,2})");
@@ -38,12 +39,15 @@ public final class Manifest {
     public final String path;
     public final String sha256;
     public final long size;
+    /** The estate's default ("default": "car-tuned" | "standard"); anything else is standard. */
+    public final Model defaultModel;
 
-    private Manifest(int version, String path, String sha256, long size) {
+    private Manifest(int version, String path, String sha256, long size, Model defaultModel) {
         this.version = version;
         this.path = path;
         this.sha256 = sha256;
         this.size = size;
+        this.defaultModel = defaultModel;
     }
 
     /** The manifest, or null when any field is missing or out of range. */
@@ -72,7 +76,8 @@ public final class Manifest {
         if (!ok) {
             return null;
         }
-        return new Manifest(code, path, sha, size);
+        Model fallback = CAR_TUNED.equals(string(json, "default")) ? Model.CAR_TUNED : Model.STANDARD;
+        return new Manifest(code, path, sha, size, fallback);
     }
 
     /** "2026-10-02.1" -> 2026100201; 0 when it is not a version. */

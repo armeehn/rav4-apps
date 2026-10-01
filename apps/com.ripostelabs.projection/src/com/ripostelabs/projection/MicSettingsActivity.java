@@ -9,6 +9,7 @@ import android.widget.TextView;
 import com.ripostelabs.design.Palette;
 import com.ripostelabs.projection.ns.Manifest;
 import com.ripostelabs.projection.ns.Model;
+import com.ripostelabs.projection.ns.ModelChoice;
 import com.ripostelabs.projection.ns.ModelStore;
 import com.ripostelabs.projection.ns.RnNoise;
 import com.ripostelabs.projection.ns.Strength;
@@ -43,13 +44,16 @@ public final class MicSettingsActivity extends Activity {
         strength.setOnCheckedChangeListener((group, id) -> MicPrefs.setStrength(this, strengthFor(id)));
         enableChildren(strength, carplay.isChecked());
 
-        model.check(MicPrefs.model(this) == Model.CAR_TUNED ? R.id.model_car : R.id.model_standard);
+        model.check(idFor(MicPrefs.manual(this)));
         showModel(modelState);
         model.setOnCheckedChangeListener((group, id) -> {
-            Model m = id == R.id.model_car ? Model.CAR_TUNED : Model.STANDARD;
-            MicPrefs.setModel(this, m);
-            // Picking Car-tuned fetches the newest model now rather than at the next daily run.
-            if (m == Model.CAR_TUNED) {
+            if (id == R.id.model_auto) {
+                MicPrefs.setAutomatic(this);
+            } else {
+                MicPrefs.setModel(this, id == R.id.model_car ? Model.CAR_TUNED : Model.STANDARD);
+            }
+            // Automatic and Car-tuned fetch the newest manifest now rather than at the next daily run.
+            if (ModelChoice.checksForUpdates(MicPrefs.manual(this))) {
                 ModelUpdater.schedule(this);
             }
             showModel(modelState);
@@ -61,10 +65,19 @@ public final class MicSettingsActivity extends Activity {
         engine.setText(RnNoise.available() ? R.string.mic_engine_ready : R.string.mic_engine_missing);
     }
 
+    /** The radio for a person's pick; no pick is Automatic. */
+    private static int idFor(Model manual) {
+        if (manual == null) {
+            return R.id.model_auto;
+        }
+        return manual == Model.CAR_TUNED ? R.id.model_car : R.id.model_standard;
+    }
+
     /** Which model the next capture runs, with the car-tuned version when there is one. */
     private void showModel(TextView state) {
         if (MicPrefs.model(this) != Model.CAR_TUNED) {
-            state.setText(R.string.mic_model_standard_state);
+            state.setText(MicPrefs.manual(this) == null ? R.string.mic_model_auto_standard_state
+                    : R.string.mic_model_standard_state);
             return;
         }
         ModelStore store = ModelUpdater.store(this);

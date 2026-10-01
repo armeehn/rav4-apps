@@ -99,7 +99,15 @@ def gate(rows):
     g = [r for r in rows if r["group"] == group]
     d_pesq = mean(g, "car-tuned", "pesq") - mean(g, "baseline", "pesq")
     d_stoi = mean(g, "car-tuned", "stoi") - mean(g, "baseline", "stoi")
+    # The car's current model against stock on the same clips: on the owner's own noise, a
+    # baseline that lost to stock is a regression the publisher rolls back (owner, 2026-10-01).
+    has_stock = bool(g) and "stock" in g[0]
+    p_stock = mean(g, "stock", "pesq") if has_stock else mean(g, "baseline", "pesq")
+    s_stock = mean(g, "stock", "stoi") if has_stock else mean(g, "baseline", "stoi")
+    regressed = bool(group == "owner" and (mean(g, "baseline", "pesq") < p_stock
+                                           or mean(g, "baseline", "stoi") < s_stock - STOI_TOLERANCE))
     return {"group": group, "clips": len(g),
+            "pesq_stock": p_stock, "stoi_stock": s_stock, "baseline_regressed": regressed,
             "pesq_baseline": mean(g, "baseline", "pesq"), "pesq_candidate": mean(g, "car-tuned", "pesq"),
             "stoi_baseline": mean(g, "baseline", "stoi"), "stoi_candidate": mean(g, "car-tuned", "stoi"),
             "delta_pesq": d_pesq, "delta_stoi": d_stoi,
