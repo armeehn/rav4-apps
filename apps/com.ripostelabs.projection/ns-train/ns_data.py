@@ -37,8 +37,9 @@ UP = NS_RATE // MIC_RATE
 S16_MAX = 32767
 
 # Public car noise, DEMAND (CC BY 4.0): 4 of its 16 array channels per scene for variety.
-# TCAR and STRAFFIC only: SPSQUARE and TBUS carry voices. With them the tuned model was gentler
-# on speech-like sound (PESQ -0.067 vs stock), without them -0.015. NS_DEMAND_SCENES overrides.
+# TCAR and STRAFFIC only: SPSQUARE and TBUS carry voices, which a suppressor should not learn
+# to keep. Their effect on the score is within run-to-run spread (README). NS_DEMAND_SCENES
+# overrides.
 DEMAND_SCENES = tuple(os.environ.get("NS_DEMAND_SCENES", "TCAR STRAFFIC").split())
 DEMAND_CHANNELS = (1, 5, 9, 13)
 # The last minute of TCAR is held out of training and used as a test noise.
