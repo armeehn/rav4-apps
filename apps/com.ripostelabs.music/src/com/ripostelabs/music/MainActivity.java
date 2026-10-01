@@ -10,6 +10,9 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.ContentObserver;
 import android.database.Cursor;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.GradientDrawable;
 import android.media.MediaPlayer;
@@ -19,12 +22,15 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -36,7 +42,9 @@ import android.widget.Toast;
 import com.ripostelabs.design.PermissionGate;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -122,12 +130,33 @@ public class MainActivity extends Activity
     private BroadcastReceiver usbWatch;
     private TrackAdapter adapter;
 
-    /** What the list shows: every track, the folders, or one folder's tracks. */
+    /** What the list shows: every track, the folders, one folder's tracks, or the starred ones. */
     private enum Browse {
         TRACKS,
         FOLDERS,
         FOLDER,
+        FAVOURITES,
     }
+
+    /** RAV4-179: starred track URIs, kept apart from the resume point. */
+    private static final String PREFS_FAVOURITES = "favourites";
+    private static final String KEY_STARS = "uris";
+    /** GPS fixes for the parked-only keyboard: one a second is plenty at walking pace. */
+    private static final long SPEED_EVERY_MS = 1_000;
+    private static final float MS_TO_KMH = 3.6f;
+
+    private SharedPreferences favourites;
+    private Set<String> stars = new HashSet<>();
+    /** The tags the search reads, one per track, rebuilt with the library. */
+    private TrackFilter.Row[] rows = new TrackFilter.Row[0];
+    /** Track indices the list shows in the track views, after favourites and search. */
+    private int[] shown = new int[0];
+    private String query = "";
+    private EditText search;
+    private ImageButton btnStar;
+    private Button btnFavs;
+    private DrivingState.Motion motion = DrivingState.Motion.UNKNOWN;
+    private final LocationListener speedWatch = this::onFix;
 
     private Browse browse = Browse.TRACKS;
     private List<Folders.Folder> folderList = new ArrayList<>();
@@ -208,7 +237,21 @@ public class MainActivity extends Activity
 
         list.setOnItemClickListener((AdapterView<?> p, View vw, int pos, long id) -> onRow(pos));
         btnBrowse = findViewById(R.id.btn_browse);
-        btnBrowse.setOnClickListener(v -> showBrowse(browse == Browse.TRACKS ? Browse.FOLDERS : Browse.TRACKS));
+        btnBrowse.setOnClickListener(v -> showBrowse(inFolders() ? Browse.TRACKS : Browse.FOLDERS));
+
+        // RAV4-179: favourites and search.
+        favourites = getSharedPreferences(PREFS_FAVOURITES, MODE_PRIVATE);
+        stars = new HashSet<>(favourites.getStringSet(KEY_STARS, new HashSet<>()));
+        btnFavs = findViewById(R.id.btn_favs);
+        btnFavs.setOnClickListener(v -> showBrowse(browse == Browse.FAVOURITES ? Browse.TRACKS : Browse.FAVOURITES));
+        btnStar = findViewById(R.id.btn_star);
+        btnStar.setOnClickListener(v -> toggleStar());
+        search = findViewById(R.id.search);
+        search.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence t, int a, int b, int c) {}
+            @Override public void onTextChanged(CharSequence t, int a, int b, int c) {}
+            @Override public void afterTextChanged(Editable e) { onQuery(e.toString()); }
+        });
 
         btnPlay.setOnClickListener(v -> togglePlay());
         btnPrev.setOnClickListener(v -> playPrevious());
@@ -235,6 +278,7 @@ public class MainActivity extends Activity
         resumePending = savedInstanceState == null;
         mode = PlayOrder.Mode.parse(resume.getString(KEY_MODE, null));
         showMode();
+        showStar();
         watchLibrary();
 
         gate.request();   // granted → loadTracks() at once
@@ -293,6 +337,8 @@ public class MainActivity extends Activity
             ui.post(() -> {
                 adopt(found);
                 regroup();
+                refilter(); // the folder level may have moved under the open view
+                adapter.notifyDataSetChanged();
                 showCount();
                 emptyText.setText(R.string.empty_no_tracks);
                 showEmpty(tracks.isEmpty());
@@ -311,9 +357,13 @@ public class MainActivity extends Activity
         tracks.clear();
         tracks.addAll(found);
         long[] ids = new long[tracks.size()];
+        rows = new TrackFilter.Row[tracks.size()];
         for (int i = 0; i < ids.length; i++) {
-            ids[i] = tracks.get(i).id;
+            Track t = tracks.get(i);
+            ids[i] = t.id;
+            rows[i] = new TrackFilter.Row(t.title, t.artist, t.album, t.uri.toString());
         }
+        refilter();
 
         current = ResumePoint.indexOf(ids, playingId);
         if (playingId != ResumePoint.NONE && current == ResumePoint.GONE) {
@@ -346,6 +396,7 @@ public class MainActivity extends Activity
         nowTitle.setText(R.string.nothing_playing);
         nowArtist.setText("");
         nowArt.setVisibility(View.GONE);
+        showStar();
         seek.setProgress(0);
         posTime.setText(fmt(0));
         durTime.setText(fmt(0));
@@ -416,6 +467,104 @@ public class MainActivity extends Activity
     protected void onPause() {
         super.onPause();
         savePoint();
+        stopSpeedWatch();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        startSpeedWatch();
+    }
+
+    /**
+     * RAV4-179: GPS speed for the parked-only keyboard. Without the location grant there is no
+     * reading, the verdict stays UNKNOWN and the keyboard stays open, as the launcher's rule does.
+     */
+    private void startSpeedWatch() {
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        LocationManager lm = getSystemService(LocationManager.class);
+        try {
+            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, SPEED_EVERY_MS, 0f, speedWatch, Looper.getMainLooper());
+        } catch (RuntimeException e) {
+            // No GPS provider on this unit: no reading, keyboard open.
+        }
+    }
+
+    private void stopSpeedWatch() {
+        getSystemService(LocationManager.class).removeUpdates(speedWatch);
+    }
+
+    private void onFix(Location loc) {
+        float kmh = loc.hasSpeed() ? loc.getSpeed() * MS_TO_KMH : Float.NaN;
+        DrivingState.Motion next = DrivingState.next(motion, kmh);
+        if (next == motion) {
+            return;
+        }
+        motion = next;
+        showSearchGate();
+    }
+
+    /** Typing only while parked: moving greys the field and drops the keyboard. */
+    private void showSearchGate() {
+        boolean allowed = DrivingState.keyboardAllowed(motion);
+        search.setEnabled(allowed);
+        search.setHint(allowed ? R.string.search_hint : R.string.search_parked);
+        if (allowed) {
+            return;
+        }
+        search.clearFocus();
+        android.view.inputmethod.InputMethodManager imm = getSystemService(android.view.inputmethod.InputMethodManager.class);
+        imm.hideSoftInputFromWindow(search.getWindowToken(), 0);
+    }
+
+    private void onQuery(String q) {
+        query = q;
+        refilter();
+        showCount();
+        adapter.notifyDataSetChanged();
+    }
+
+    /** Star or unstar the playing track. */
+    private void toggleStar() {
+        if (current < 0 || current >= tracks.size()) {
+            return;
+        }
+        stars = TrackFilter.toggle(stars, tracks.get(current).uri.toString());
+        favourites.edit().putStringSet(KEY_STARS, stars).apply();
+        showStar();
+        if (browse == Browse.FAVOURITES) {
+            onQuery(query);
+        }
+    }
+
+    private void showStar() {
+        boolean on = current >= 0 && current < tracks.size() && stars.contains(tracks.get(current).uri.toString());
+        btnStar.setImageResource(on ? R.drawable.ic_star : R.drawable.ic_star_border);
+        btnStar.setColorFilter(on ? cAccent : cText);
+        btnStar.setContentDescription(getString(on ? R.string.star_remove : R.string.star_add));
+    }
+
+    /** The track rows for the current view: its base set, then the search. */
+    private void refilter() {
+        int[] base;
+        if (browse == Browse.FOLDER && openFolder != null) {
+            base = openFolder.rows;
+        } else {
+            base = new int[rows.length];
+            for (int i = 0; i < base.length; i++) {
+                base[i] = i;
+            }
+            if (browse == Browse.FAVOURITES) {
+                base = TrackFilter.starred(rows, base, stars);
+            }
+        }
+        shown = TrackFilter.search(rows, base, query);
+    }
+
+    private boolean inFolders() {
+        return browse == Browse.FOLDERS || browse == Browse.FOLDER;
     }
 
     /** Rebuild the folder level after a reload; a folder that went with its stick closes. */
@@ -443,7 +592,11 @@ public class MainActivity extends Activity
 
     private void showBrowse(Browse b) {
         browse = b;
-        btnBrowse.setText(b == Browse.TRACKS ? R.string.browse_folders : R.string.browse_tracks);
+        btnBrowse.setText(inFolders() ? R.string.browse_tracks : R.string.browse_folders);
+        btnFavs.setText(b == Browse.FAVOURITES ? R.string.browse_tracks : R.string.browse_favourites);
+        // The folder list has no tags to search; the field comes back with the tracks.
+        search.setVisibility(b == Browse.FOLDERS ? View.INVISIBLE : View.VISIBLE);
+        refilter();
         showCount();
         adapter.notifyDataSetChanged();
         list.setSelection(0);
@@ -459,8 +612,17 @@ public class MainActivity extends Activity
             count.setText(folderLine(openFolder));
             return;
         }
-        count.setText(tracks.size() == 1 ? getString(R.string.tracks_count_one)
-                : getString(R.string.tracks_count, tracks.size()));
+        if (browse == Browse.FAVOURITES) {
+            if (shown.length == 0 && query.isEmpty()) {
+                count.setText(R.string.favourites_none);
+                return;
+            }
+            count.setText(shown.length == 1 ? getString(R.string.favourites_count_one)
+                    : getString(R.string.favourites_count, shown.length));
+            return;
+        }
+        count.setText(shown.length == 1 ? getString(R.string.tracks_count_one)
+                : getString(R.string.tracks_count, shown.length));
     }
 
     private String folderLine(Folders.Folder f) {
@@ -482,7 +644,7 @@ public class MainActivity extends Activity
 
     /** The track index behind list row {@code pos} in the track views. */
     private int trackAt(int pos) {
-        return browse == Browse.FOLDER && openFolder != null ? openFolder.rows[pos] : pos;
+        return shown[pos];
     }
 
     /** Back inside a folder returns to the folders, as stock's file list did. */
@@ -646,6 +808,7 @@ public class MainActivity extends Activity
 
         nowTitle.setText(t.title);
         nowArtist.setText(t.artist);
+        showStar();
         seek.setProgress(0);
         seek.setMax(t.duration > 0 ? (int) t.duration : 0);
         posTime.setText(fmt(0));
@@ -771,10 +934,7 @@ public class MainActivity extends Activity
             if (browse == Browse.FOLDERS) {
                 return folderList.size();
             }
-            if (browse == Browse.FOLDER && openFolder != null) {
-                return openFolder.rows.length;
-            }
-            return tracks.size();
+            return shown.length;
         }
         @Override public Object getItem(int p) {
             return browse == Browse.FOLDERS ? folderList.get(p) : tracks.get(trackAt(p));

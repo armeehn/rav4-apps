@@ -18,6 +18,14 @@
     <string name="cover_art">Cover art</string>
     <string name="browse_folders">Folders</string>
     <string name="browse_tracks">All tracks</string>
+    <string name="browse_favourites">Favourites</string>
+    <string name="favourites_count">%1$d favourites</string>
+    <string name="favourites_count_one">1 favourite</string>
+    <string name="favourites_none">No favourites yet. Star the playing track.</string>
+    <string name="star_add">Add to favourites</string>
+    <string name="star_remove">Remove from favourites</string>
+    <string name="search_hint">Search title, artist or album</string>
+    <string name="search_parked">Search when parked</string>
     <string name="folders_count">%1$d folders</string>
     <string name="where_usb">USB</string>
     <string name="where_internal">Internal</string>

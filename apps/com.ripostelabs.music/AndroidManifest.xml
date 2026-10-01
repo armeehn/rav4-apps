@@ -20,6 +20,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <!-- RAV4-179: GPS speed withholds the search keyboard while moving. Never asked for: without
+         the grant the keyboard stays open, as the launcher's parked-only rule fails open. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:icon="@mipmap/ic_launcher"

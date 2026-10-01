@@ -37,6 +37,48 @@
                 android:text="" />
         </LinearLayout>
 
+        <!-- RAV4-179: search the current view; the keyboard is withheld while moving -->
+        <LinearLayout
+            android:layout_width="320dp"
+            android:layout_height="48dp"
+            android:layout_marginRight="12dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_field"
+            android:paddingLeft="14dp"
+            android:paddingRight="14dp">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_search"
+                android:tint="@color/text2"
+                android:importantForAccessibility="no" />
+
+            <EditText
+                android:id="@+id/search"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginLeft="8dp"
+                android:background="@android:color/transparent"
+                android:hint="@string/search_hint"
+                android:textColorHint="@color/text3"
+                android:textColor="@color/text"
+                android:textSize="15sp"
+                android:singleLine="true"
+                android:imeOptions="actionSearch|flagNoExtractUi"
+                android:inputType="text" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_favs"
+            style="@style/EmptyStateAction"
+            android:layout_marginTop="0dp"
+            android:layout_marginRight="12dp"
+            android:visibility="visible"
+            android:text="@string/browse_favourites" />
+
         <Button
             android:id="@+id/btn_browse"
             style="@style/EmptyStateAction"
@@ -148,6 +190,18 @@
                     style="@style/Caption"
                     android:text="" />
             </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/btn_star"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:layout_marginRight="8dp"
+                android:background="@drawable/btn_icon"
+                android:src="@drawable/ic_star_border"
+                android:tint="@color/text"
+                android:scaleType="fitCenter"
+                android:padding="14dp"
+                android:contentDescription="@string/star_add" />
 
             <ImageButton
                 android:id="@+id/btn_mode"
