@@ -30,6 +30,16 @@ public final class RadioBankTest {
             }
         }
 
+        // The tuner's list is the one preset store (car, 2026-10-01): a slot shows what the list
+        // holds, an empty slot is empty, and nothing falls back to a copy of our own.
+        int[] list = new int[42];
+        list[8] = 9050;
+        list[24] = 1150;
+        check(RadioZone.preset(list, 1, 2) == 9050, "FM2 03 reads slot 8");
+        check(RadioZone.preset(list, 4, 0) == 1150, "AM2 01 reads slot 24");
+        check(RadioZone.preset(list, 0, 0) == 0, "an empty FM1 01 stays empty");
+        check(RadioZone.preset(new int[3], 3, 0) == 0, "a short list has no AM1");
+
         // Bank labels, the vendor's "FM%d" / "AM%d" (MainActivity.java:645-650).
         check(RadioZone.bankLabel(0).equals("FM1"), "band 0 is FM1");
         check(RadioZone.bankLabel(2).equals("FM3"), "band 2 is FM3");
