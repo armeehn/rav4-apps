@@ -363,7 +363,9 @@ public class MainActivity extends Activity
         int freq = tuner.getFreq();
         int band = tuner.getBand();
         if (band >= 0) curBand = band;
-        boolean fmNow = curBand <= 2;
+        // The frequency decides FM or AM when the band report disagrees (530 is never 5.30 MHz).
+        curBand = RadioZone.bandFor(curBand, freq);
+        boolean fmNow = !RadioZone.isAm(curBand);
 
         // Follow the hardware band: if the MCU is on the other band than the
         // selected tab (e.g. SWC band button), switch the tab to match. Not while
