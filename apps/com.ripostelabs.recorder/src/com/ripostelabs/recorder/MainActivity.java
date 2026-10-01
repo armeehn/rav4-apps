@@ -217,6 +217,8 @@ public class MainActivity extends Activity
             citizen = MediaCitizen.attach(this, "recorder", new SilentTransport());
         }
         if (!citizen.takeFocus(MediaCitizen.Focus.RECORDING)) {
+            // Say so: a refusal that returns silently reads as a dead button.
+            toast(getString(R.string.mic_busy));
             return;
         }
         String stamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());

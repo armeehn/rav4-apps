@@ -69,6 +69,11 @@ jobs:
       - name: Tap targets
         run: scope/check-tap-targets.sh
 
+      # A FrameLayout 0dp wide inside a vertical column swallowed the Recorder's record button:
+      # it drew, but no touch could reach it. Only a finger on the panel showed it.
+      - name: Weighted sizes
+        run: scope/check-weighted-sizes.sh
+
       # An ImageView wired as a button and a bare Switch both shipped unlabelled: silent under
       # TalkBack and unreachable by any UI driver except by pixel (a11y audit, 2026-09-22).
       # The device half, scope/a11y-audit.py, needs an emulator; its rules are self-tested here.
