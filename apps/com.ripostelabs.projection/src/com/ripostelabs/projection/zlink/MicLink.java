@@ -23,6 +23,21 @@ public final class MicLink {
 
     public enum State { CLOSED, OPEN }
 
+    /** What one recorder read means for the capture loop. */
+    public enum Read { PCM, IDLE, LOST }
+
+    /**
+     * One AudioRecord.read result: bytes are PCM, zero is nothing yet, a negative code is a
+     * dead recorder. The error returns at once, so a loop that retries it spins (RAV4-243).
+     */
+    public static Read read(int n) {
+        if (n > 0) {
+            return Read.PCM;
+        }
+
+        return n == 0 ? Read.IDLE : Read.LOST;
+    }
+
     /** One buffer of little-endian PCM from the recorder; only the first {@code len} bytes count. */
     public interface Pcm {
         void onPcm(byte[] pcm, int len);

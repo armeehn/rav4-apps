@@ -86,9 +86,21 @@ final class MicSource implements MicLink.Recorder {
             try {
                 while (running) {
                     int n = r.read(buf, 0, frameLen);
-                    if (n <= 0) {
+                    MicLink.Read got = MicLink.read(n);
+                    // A dead recorder answers at once, so a retry spins this thread. The next
+                    // MicStart opens a fresh one.
+                    if (got == MicLink.Read.LOST) {
+                        Log.w(TAG, "mic: recorder lost (" + n + "), capture ends");
+                        break;
+                    }
+
+                    if (got == MicLink.Read.IDLE) {
+                        if (!idle()) {
+                            break;
+                        }
                         continue;
                     }
+
                     // Peak before suppression: it is the recorder's health, not the output's.
                     peak = Math.max(peak, peak(buf, n));
                     ns.process(buf, n);
@@ -110,6 +122,16 @@ final class MicSource implements MicLink.Recorder {
         pump.start();
         Log.i(TAG, "mic: recording " + sampleRate + " Hz x" + channels + ", noise suppression " + ns.mode());
         return true;
+    }
+
+    /** Nothing read: wait one frame instead of asking again at once; false when interrupted. */
+    private static boolean idle() {
+        try {
+            Thread.sleep(FRAME_MS);
+            return true;
+        } catch (InterruptedException e) {
+            return false;
+        }
     }
 
     private static int peak(byte[] pcm, int len) {
