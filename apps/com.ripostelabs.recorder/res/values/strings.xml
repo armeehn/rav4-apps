@@ -30,6 +30,14 @@
     <string name="strength_full">Strong</string>
     <string name="noise_test_note">Same mic path as CarPlay calls. Saves each take raw and cleaned.</string>
     <string name="ns_unavailable">Noise suppressor unavailable: cleaned will match raw</string>
+    <string name="mode_road_noise">Road noise</string>
+    <string name="tag_city">City</string>
+    <string name="tag_highway">Highway</string>
+    <string name="tag_fan_high">Fan high</string>
+    <string name="tag_rain">Rain</string>
+    <string name="tag_other">Other</string>
+    <string name="road_note">Don\'t talk while capturing. Unprocessed mic, as CarPlay hears it. %1$s of %2$d min captured.</string>
+    <string name="road_saved">Saved %1$s of %2$s noise</string>
     <string name="pair_raw_then_cleaned">Raw, then cleaned</string>
     <string name="pair_playing_cleaned">Now: cleaned</string>
 </resources>
