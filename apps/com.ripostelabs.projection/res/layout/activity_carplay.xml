@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The phone's picture edge to edge; a small status strip until the first frame. -->
+<!-- The phone's picture edge to edge. Until the first frame: the waiting panel with the
+     reason, a one-tap fix and Home. A bench build adds the protocol trace strip. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -12,6 +13,76 @@
         android:id="@+id/carplay_video"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+    <!-- Opaque, so a stale texture never shows through, and it takes the touches the
+         surface would otherwise send to a phone that is not there. -->
+    <LinearLayout
+        android:id="@+id/carplay_wait"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/bg"
+        android:clickable="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingLeft="48dp"
+        android:paddingRight="48dp">
+
+        <TextView
+            android:id="@+id/carplay_title"
+            style="@style/H1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/carplay_starting" />
+
+        <TextView
+            android:id="@+id/carplay_reason"
+            style="@style/Body"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textColor="@color/text2"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/carplay_fix"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:minHeight="56dp"
+                android:paddingLeft="28dp"
+                android:paddingRight="28dp"
+                android:background="@drawable/btn_accent"
+                android:fontFamily="sans-serif-medium"
+                android:stateListAnimator="@null"
+                android:textAllCaps="false"
+                android:textColor="@color/on_accent"
+                android:textSize="17sp"
+                android:visibility="gone" />
+
+            <Button
+                android:id="@+id/carplay_home"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:paddingLeft="28dp"
+                android:paddingRight="28dp"
+                android:background="@drawable/btn_ghost"
+                android:fontFamily="sans-serif-medium"
+                android:stateListAnimator="@null"
+                android:text="@string/carplay_home"
+                android:textAllCaps="false"
+                android:textColor="@color/text"
+                android:textSize="17sp" />
+        </LinearLayout>
+    </LinearLayout>
 
     <TextView
         android:id="@+id/carplay_status"
