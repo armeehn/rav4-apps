@@ -137,6 +137,12 @@ public class MainActivity extends Activity implements Projector.Screen {
                 scan();
             }
         });
+        findViewById(R.id.mic).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this, MicSettingsActivity.class));
+            }
+        });
         wireless.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

@@ -13,4 +13,16 @@
     <string name="carplay_connecting">Connecting to your phone…</string>
     <string name="carplay_disconnected">Phone disconnected</string>
     <string name="carplay_name">CarPlay</string>
+    <!-- Microphone settings (MicSettingsActivity). -->
+    <string name="mic_button">Mic</string>
+    <string name="mic_title">Microphone</string>
+    <string name="mic_intro">Road, wind and engine noise is taken out of the cabin microphone before your voice goes to the phone.</string>
+    <string name="mic_ns_carplay">Noise suppression for CarPlay (Siri and calls)</string>
+    <string name="mic_strength">Strength</string>
+    <string name="mic_strength_light">Light</string>
+    <string name="mic_strength_medium">Medium</string>
+    <string name="mic_strength_full">Strong</string>
+    <string name="mic_engine_ready">Noise suppressor ready (RNNoise)</string>
+    <string name="mic_engine_missing">Noise suppressor unavailable on this device: the mic goes out unprocessed</string>
+    <string name="mic_applies">Changes apply from the next Siri request or call. Light keeps more of the cabin, Strong removes the most.</string>
 </resources>

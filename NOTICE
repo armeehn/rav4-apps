@@ -12,7 +12,14 @@ THIRD-PARTY / VENDOR NOTES
 --------------------------------------------------------------------------------
 
 The apps here are clean-room rewrites. They are written against the public
-Android framework only and vendor no third-party code.
+Android framework only and vendor no third-party code, with one exception:
+
+  RNNoise (apps/com.ripostelabs.projection/jni/rnnoise), the Projection app's
+  microphone noise suppressor, and its "little" model weights.
+  Copyright (c) 2007-2017, 2024 Jean-Marc Valin; (c) 2023 Amazon;
+  (c) 2017 Mozilla; (c) 2005-2017 Xiph.Org Foundation; (c) 2003-2004 Mark Borgerding.
+  BSD 3-Clause; full text in jni/rnnoise/COPYING and, in the APK,
+  res/raw/rnnoise_copying.txt.
 
 Some app directories keep an OEM-derived Java package name (for example
 com.szchoiceway.photoreader inside com.ripostelabs.photos) as an artifact of the
