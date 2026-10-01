@@ -9,9 +9,18 @@
     <!-- The strip over the panel while the phone's picture is not there yet. A bench build
          shows the daemon's protocol trace instead. -->
     <string name="carplay_starting">Starting CarPlay…</string>
-    <string name="carplay_waiting_phone">Waiting for your phone…</string>
-    <string name="carplay_connecting">Connecting to your phone…</string>
-    <string name="carplay_disconnected">Phone disconnected</string>
+    <string name="carplay_waiting_phone">Waiting for iPhone…</string>
+    <string name="carplay_connecting">Connecting to iPhone…</string>
+    <string name="carplay_disconnected">iPhone disconnected</string>
+    <!-- The waiting panel: why no iPhone is connected, the one-tap fix, and the way out. -->
+    <string name="carplay_why_airplane">Airplane mode is on, so Bluetooth and Wi-Fi are off.</string>
+    <string name="carplay_why_bluetooth">Bluetooth is off. CarPlay finds your iPhone over Bluetooth.</string>
+    <string name="carplay_why_wifi">Wi-Fi is off. Wireless CarPlay runs over Wi-Fi.</string>
+    <string name="carplay_why_no_phone">No iPhone found. Unlock it and check that its Bluetooth and Wi-Fi are on.</string>
+    <string name="carplay_fix_airplane">Turn off airplane mode</string>
+    <string name="carplay_fix_bluetooth">Turn on Bluetooth</string>
+    <string name="carplay_fix_wifi">Turn on Wi-Fi</string>
+    <string name="carplay_home">Home</string>
     <string name="carplay_name">CarPlay</string>
     <!-- Microphone settings (MicSettingsActivity). -->
     <string name="mic_button">Mic</string>
