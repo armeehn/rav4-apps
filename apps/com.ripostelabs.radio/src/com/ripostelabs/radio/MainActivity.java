@@ -2,7 +2,6 @@ package com.ripostelabs.radio;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.media.AudioAttributes;
@@ -65,7 +64,6 @@ public class MainActivity extends Activity
     private boolean dragging = false;
     /** Uptime of the last KEY_BAND_* we sent, 0 when none is in flight. */
     private long bandSwitchAt = 0;
-    private SharedPreferences prefs;
 
     // Tuner views
     private View tunerPane, netPane;
@@ -121,7 +119,6 @@ public class MainActivity extends Activity
         cText3 = Palette.color(this, R.color.text3);
         cStroke = Palette.color(this, R.color.stroke);
 
-        prefs = getSharedPreferences("presets", MODE_PRIVATE);
         tuner = Tuner.open(this, this);
 
         bindTunerViews();
@@ -212,10 +209,9 @@ public class MainActivity extends Activity
                 }
             });
             p.setOnLongClickListener(v -> {
-                // Both stores: the MCU's bank (vendor cmd 101) and ours, so a unit whose
-                // tuner never reports its list still shows the slot.
+                // One store: the tuner's list (vendor cmd 101). The launcher writes the slot
+                // at once and keeps it across boots; a copy here hid it behind zone defaults.
                 tuner.storePreset(RadioZone.stationSlot(curBand, slot));
-                savePreset(slot, curFreq);
                 refreshPresets();
                 Toast.makeText(this, getString(R.string.preset_saved, String.valueOf(slot + 1)),
                         Toast.LENGTH_SHORT).show();
@@ -454,22 +450,10 @@ public class MainActivity extends Activity
 
     // ---- Presets -----------------------------------------------------------
 
-    /**
-     * Our own store, keyed by position across the band class: FM1 keeps "fm0".."fm5" from
-     * before the banks, FM2 is "fm6".., AM1 "am0".., AM2 "am6"..
-     */
-    private String presetKey(int slot) {
-        int first = RadioZone.stationSlot(isFm() ? 0 : 3, 0);
-        return (isFm() ? "fm" : "am") + (RadioZone.stationSlot(curBand, slot) - first);
-    }
-    /** The MCU's own bank first (its list is the vendor's presets), our saved slot when it is empty. */
+    /** The station in a preset position of the current bank, from the tuner's list. */
     private int getPreset(int slot) {
-        int[] list = tuner.getStationList();
-        int mcuSlot = RadioZone.stationSlot(curBand, slot);
-        if (mcuSlot < list.length && list[mcuSlot] > 0) return list[mcuSlot];
-        return prefs.getInt(presetKey(slot), 0);
+        return RadioZone.preset(tuner.getStationList(), curBand, slot);
     }
-    private void savePreset(int slot, int freq) { prefs.edit().putInt(presetKey(slot), freq).apply(); }
 
     private void refreshPresets() {
         for (int i = 0; i < presetViews.size(); i++) {

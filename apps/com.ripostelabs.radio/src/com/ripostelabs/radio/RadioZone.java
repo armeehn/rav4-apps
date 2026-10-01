@@ -113,6 +113,19 @@ final class RadioZone {
         return Math.max(0, band) * BANK_SLOTS + position;
     }
 
+    /**
+     * The station in a bank position, read from the tuner's 42-entry list; 0 when the slot is
+     * empty or the list is short. The list is the one preset store: the launcher keeps it
+     * across boots, the vendor gateway gets it from the MCU.
+     */
+    static int preset(int[] list, int band, int position) {
+        int slot = stationSlot(band, position);
+        if (slot >= list.length) {
+            return 0;
+        }
+        return list[slot];
+    }
+
     /** The bank name the vendor shows, "FM%d" / "AM%d" (MainActivity.java:645-650). */
     static String bankLabel(int band) {
         if (band >= FIRST_AM_BAND) {
