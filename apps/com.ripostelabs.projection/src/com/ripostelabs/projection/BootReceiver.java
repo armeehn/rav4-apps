@@ -12,5 +12,7 @@ public final class BootReceiver extends BroadcastReceiver {
             return;
         }
         context.startForegroundService(new Intent(context, ZlinkService.class));
+        // A newer car-tuned noise model, checked once the network is up.
+        ModelUpdater.schedule(context);
     }
 }

@@ -9,6 +9,9 @@ import android.media.MediaRecorder;
 import android.os.Process;
 import android.util.Log;
 
+import com.ripostelabs.projection.ns.Engine;
+import com.ripostelabs.projection.ns.Model;
+import com.ripostelabs.projection.ns.ModelStore;
 import com.ripostelabs.projection.ns.NsPipeline;
 import com.ripostelabs.projection.ns.RnNoise;
 import com.ripostelabs.projection.zlink.MicLink;
@@ -46,7 +49,27 @@ final class MicSource implements MicLink.Recorder {
         if (!MicPrefs.suppress(context, MicPrefs.Path.CARPLAY)) {
             return NsPipeline.off();
         }
-        return NsPipeline.create(sampleRate, channels, RnNoise.open(), MicPrefs.strength(context));
+        return NsPipeline.create(sampleRate, channels, engine(), MicPrefs.strength(context));
+    }
+
+    /**
+     * Car-tuned when chosen and usable, else the standard model. This is the session boundary:
+     * a model downloaded since the last capture takes over here, never mid-call.
+     */
+    private Engine engine() {
+        if (MicPrefs.model(context) != Model.CAR_TUNED) {
+            return RnNoise.open();
+        }
+        ModelStore.Session s = ModelUpdater.store(context).open(RnNoise::open);
+        if (!s.refused.isEmpty()) {
+            Log.w(TAG, "mic: car-tuned model(s) " + s.refused + " would not load, rolled back");
+        }
+        if (s.engine == null) {
+            Log.i(TAG, "mic: no car-tuned model yet, standard model");
+            return RnNoise.open();
+        }
+        Log.i(TAG, "mic: car-tuned model v" + s.version);
+        return s.engine;
     }
 
     @Override

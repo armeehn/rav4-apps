@@ -31,6 +31,14 @@
     <string name="mic_strength_light">Light</string>
     <string name="mic_strength_medium">Medium</string>
     <string name="mic_strength_full">Strong</string>
+    <string name="mic_model">Model</string>
+    <string name="mic_model_standard">Standard</string>
+    <string name="mic_model_car">Car-tuned (auto-updating)</string>
+    <string name="mic_model_standard_state">Standard model: RNNoise as shipped</string>
+    <string name="mic_model_car_active">Car-tuned model v%1$d active, trained on this car\'s road noise</string>
+    <string name="mic_model_car_pending">Car-tuned model v%1$d active, v%2$d downloaded for the next call</string>
+    <string name="mic_model_car_next">Car-tuned model v%1$d downloaded, in use from the next call</string>
+    <string name="mic_model_car_none">No car-tuned model downloaded yet: the standard model runs until one arrives</string>
     <string name="mic_engine_ready">Noise suppressor ready (RNNoise)</string>
     <string name="mic_engine_missing">Noise suppressor unavailable on this device: the mic goes out unprocessed</string>
     <string name="mic_applies">Changes apply from the next Siri request or call. Light keeps more of the cabin, Strong removes the most.</string>

@@ -9,4 +9,4 @@ trap 'rm -rf "$out"' EXIT
 . "$here/sources.sh"
 cc -O2 $NS_CFLAGS -Wa,-I"$here/rnnoise/weights" -I"$here" \
   $(ns_sources "$here") "$here/test/ns_test.c" -o "$out/ns_test" -lm -lpthread
-"$out/ns_test"
+"$out/ns_test" "$here/rnnoise/weights/rnnoise_little.bin"

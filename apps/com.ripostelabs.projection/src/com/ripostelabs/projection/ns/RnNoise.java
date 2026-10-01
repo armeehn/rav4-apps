@@ -30,6 +30,18 @@ public final class RnNoise implements Engine {
         return h == 0 ? null : new RnNoise(h);
     }
 
+    /**
+     * A fresh denoiser on another model's weights (a car-tuned download), or null when the
+     * library is not usable or the blob is not a model of this shape.
+     */
+    public static RnNoise open(byte[] blob) {
+        if (!LOADED || blob == null || nativeFrameSize() != FRAME) {
+            return null;
+        }
+        long h = nativeOpenBlob(blob);
+        return h == 0 ? null : new RnNoise(h);
+    }
+
     public static boolean available() {
         return LOADED;
     }
@@ -73,6 +85,8 @@ public final class RnNoise implements Engine {
     }
 
     private static native long nativeOpen();
+
+    private static native long nativeOpenBlob(byte[] blob);
 
     private static native float nativeFrame(long handle, float[] pcm);
 
