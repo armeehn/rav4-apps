@@ -67,6 +67,26 @@ cd "$OUT" && cp base.apk unsigned.apk
 if command -v zip >/dev/null; then zip -qj unsigned.apk classes.dex
 else python3 -c 'import zipfile; z=zipfile.ZipFile("unsigned.apk","a",zipfile.ZIP_DEFLATED); z.write("classes.dex","classes.dex"); z.close()'
 fi
+# 4b. native libraries, for an app that has them: jniLibs/<abi>/*.so go in as lib/<abi>/*.so.
+#     They are prebuilt (the Projection app's jni/build.sh, NDK r27) and committed, because
+#     no host that runs this script has an NDK. Compressed: the manifest leaves
+#     extractNativeLibs at its default, so the installer unpacks them.
+if [ -d "$PROJ/jniLibs" ]; then
+  mkdir -p "$OUT/native/lib"
+  for abi_dir in "$PROJ"/jniLibs/*/; do
+    abi="$(basename "$abi_dir")"
+    mkdir -p "$OUT/native/lib/$abi"
+    cp "$abi_dir"*.so "$OUT/native/lib/$abi/"
+  done
+  if command -v zip >/dev/null; then (cd "$OUT/native" && zip -qr ../unsigned.apk lib)
+  else (cd "$OUT/native" && python3 -c 'import os, zipfile
+z = zipfile.ZipFile("../unsigned.apk", "a", zipfile.ZIP_DEFLATED)
+for root, _, files in os.walk("lib"):
+    for f in files:
+        z.write(os.path.join(root, f))
+z.close()')
+  fi
+fi
 # 5. align + sign
 "$ZIP" -f 4 unsigned.apk aligned.apk >/dev/null
 "$SIGN" sign --ks "$KS" --ks-pass pass:android --out "$PROJ/app-debug.apk" aligned.apk

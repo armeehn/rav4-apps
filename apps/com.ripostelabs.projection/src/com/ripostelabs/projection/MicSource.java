@@ -9,13 +9,16 @@ import android.media.MediaRecorder;
 import android.os.Process;
 import android.util.Log;
 
+import com.ripostelabs.projection.ns.NsPipeline;
+import com.ripostelabs.projection.ns.RnNoise;
 import com.ripostelabs.projection.zlink.MicLink;
 
 /**
  * The cabin microphone for Siri and calls: PCM from {@link AudioRecord} in the format the
  * daemon asked for, handed to a sink in frames of {@link #FRAME_MS}. Voice-communication
  * source, so the platform's own echo cancellation and noise suppression apply where the
- * HAL has them; the daemon runs its own AEC on top.
+ * HAL has them. Then RNNoise ({@link NsPipeline}), after the echo canceller as it must be,
+ * unless switched off in {@link MicSettingsActivity}.
  */
 final class MicSource implements MicLink.Recorder {
 
@@ -36,6 +39,14 @@ final class MicSource implements MicLink.Recorder {
 
     static boolean permitted(Context context) {
         return context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /** This capture's suppressor, per the settings; bypass when off or unavailable. */
+    private NsPipeline pipeline(int sampleRate, int channels) {
+        if (!MicPrefs.suppress(context, MicPrefs.Path.CARPLAY)) {
+            return NsPipeline.off();
+        }
+        return NsPipeline.create(sampleRate, channels, RnNoise.open(), MicPrefs.strength(context));
     }
 
     @Override
@@ -64,29 +75,40 @@ final class MicSource implements MicLink.Recorder {
         running = true;
         final AudioRecord r = record;
         final int frameLen = frame;
+        // The pump thread owns the pipeline and frees it on its way out: close() only stops
+        // the loop, so the native state is never freed under a frame in flight.
+        final NsPipeline ns = pipeline(sampleRate, channels);
         pump = new Thread(() -> {
             Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
             byte[] buf = new byte[frameLen];
             int peak = 0;
             int frames = 0;
-            while (running) {
-                int n = r.read(buf, 0, frameLen);
-                if (n <= 0) {
-                    continue;
+            try {
+                while (running) {
+                    int n = r.read(buf, 0, frameLen);
+                    if (n <= 0) {
+                        continue;
+                    }
+                    // Peak before suppression: it is the recorder's health, not the output's.
+                    peak = Math.max(peak, peak(buf, n));
+                    ns.process(buf, n);
+                    sink.onPcm(buf, n);
+                    // One line a second with the loudest sample: a recorder the policy silences
+                    // (a foreground service started from the background) reads all zeros. The
+                    // suppressor's cost per 10 ms rides along, the CPU figure for the car.
+                    if (++frames * FRAME_MS >= LEVEL_EVERY_MS) {
+                        Log.i(TAG, "mic: peak " + peak + " / 32767, ns " + ns.mode()
+                                + " " + ns.takeMicrosPerChunk() + " us/10ms");
+                        peak = 0;
+                        frames = 0;
+                    }
                 }
-                sink.onPcm(buf, n);
-                // One line a second with the loudest sample: a recorder the policy silences
-                // (a foreground service started from the background) reads all zeros.
-                peak = Math.max(peak, peak(buf, n));
-                if (++frames * FRAME_MS >= LEVEL_EVERY_MS) {
-                    Log.i(TAG, "mic: peak " + peak + " / 32767");
-                    peak = 0;
-                    frames = 0;
-                }
+            } finally {
+                ns.close();
             }
         }, "carplay-mic");
         pump.start();
-        Log.i(TAG, "mic: recording " + sampleRate + " Hz x" + channels);
+        Log.i(TAG, "mic: recording " + sampleRate + " Hz x" + channels + ", noise suppression " + ns.mode());
         return true;
     }
 
