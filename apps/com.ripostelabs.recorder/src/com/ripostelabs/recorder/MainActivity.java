@@ -3,6 +3,7 @@ package com.ripostelabs.recorder;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.SharedPreferences;
 import android.graphics.drawable.GradientDrawable;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
@@ -32,12 +33,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ripostelabs.design.PermissionGate;
+import com.ripostelabs.projection.ns.NsPipeline;
+import com.ripostelabs.projection.ns.RnNoise;
+import com.ripostelabs.projection.ns.Strength;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -71,10 +76,43 @@ public class MainActivity extends Activity
         final String name;
         final long duration; // ms
         final long date;     // epoch ms
-        Rec(File file, String name, long duration, long date) {
+        /** A noise test's cleaned half, played after {@link #file} (the raw half); else null. */
+        final File second;
+        Rec(File file, String name, long duration, long date, File second) {
             this.file = file; this.name = name; this.duration = duration; this.date = date;
+            this.second = second;
         }
     }
+
+    /** What the record button captures. */
+    private enum Mode {
+        /** An AAC memo through MediaRecorder, the app's original job. */
+        MEMO,
+        /** One mic take saved twice: as captured, and through the CarPlay mic's RNNoise. */
+        NOISE_TEST,
+    }
+
+    /**
+     * The noise test's capture rate. The phone picks the CarPlay mic's rate per session and
+     * calls and Siri ask for 16 kHz, so the test runs the pipeline at 16 kHz too (16k to 48k
+     * around RNNoise, as a call does).
+     */
+    private static final int NOISE_TEST_RATE = 16000;
+    /** Projection's MicPrefs default, chosen there by PESQ-WB in car noise. */
+    private static final Strength DEFAULT_STRENGTH = Strength.MEDIUM;
+    private static final String PREFS = "recorder";
+    private static final String KEY_MODE = "mode";
+    private static final String KEY_STRENGTH = "ns_strength";
+
+    private Mode mode = Mode.MEMO;
+    private Strength strength = DEFAULT_STRENGTH;
+    private LinearLayout modeRow, optionRow;
+    private TextView modeNote;
+
+    // noise test capture
+    private PcmCapture capture;
+    private TwinTake twin;
+    private String twinBase;
 
     private final ArrayList<Rec> recs = new ArrayList<>();
     private final ExecutorService io = Executors.newSingleThreadExecutor();
@@ -106,6 +144,8 @@ public class MainActivity extends Activity
     private int playing = -1;
     private boolean prepared = false;
     private boolean userSeeking = false;
+    /** True while a pair's cleaned half plays. */
+    private boolean playingSecond = false;
 
     // palette
     private int cAccent, cText, cText2, cSurface2;
@@ -119,6 +159,9 @@ public class MainActivity extends Activity
             if (recorder != null) {
                 try { level = Math.min(1f, recorder.getMaxAmplitude() / 20000f); }
                 catch (Exception ignored) {}
+            }
+            if (capture != null) {
+                level = Math.min(1f, capture.takePeak() / 20000f);
             }
             float scale = 1f + level * 0.7f;
             pulse.setScaleX(scale);
@@ -172,6 +215,15 @@ public class MainActivity extends Activity
         adapter = new RecAdapter();
         list.setAdapter(adapter);
 
+        // Mode and strength survive a restart: a test session spans several takes.
+        SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+        mode = prefs.getString(KEY_MODE, "").equals(Mode.NOISE_TEST.name()) ? Mode.NOISE_TEST : Mode.MEMO;
+        strength = Strength.parse(prefs.getString(KEY_STRENGTH, null), DEFAULT_STRENGTH);
+        modeRow = findViewById(R.id.modes);
+        optionRow = findViewById(R.id.options);
+        modeNote = findViewById(R.id.mode_note);
+        renderModes();
+
         btnRecord.setOnClickListener(v -> {
             if (recording) stopRecording();
             else if (gate.granted()) startRecording();
@@ -211,20 +263,34 @@ public class MainActivity extends Activity
         File dir = recordDir();
         if (dir == null) { toast("Storage unavailable"); return; }
 
+        // Playback holds media focus; let it go before asking for the capture's.
+        stopPlayback();
+
         // Exclusive focus: a ducked radio is still audible, and still ends up in the
         // capture. A refusal means something else already holds the microphone.
-        if (citizen == null) {
-            citizen = MediaCitizen.attach(this, "recorder", new SilentTransport());
-        }
-        if (!citizen.takeFocus(MediaCitizen.Focus.RECORDING)) {
+        if (!citizen().takeFocus(MediaCitizen.Focus.RECORDING)) {
             // Say so: a refusal that returns silently reads as a dead button.
             toast(getString(R.string.mic_busy));
             return;
         }
         String stamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
-        recordingFile = new File(dir, "REC_" + stamp + ".m4a");
+        boolean started = mode == Mode.NOISE_TEST ? startNoiseTest(dir, stamp) : startMemo(dir, stamp);
+        if (!started) {
+            // Nothing is capturing, so hand the cabin back rather than hold it silent.
+            citizen().releaseFocus();
+            toast(getString(R.string.mic_unavailable));
+            return;
+        }
 
-        stopPlayback();
+        recording = true;
+        recStartMs = SystemClock.elapsedRealtime();
+        recStyleOn(true);
+        elapsed.setText(fmt(0));
+        ui.postDelayed(recTick, 90);
+    }
+
+    private boolean startMemo(File dir, String stamp) {
+        recordingFile = new File(dir, "REC_" + stamp + ".m4a");
         try {
             recorder = new MediaRecorder();
             recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
@@ -237,17 +303,70 @@ public class MainActivity extends Activity
             recorder.start();
         } catch (Exception e) {
             releaseRecorder();
-            // Nothing is capturing, so hand the cabin back rather than hold it silent.
-            citizen.releaseFocus();
-            toast("Could not start recording");
-            return;
+            return false;
+        }
+        return true;
+    }
+
+    /** One capture, two files: "<base> raw.wav" and "<base> cleaned.wav". */
+    private boolean startNoiseTest(File dir, String stamp) {
+        twinBase = "NR_" + stamp;
+        NsPipeline ns = NsPipeline.create(NOISE_TEST_RATE, 1, RnNoise.open(), strength);
+        try {
+            twin = TwinTake.open(new File(dir, Takes.rawName(twinBase)),
+                    new File(dir, Takes.cleanedName(twinBase)), NOISE_TEST_RATE, ns);
+        } catch (java.io.IOException e) {
+            ns.close();
+            return false;
         }
 
-        recording = true;
-        recStartMs = SystemClock.elapsedRealtime();
-        recStyleOn(true);
-        elapsed.setText(fmt(0));
-        ui.postDelayed(recTick, 90);
+        capture = PcmCapture.start(NOISE_TEST_RATE, twin::accept);
+        if (capture == null) {
+            closeTwin();
+            deleteTwin(dir);
+            return false;
+        }
+
+        // Without the library both files would be the same; say so before the take, not after.
+        if (twin.mode() != NsPipeline.Mode.ACTIVE) {
+            toast(getString(R.string.ns_unavailable));
+        }
+        return true;
+    }
+
+    private void closeTwin() {
+        if (twin == null) {
+            return;
+        }
+        try {
+            twin.close();
+        } catch (java.io.IOException ignored) {
+            // The headers stay at zero length; the files are dropped as too short below.
+        }
+        twin = null;
+    }
+
+    private void deleteTwin(File dir) {
+        new File(dir, Takes.rawName(twinBase)).delete();
+        new File(dir, Takes.cleanedName(twinBase)).delete();
+    }
+
+    /** Stop a noise test take and offer to name it; drops a take with no samples. */
+    private void stopNoiseTest() {
+        capture.stop();
+        String error = capture.error();
+        capture = null;
+        closeTwin();
+
+        File dir = recordDir();
+        File raw = new File(dir, Takes.rawName(twinBase));
+        File cleaned = new File(dir, Takes.cleanedName(twinBase));
+        if (raw.length() <= Wav.HEADER_BYTES) {
+            deleteTwin(dir);
+            toast(error != null ? error : "Recording too short");
+            return;
+        }
+        promptPairName(raw, cleaned);
     }
 
     private void stopRecording() {
@@ -258,6 +377,12 @@ public class MainActivity extends Activity
         recording = false;
         ui.removeCallbacks(recTick);
         recStyleOn(false);
+        elapsed.setText("0:00");
+
+        if (capture != null) {
+            stopNoiseTest();
+            return;
+        }
 
         boolean ok = true;
         try {
@@ -331,6 +456,31 @@ public class MainActivity extends Activity
                 .show();
     }
 
+    /** Name a noise test take: both halves move together, keeping " raw" / " cleaned". */
+    private void promptPairName(final File raw, final File cleaned) {
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
+        input.setText(twinBase);
+        input.setSelectAllOnFocus(true);
+
+        int pad = dp(20);
+        FrameWrap wrap = new FrameWrap(this);
+        wrap.setPadding(pad, dp(8), pad, 0);
+        wrap.addView(input);
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.name_recording)
+                .setView(wrap)
+                .setPositiveButton(R.string.save, (d, w) -> {
+                    Takes.renamePair(raw, cleaned, input.getText().toString());
+                    loadRecordings();
+                })
+                .setNegativeButton(R.string.cancel, (d, w) -> loadRecordings())
+                .setOnCancelListener(d -> loadRecordings())
+                .show();
+    }
+
     /** minimal FrameLayout replacement so the EditText gets side padding */
     private static final class FrameWrap extends LinearLayout {
         FrameWrap(android.content.Context c) { super(c); setOrientation(VERTICAL); }
@@ -355,6 +505,91 @@ public class MainActivity extends Activity
         return file;
     }
 
+    // ---------------- modes ----------------
+
+    /** Mode chips, then for the noise test the strength chips and a note on the capture. */
+    private void renderModes() {
+        chips(modeRow, new String[]{getString(R.string.mode_memo), getString(R.string.mode_noise_test)},
+                mode.ordinal(), i -> setMode(Mode.values()[i]));
+
+        boolean test = mode == Mode.NOISE_TEST;
+        optionRow.setVisibility(test ? View.VISIBLE : View.GONE);
+        modeNote.setVisibility(test ? View.VISIBLE : View.GONE);
+        if (!test) {
+            return;
+        }
+
+        Strength[] all = Strength.values();
+        String[] labels = new String[all.length];
+        for (int i = 0; i < all.length; i++) {
+            labels[i] = strengthLabel(all[i]);
+        }
+        chips(optionRow, labels, strength.ordinal(), i -> setStrength(all[i]));
+    }
+
+    /** The same three words as the CarPlay mic settings. */
+    private String strengthLabel(Strength s) {
+        switch (s) {
+            case LIGHT:
+                return getString(R.string.strength_light);
+            case FULL:
+                return getString(R.string.strength_full);
+            default:
+                return getString(R.string.strength_medium);
+        }
+    }
+
+    private void setMode(Mode m) {
+        // A take in progress keeps the mode it started with.
+        if (recording) {
+            return;
+        }
+        mode = m;
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_MODE, m.name()).apply();
+        renderModes();
+    }
+
+    private void setStrength(Strength s) {
+        if (recording) {
+            return;
+        }
+        strength = s;
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_STRENGTH, s.name()).apply();
+        renderModes();
+    }
+
+    /** A row of tappable labels, one selected, rebuilt on every change. */
+    private void chips(LinearLayout row, String[] labels, int selected, java.util.function.IntConsumer onPick) {
+        row.removeAllViews();
+        for (int i = 0; i < labels.length; i++) {
+            final int index = i;
+            boolean on = i == selected;
+
+            GradientDrawable bg = new GradientDrawable();
+            bg.setCornerRadius(dp(24));
+            if (on) {
+                bg.setColor(cAccent);
+            } else {
+                bg.setStroke(dp(1), cText2);
+            }
+
+            TextView chip = new TextView(this);
+            chip.setText(labels[i]);
+            chip.setTextSize(15);
+            chip.setGravity(Gravity.CENTER);
+            chip.setTextColor(on ? Palette.color(this, R.color.on_accent) : cText);
+            chip.setBackground(bg);
+            chip.setPadding(dp(18), 0, dp(18), 0);
+            chip.setMinWidth(dp(48));
+            chip.setOnClickListener(v -> onPick.accept(index));
+
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, dp(48));
+            lp.rightMargin = dp(8);
+            row.addView(chip, lp);
+        }
+    }
+
     // ---------------- list ----------------
 
     private void loadRecordings() {
@@ -362,17 +597,18 @@ public class MainActivity extends Activity
         io.execute(() -> {
             ArrayList<Rec> found = new ArrayList<>();
             if (dir != null) {
-                File[] files = dir.listFiles((d, name) ->
-                        name.toLowerCase(Locale.US).endsWith(".m4a"));
+                File[] files = dir.listFiles((d, name) -> {
+                    String lower = name.toLowerCase(Locale.US);
+                    return lower.endsWith(".m4a") || lower.endsWith(".wav");
+                });
                 if (files != null) {
                     Arrays.sort(files, (a, b) ->
                             Long.compare(b.lastModified(), a.lastModified()));
-                    for (File f : files) {
-                        long dur = durationOf(f);
-                        String n = f.getName();
-                        int dot = n.lastIndexOf('.');
-                        if (dot > 0) n = n.substring(0, dot);
-                        found.add(new Rec(f, n, dur, f.lastModified()));
+                    // A noise test's two files become one row that plays raw, then cleaned.
+                    List<Takes.Take> takes = Takes.group(Arrays.asList(files));
+                    for (Takes.Take t : takes) {
+                        found.add(new Rec(t.first, t.name, durationOf(t.first),
+                                t.first.lastModified(), t.second));
                     }
                 }
             }
@@ -424,6 +660,9 @@ public class MainActivity extends Activity
         Rec r = recs.get(pos);
         if (playing == pos) stopPlayback();
         try { r.file.delete(); } catch (Exception ignored) {}
+        if (r.second != null) {
+            r.second.delete();
+        }
         toast(getString(R.string.deleted));
         loadRecordings();
     }
@@ -442,9 +681,22 @@ public class MainActivity extends Activity
     }
 
     private void playAt(int pos) {
+        playFile(pos, false);
+    }
+
+    /** Play a row's first file, or a pair's cleaned half when {@code second}. */
+    private void playFile(int pos, boolean second) {
         Rec r = recs.get(pos);
+        File f = second ? r.second : r.file;
+        // Media focus, as the Music app takes it: the radio stops instead of playing over the
+        // take. Refused means a call is on; the second half rides the first half's focus.
+        if (!second && !citizen().takeFocus(MediaCitizen.Focus.MEDIA)) {
+            toast(getString(R.string.audio_busy));
+            return;
+        }
         prepared = false;
         playing = pos;
+        playingSecond = second;
         try {
             if (player == null) {
                 player = new MediaPlayer();
@@ -453,7 +705,7 @@ public class MainActivity extends Activity
             } else {
                 player.reset();
             }
-            player.setDataSource(r.file.getAbsolutePath());
+            player.setDataSource(f.getAbsolutePath());
             player.prepareAsync();
         } catch (Exception e) {
             toast("Could not play recording");
@@ -472,13 +724,23 @@ public class MainActivity extends Activity
 
     @Override
     public void onCompletion(MediaPlayer mp) {
+        // A noise test plays back to back: raw, then the same take cleaned.
+        if (playing >= 0 && playing < recs.size() && recs.get(playing).second != null && !playingSecond) {
+            playFile(playing, true);
+            return;
+        }
         try { mp.seekTo(0); } catch (Exception ignored) {}
+        citizen().releaseFocus();
         adapter.notifyDataSetChanged();
     }
 
     private void stopPlayback() {
+        if (player != null && citizen != null) {
+            citizen.releaseFocus();
+        }
         prepared = false;
         playing = -1;
+        playingSecond = false;
         if (player != null) {
             try { player.reset(); } catch (Exception ignored) {}
             try { player.release(); } catch (Exception ignored) {}
@@ -538,7 +800,13 @@ public class MainActivity extends Activity
 
             final Rec r = recs.get(position);
             name.setText(r.name);
-            meta.setText(fmt(r.duration) + "  •  " + dfmt.format(new Date(r.date)));
+            String when = fmt(r.duration) + "  •  " + dfmt.format(new Date(r.date));
+            if (r.second != null) {
+                boolean cleanedNow = position == playing && playingSecond;
+                when = getString(cleanedNow ? R.string.pair_playing_cleaned : R.string.pair_raw_then_cleaned)
+                        + "  •  " + when;
+            }
+            meta.setText(when);
 
             boolean active = position == playing;
             boolean isPlaying = active && player != null && prepared && player.isPlaying();
@@ -722,11 +990,23 @@ public class MainActivity extends Activity
         ui.removeCallbacks(recTick);
         ui.removeCallbacks(playTick);
         releaseRecorder();
+        if (capture != null) {
+            capture.stop();
+            capture = null;
+            closeTwin();
+        }
         stopPlayback();
         if (citizen != null) {
             citizen.release();
             citizen = null;
         }
+    }
+
+    private MediaCitizen citizen() {
+        if (citizen == null) {
+            citizen = MediaCitizen.attach(this, "recorder", new SilentTransport());
+        }
+        return citizen;
     }
 
     /**
