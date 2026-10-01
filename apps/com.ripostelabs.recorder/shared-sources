@@ -1,0 +1,4 @@
+# The CarPlay mic's noise suppressor, compiled in from the Projection app (template/build.sh).
+# The noise reduction test must run exactly what a call runs, so it shares, never copies.
+apps/com.ripostelabs.projection/src/com/ripostelabs/projection/ns
+apps/com.ripostelabs.projection/jniLibs

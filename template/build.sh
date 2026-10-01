@@ -55,11 +55,28 @@ SHARED_SRC="$PROJ/../_design/src"
 # The template itself lives beside apps/, not inside it, so fall back to the repo copy.
 [ -d "$SHARED_SRC" ] || SHARED_SRC="$(dirname "$0")/../apps/_design/src"
 [ -d "$SHARED_SRC" ] || SHARED_SRC=""
+# Code one app owns and another reuses, listed in the user's apps/<app>/shared-sources, one
+# repo-relative path per line: a Java package directory, or a jniLibs/ directory.
+#   apps/com.ripostelabs.projection/src/com/ripostelabs/projection/ns   (RNNoise pipeline)
+#   apps/com.ripostelabs.projection/jniLibs                             (its native library)
+# The owner stays the one source of truth: nothing is copied into the user's tree, so the two
+# cannot drift. The JNI symbol names pin the package, which is why it is shared, not moved.
+REPO="$(cd "$PROJ/../.." && pwd)"
+SHARED_PKGS=""
+SHARED_LIBS=""
+if [ -f "$PROJ/shared-sources" ]; then
+  while read -r rel; do
+    case "$rel" in ''|'#'*) continue ;; esac
+    [ -d "$REPO/$rel" ] || { echo "shared-sources: no directory $rel" >&2; exit 1; }
+    if [ "$(basename "$rel")" = "jniLibs" ]; then SHARED_LIBS="$SHARED_LIBS $REPO/$rel"
+    else SHARED_PKGS="$SHARED_PKGS $REPO/$rel"; fi
+  done < "$PROJ/shared-sources"
+fi
 # -encoding is explicit: several sources carry × ÷ √ π as literals, and javac otherwise
 # decodes them with the ambient locale's charset — green on a UTF-8 shell, 200 syntax
 # errors on a runner that happens to start in the C locale.
 "$JAVAC" $JAVAC_ARGS -encoding UTF-8 -d "$OUT/classes" -classpath "$PLATFORM" \
-  $(find "$PROJ/src" $SHARED_SRC "$OUT/gen" -name '*.java')
+  $(find "$PROJ/src" $SHARED_SRC $SHARED_PKGS "$OUT/gen" -name '*.java')
 # 3. dex
 "$D8" --lib "$PLATFORM" --output "$OUT" $(find "$OUT/classes" -name '*.class') >/dev/null 2>&1
 # 4. assemble: add classes.dex into the resource apk (python fallback: hosts without zip(1))
@@ -71,9 +88,11 @@ fi
 #     They are prebuilt (the Projection app's jni/build.sh, NDK r27) and committed, because
 #     no host that runs this script has an NDK. Compressed: the manifest leaves
 #     extractNativeLibs at its default, so the installer unpacks them.
-if [ -d "$PROJ/jniLibs" ]; then
+LIB_DIRS="$SHARED_LIBS"
+[ -d "$PROJ/jniLibs" ] && LIB_DIRS="$PROJ/jniLibs $LIB_DIRS"
+if [ -n "${LIB_DIRS// /}" ]; then
   mkdir -p "$OUT/native/lib"
-  for abi_dir in "$PROJ"/jniLibs/*/; do
+  for abi_dir in $(for l in $LIB_DIRS; do echo "$l"/*/; done); do
     abi="$(basename "$abi_dir")"
     mkdir -p "$OUT/native/lib/$abi"
     cp "$abi_dir"*.so "$OUT/native/lib/$abi/"

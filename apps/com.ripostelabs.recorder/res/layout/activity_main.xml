@@ -38,12 +38,37 @@
                 android:text="@string/tap_to_record" />
         </LinearLayout>
 
+        <!-- Mode chips; for the noise test, strength chips and a note (built in code). -->
+        <LinearLayout
+            android:id="@+id/modes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal" />
+
+        <LinearLayout
+            android:id="@+id/options"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/mode_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            style="@style/Caption"
+            android:text="@string/noise_test_note"
+            android:visibility="gone" />
+
         <!-- Elapsed time -->
         <TextView
             android:id="@+id/elapsed"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
+            android:layout_marginTop="4dp"
             style="@style/Display"
             android:text="0:00" />
 
@@ -73,21 +98,22 @@
                 android:scaleType="fitCenter"
                 android:padding="38dp"
                 android:contentDescription="@string/record" />
-        </FrameLayout>
 
-        <!-- Stop button (hidden until recording) -->
-        <ImageButton
-            android:id="@+id/btn_stop"
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:layout_marginTop="4dp"
-            android:background="@drawable/btn_icon"
-            android:src="@drawable/ic_stop"
-            android:tint="@color/text"
-            android:scaleType="fitCenter"
-            android:padding="18dp"
-            android:visibility="invisible"
-            android:contentDescription="@string/stop" />
+            <!-- Stop button (hidden until recording), beside the FAB so the chips keep room -->
+            <ImageButton
+                android:id="@+id/btn_stop"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_gravity="center_vertical|end"
+                android:layout_marginEnd="48dp"
+                android:background="@drawable/btn_icon"
+                android:src="@drawable/ic_stop"
+                android:tint="@color/text"
+                android:scaleType="fitCenter"
+                android:padding="18dp"
+                android:visibility="invisible"
+                android:contentDescription="@string/stop" />
+        </FrameLayout>
     </LinearLayout>
 
     <!-- ============ Right: recordings list ============ -->

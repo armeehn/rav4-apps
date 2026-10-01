@@ -21,4 +21,15 @@
     <string name="cancel">Cancel</string>
     <string name="deleted">Recording deleted</string>
     <string name="mic_busy">Microphone in use by a call or CarPlay</string>
+    <string name="audio_busy">Audio in use by a call</string>
+    <string name="mic_unavailable">Could not start the microphone</string>
+    <string name="mode_memo">Voice memo</string>
+    <string name="mode_noise_test">Noise reduction test</string>
+    <string name="strength_light">Light</string>
+    <string name="strength_medium">Medium</string>
+    <string name="strength_full">Strong</string>
+    <string name="noise_test_note">Same mic path as CarPlay calls. Saves each take raw and cleaned.</string>
+    <string name="ns_unavailable">Noise suppressor unavailable: cleaned will match raw</string>
+    <string name="pair_raw_then_cleaned">Raw, then cleaned</string>
+    <string name="pair_playing_cleaned">Now: cleaned</string>
 </resources>

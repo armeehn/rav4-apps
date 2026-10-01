@@ -28,6 +28,16 @@ for d in apps/_design apps/com.ripostelabs.*; do
     [ -d "$d/test" ] || continue
     pkg="$(basename "$d")"
 
+    # Packages this app compiles in from another app (template/build.sh, shared-sources): their
+    # source root goes on the path too, e.g. .../projection/src for .../projection/src/.../ns.
+    shared=""
+    if [ -f "$d/shared-sources" ]; then
+        while read -r rel; do
+            case "$rel" in ''|'#'*|*/jniLibs) continue ;; esac
+            shared="$shared:${rel%%/src/*}/src"
+        done < "$d/shared-sources"
+    fi
+
     out="$(mktemp -d)"
     # Only the test files are named. The app's sources are on the -sourcepath, so javac pulls in
     # exactly the classes a test actually reaches and nothing else.
@@ -37,7 +47,7 @@ for d in apps/_design apps/com.ripostelabs.*; do
     # It also enforces the boundary by construction: a test that reaches for an Activity fails to
     # resolve, so this harness can only ever cover logic that does not depend on Android.
     if ! "$JAVAC" -nowarn -encoding UTF-8 -d "$out" \
-        -classpath "$PLATFORM" -sourcepath "$d/src:$d/test" \
+        -classpath "$PLATFORM" -sourcepath "$d/src:$d/test$shared" \
         $(find "$d/test" -name '*.java') >"$out/compile.log" 2>&1
     then
         echo "FAIL $pkg: tests do not compile"
