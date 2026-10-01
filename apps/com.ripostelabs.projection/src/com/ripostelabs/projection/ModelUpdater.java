@@ -9,7 +9,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.ripostelabs.projection.ns.Manifest;
-import com.ripostelabs.projection.ns.Model;
+import com.ripostelabs.projection.ns.ModelChoice;
 import com.ripostelabs.projection.ns.ModelSource;
 import com.ripostelabs.projection.ns.ModelStore;
 
@@ -32,7 +32,8 @@ import java.nio.charset.StandardCharsets;
  *                                                                          ──▶ sha256 ok? ──▶ pending
  *
  * Where from: {@link ModelSource} (the ingest service over the uplink, or launcher.hq on the
- * farm). Only runs while Car-tuned is the chosen model, so a car on Standard spends no data.
+ * farm). Runs on automatic (to learn the estate's default) and on a picked Car-tuned; a car
+ * where a person picked Standard spends no data.
  */
 public final class ModelUpdater extends JobService {
 
@@ -75,7 +76,7 @@ public final class ModelUpdater extends JobService {
 
     @Override
     public boolean onStartJob(JobParameters params) {
-        if (MicPrefs.model(this) != Model.CAR_TUNED) {
+        if (!ModelChoice.checksForUpdates(MicPrefs.manual(this))) {
             return false;
         }
         new Thread(() -> {
@@ -103,6 +104,8 @@ public final class ModelUpdater extends JobService {
         if (m == null) {
             return "manifest unreadable at " + src.manifestUrl();
         }
+        // The gate's verdict: car-tuned after a win on this car's own noise, standard on a rollback.
+        MicPrefs.setEstateDefault(context, m.defaultModel);
         ModelStore s = store(context);
         if (!s.wants(m)) {
             return "up to date (" + Manifest.label(s.activeVersion()) + ")";

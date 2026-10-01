@@ -11,10 +11,13 @@
     ns_report.py manifest REPORT_DIR VERSION PARENT_MANIFEST     manifest.json
     ns_report.py wants                                   wants.json for the car
 
-Formats are road-noise/CONTRACT.md's (sections 3 to 5, 8). The manifest's "default" is
-carried over from the previous one (first: standard). Training never changes it;
-"owner_gate_pass" records whether this model won on the owner's own held-out drives, which
-is the evidence a person needs to change it.
+Formats are road-noise/CONTRACT.md's (sections 3 to 5, 8). The manifest's "default" is the
+gate's decision, which the owner approved on 2026-10-01: "car-tuned" only when this model won
+on the owner's own held-out drives ("owner_gate_pass"), else "standard". A car on Automatic
+follows it; a person's explicit pick in the app always wins.
+
+    ns_report.py regressed METRICS_JSON                  "yes" when the car's model lost to stock
+    ns_report.py rollback VERSION PARENT_MANIFEST        manifest.json: parent's blob, default standard
 """
 import hashlib
 import json
@@ -24,6 +27,7 @@ import wave
 from datetime import datetime, timezone
 
 DEFAULT_STANDARD = "standard"
+DEFAULT_CAR = "car-tuned"
 MODEL_NAME = "rnnoise"
 BLOB_NAME = "weights.bin"
 # The emulator farm's proofs (CONTRACT.md section 7); ns_data.py skips the same rows.
@@ -154,11 +158,33 @@ def manifest(report, version, parent_manifest):
         "notes": (f"eval on {v['group']} noise: {v['delta_pesq']:+.3f} PESQ-WB, "
                   f"{v['delta_stoi']:+.4f} STOI vs {field(parent_manifest, 'version') or 'stock'}"),
         "parent": field(parent_manifest, "version") or None,
-        "default": field(parent_manifest, "default") or DEFAULT_STANDARD,
+        "default": DEFAULT_CAR if won else DEFAULT_STANDARD,
         "owner_gate_pass": won,
         "owner_minutes": round(owner["minutes"], 1),
         "metrics": {k: v[k] for k in ("group", "clips", "pesq_baseline", "pesq_candidate",
                                       "stoi_baseline", "stoi_candidate", "delta_pesq", "delta_stoi")},
+    }, indent=1)
+
+
+def regressed(path):
+    return "yes" if json.load(open(path))["verdict"].get("baseline_regressed") else "no"
+
+
+def rollback(version, parent_manifest):
+    """The parent's weights again under a new version, with the default back on standard."""
+    parent = json.load(open(parent_manifest))
+    blob = parent["files"][0]
+    return json.dumps({
+        "name": MODEL_NAME,
+        "version": version,
+        "published_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "files": [{"path": f"{version}/{BLOB_NAME}", "sha256": blob["sha256"], "bytes": blob["bytes"]}],
+        "min_app_version": None,
+        "notes": f"rollback: {parent['version']} lost to stock on the owner's noise",
+        "parent": parent["version"],
+        "rollback_of": parent["version"],
+        "default": DEFAULT_STANDARD,
+        "owner_gate_pass": False,
     }, indent=1)
 
 
@@ -189,6 +215,10 @@ def main():
         print(blob_path(*args))
     elif cmd == "next-version":
         print(next_version(*args))
+    elif cmd == "regressed":
+        print(regressed(*args))
+    elif cmd == "rollback":
+        print(rollback(*args))
     elif cmd == "manifest":
         print(manifest(*args))
     elif cmd == "wants":

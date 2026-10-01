@@ -121,12 +121,32 @@ read -r result group dpesq dstoi <<< "$(report verdict "$REPORT/metrics.json")"
 log "gate: $result on $group noise (PESQ $dpesq, STOI $dstoi vs the car's model)"
 echo "$(date '+%F %T') $result $group pesq$dpesq stoi$dstoi" >> "$REPORT/runs.log"
 
+# 3b. Rollback: the car follows the estate's default (owner-approved 2026-10-01). When the
+#     model it runs now lost to stock on the owner's own noise, republish its blob with the
+#     default back on standard, so cars on Automatic return to the shipped model.
+if [ "$MODE" != "report" ] && [ "$result" != "pass" ] \
+    && [ "$(report field "$MODELS/manifest.json" default)" = car-tuned ] \
+    && [ "$(report regressed "$REPORT/metrics.json")" = yes ]; then
+    version=$(report next-version "$MODELS/manifest.json")
+    current=$(report blob-path "$MODELS/manifest.json")
+    report rollback "$version" "$MODELS/manifest.json" > "$STATE/manifest.json"
+    for root in "$MODELS:$SHARE_OWNER" "$WEB:$WEB_OWNER"; do
+        dir=${root%%:*}
+        owner=${root#*:}
+        put "$MODELS/$current" "$dir/$version/weights.bin" "$owner"
+        put "$STATE/manifest.json" "$dir/manifest.json" "$owner"
+    done
+    log "rolled back: $version restores the standard default"
+    notify "Car NS model rolled back ($version)" "$(cat "$STATE/manifest.json")"
+    exit 0
+fi
+
 if [ "$MODE" = "report" ] || [ "$result" != "pass" ]; then
     exit 0
 fi
 
 # 4. Publish: the version folder first, manifest.json last, so the car never sees a manifest
-#    that names a missing file. The default is carried over; training never changes it.
+#    that names a missing file. The default is the gate's: car-tuned only on an owner win.
 version=$(report next-version "$MODELS/manifest.json")
 report manifest "$REPORT" "$version" "$MODELS/manifest.json" > "$STATE/manifest.json"
 for root in "$MODELS:$SHARE_OWNER" "$WEB:$WEB_OWNER"; do
