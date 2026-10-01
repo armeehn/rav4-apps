@@ -20,6 +20,7 @@
     <string name="browse_tracks">All tracks</string>
     <string name="browse_favourites">Favourites</string>
     <string name="favourites_count">%1$d favourites</string>
+    <string name="favourites_count_one">1 favourite</string>
     <string name="favourites_none">No favourites yet. Star the playing track.</string>
     <string name="star_add">Add to favourites</string>
     <string name="star_remove">Remove from favourites</string>

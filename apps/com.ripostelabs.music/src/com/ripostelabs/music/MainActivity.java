@@ -613,7 +613,11 @@ public class MainActivity extends Activity
             return;
         }
         if (browse == Browse.FAVOURITES) {
-            count.setText(shown.length == 0 && query.isEmpty() ? getString(R.string.favourites_none)
+            if (shown.length == 0 && query.isEmpty()) {
+                count.setText(R.string.favourites_none);
+                return;
+            }
+            count.setText(shown.length == 1 ? getString(R.string.favourites_count_one)
                     : getString(R.string.favourites_count, shown.length));
             return;
         }
