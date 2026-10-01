@@ -54,9 +54,15 @@ public final class ModelStoreTest {
         return text.getBytes(StandardCharsets.US_ASCII);
     }
 
-    private static Manifest manifest(int version, byte[] blob) {
-        return Manifest.parse("{\"version\": " + version + ", \"file\": \"rnnoise-car-" + version
-                + ".bin\", \"sha256\": \"" + ModelStore.sha256(blob) + "\", \"size\": " + blob.length + "}");
+    /** Version n is "2026-10-01.n", so the store sees code 20261001 * 100 + n. */
+    private static Manifest manifest(int n, byte[] blob) {
+        String v = "2026-10-01." + n;
+        return Manifest.parse("{\"name\": \"rnnoise\", \"version\": \"" + v + "\", \"files\": [{\"path\": \""
+                + v + "/weights.bin\", \"sha256\": \"" + ModelStore.sha256(blob) + "\", \"bytes\": " + blob.length + "}]}");
+    }
+
+    private static int code(int n) {
+        return 2026100100 + n;
     }
 
     private static ModelStore fresh() throws IOException {
@@ -81,15 +87,15 @@ public final class ModelStoreTest {
     private static void stagedModelWaitsForTheNextSession() throws IOException {
         ModelStore store = fresh();
         Check.that(store.stage(manifest(1, blob("GOOD v1")), blob("GOOD v1")), "v1 staged");
-        Check.eq(1, store.open(ModelStoreTest::open).version, "v1 in use from the next session");
+        Check.eq(code(1), store.open(ModelStoreTest::open).version, "v1 in use from the next session");
 
         // A download arrives mid-call: nothing changes until the next capture starts.
         Check.that(store.stage(manifest(2, blob("GOOD v2")), blob("GOOD v2")), "v2 staged");
-        Check.eq(1, store.activeVersion(), "v1 still active during the call");
-        Check.eq(2, store.pendingVersion(), "v2 waiting");
+        Check.eq(code(1), store.activeVersion(), "v1 still active during the call");
+        Check.eq(code(2), store.pendingVersion(), "v2 waiting");
 
         ModelStore.Session s = store.open(ModelStoreTest::open);
-        Check.eq(2, s.version, "v2 at the next session");
+        Check.eq(code(2), s.version, "v2 at the next session");
         Check.that("GOOD v2".equals(((Fake) s.engine).blob), "with v2's bytes");
         Check.eq(0, store.pendingVersion(), "nothing pending after the swap");
     }
@@ -113,12 +119,12 @@ public final class ModelStoreTest {
         store.stage(manifest(2, blob("BAD v2")), blob("BAD v2"));
 
         ModelStore.Session s = store.open(ModelStoreTest::open);
-        Check.eq(1, s.version, "v1 back in use");
-        Check.that(s.refused.contains(2), "v2 reported as refused");
-        Check.eq(1, store.activeVersion(), "v1 is active again");
+        Check.eq(code(1), s.version, "v1 back in use");
+        Check.that(s.refused.contains(code(2)), "v2 reported as refused");
+        Check.eq(code(1), store.activeVersion(), "v1 is active again");
         Check.that(!store.wants(manifest(2, blob("BAD v2"))), "v2 is never fetched again");
         Check.that(store.wants(manifest(3, blob("GOOD v3"))), "a fixed v3 still is");
-        Check.eq(1, store.open(ModelStoreTest::open).version, "and v1 stays in use");
+        Check.eq(code(1), store.open(ModelStoreTest::open).version, "and v1 stays in use");
     }
 
     private static void brokenFirstModelFallsBackToNone() throws IOException {
@@ -137,8 +143,8 @@ public final class ModelStoreTest {
         a.stage(manifest(5, blob("GOOD v5")), blob("GOOD v5"));
 
         ModelStore b = new ModelStore(dir);
-        Check.eq(4, b.activeVersion(), "active survives");
-        Check.eq(5, b.pendingVersion(), "pending survives");
-        Check.eq(5, b.open(ModelStoreTest::open).version, "and is promoted after a restart");
+        Check.eq(code(4), b.activeVersion(), "active survives");
+        Check.eq(code(5), b.pendingVersion(), "pending survives");
+        Check.eq(code(5), b.open(ModelStoreTest::open).version, "and is promoted after a restart");
     }
 }

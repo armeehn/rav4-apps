@@ -7,6 +7,7 @@ import android.database.MatrixCursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 
+import com.ripostelabs.projection.ns.Manifest;
 import com.ripostelabs.projection.ns.Model;
 
 import java.io.File;
@@ -17,7 +18,8 @@ import java.io.FileNotFoundException;
  * mode) so they hear what a call would:
  *
  *   query  content://com.ripostelabs.projection.nsmodel/choice
- *          one row: model (STANDARD or CAR_TUNED), version (0 = none, the standard model runs)
+ *          one row: model (STANDARD or CAR_TUNED), version (0 = none, the standard model runs),
+ *          label ("2026-10-02.1", "" for none)
  *   open   content://com.ripostelabs.projection.nsmodel/active.bin
  *          the car-tuned blob in use, the format of jni/rnnoise/weights/rnnoise_little.bin
  *
@@ -27,6 +29,7 @@ public final class NsModelProvider extends ContentProvider {
 
     static final String COL_MODEL = "model";
     static final String COL_VERSION = "version";
+    static final String COL_LABEL = "label";
     private static final String PATH_CHOICE = "choice";
     private static final String PATH_BLOB = "active.bin";
 
@@ -42,8 +45,8 @@ public final class NsModelProvider extends ContentProvider {
         }
         Model model = MicPrefs.model(getContext());
         int version = model == Model.CAR_TUNED ? ModelUpdater.store(getContext()).activeVersion() : 0;
-        MatrixCursor c = new MatrixCursor(new String[] {COL_MODEL, COL_VERSION});
-        c.addRow(new Object[] {model.name(), version});
+        MatrixCursor c = new MatrixCursor(new String[] {COL_MODEL, COL_VERSION, COL_LABEL});
+        c.addRow(new Object[] {model.name(), version, version == 0 ? "" : Manifest.label(version)});
         return c;
     }
 

@@ -7,6 +7,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.ripostelabs.design.Palette;
+import com.ripostelabs.projection.ns.Manifest;
 import com.ripostelabs.projection.ns.Model;
 import com.ripostelabs.projection.ns.ModelStore;
 import com.ripostelabs.projection.ns.RnNoise;
@@ -74,14 +75,14 @@ public final class MicSettingsActivity extends Activity {
             return;
         }
         if (active == 0) {
-            state.setText(getString(R.string.mic_model_car_next, pending));
+            state.setText(getString(R.string.mic_model_car_next, Manifest.label(pending)));
             return;
         }
         if (pending != 0) {
-            state.setText(getString(R.string.mic_model_car_pending, active, pending));
+            state.setText(getString(R.string.mic_model_car_pending, Manifest.label(active), Manifest.label(pending)));
             return;
         }
-        state.setText(getString(R.string.mic_model_car_active, active));
+        state.setText(getString(R.string.mic_model_car_active, Manifest.label(active)));
     }
 
     private static void enableChildren(RadioGroup group, boolean on) {

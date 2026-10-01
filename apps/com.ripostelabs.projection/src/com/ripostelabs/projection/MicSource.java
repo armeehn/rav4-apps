@@ -68,7 +68,7 @@ final class MicSource implements MicLink.Recorder {
             Log.i(TAG, "mic: no car-tuned model yet, standard model");
             return RnNoise.open();
         }
-        Log.i(TAG, "mic: car-tuned model v" + s.version);
+        Log.i(TAG, "mic: car-tuned model " + com.ripostelabs.projection.ns.Manifest.label(s.version));
         return s.engine;
     }
 
