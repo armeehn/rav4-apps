@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily check for new road noise to retrain the car-tuned RNNoise model on
+
+[Timer]
+OnCalendar=*-*-* 03:30
+RandomizedDelaySec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

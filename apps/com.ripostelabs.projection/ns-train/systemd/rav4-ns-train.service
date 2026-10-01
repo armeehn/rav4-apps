@@ -1,0 +1,11 @@
+[Unit]
+Description=Retrain the car-tuned RNNoise model on new road noise; publish if it beats the car's model
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Runs from the shared rav4-apps checkout on x (kept on main); training itself runs on forge.
+ExecStart=/home/sasha/rav4-apps/apps/com.ripostelabs.projection/ns-train/train-car-model.sh --auto
+# A run takes about 30 min (forge mix and eval, vile fine-tune); leave room for a slow day.
+TimeoutStartSec=3h
