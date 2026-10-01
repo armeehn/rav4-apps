@@ -46,6 +46,9 @@ final class RadioZone {
     /** getRadioBand() value of AM1; 0..2 are FM1..FM3. */
     private static final int FIRST_AM_BAND = 3;
 
+    /** Below this a frequency is AM kHz: the lowest FM value any zone tunes is OIRT 65.00 MHz. */
+    private static final int FM_FLOOR = 6500;
+
     /** What the launcher sends the MCU when nothing is configured; also the vendor's SysVar default. */
     static final int DEFAULT_ZONE = 0;
 
@@ -73,7 +76,30 @@ final class RadioZone {
     /** The plan for a band as getRadioBand() counts them: 0..2 FM, 3+ AM. */
     static Plan plan(int zone, int band) {
         RadioZone z = of(zone);
-        return band >= 3 ? z.am : z.fm;
+        return isAm(band) ? z.am : z.fm;
+    }
+
+    /** True for AM1 and up, as the vendor splits `mRadioBndNum > 2`. */
+    static boolean isAm(int band) {
+        return band >= FIRST_AM_BAND;
+    }
+
+    /**
+     * The band the tuner is on, judged against its frequency. A band report can be missed
+     * (the launcher dropped every one until device-reveng #388) and the frequency's units
+     * cannot lie: 530 under FM2 is AM1, 96.30 under AM2 is FM1. An agreeing band is kept.
+     */
+    static int bandFor(int band, int freq) {
+        if (freq <= 0) {
+            return band;
+        }
+
+        boolean amFreq = freq < FM_FLOOR;
+        if (amFreq == isAm(band)) {
+            return band;
+        }
+
+        return amFreq ? FIRST_AM_BAND : 0;
     }
 
     /**
