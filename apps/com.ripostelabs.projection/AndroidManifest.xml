@@ -51,7 +51,11 @@
         <provider android:authorities="com.ripostelabs.carlauncher.theme" />
     </queries>
 
+    <!-- usesCleartextTraffic: the model download from the estate's ingest service is plain
+         HTTP inside the uplink's WireGuard tunnel (ns/ModelSource), like the launcher's
+         uploads. -->
     <application
+        android:usesCleartextTraffic="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:allowBackup="false"

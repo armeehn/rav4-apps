@@ -10,13 +10,17 @@ import android.util.Log;
 
 import com.ripostelabs.projection.ns.Manifest;
 import com.ripostelabs.projection.ns.Model;
+import com.ripostelabs.projection.ns.ModelSource;
 import com.ripostelabs.projection.ns.ModelStore;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
@@ -27,12 +31,10 @@ import java.nio.charset.StandardCharsets;
  *   boot, daily, or Car-tuned picked ──▶ (network up) ──▶ manifest.json ──▶ newer? ──▶ blob
  *                                                                          ──▶ sha256 ok? ──▶ pending
  *
- * Only runs while Car-tuned is the chosen model, so a car on Standard spends no data.
+ * Where from: {@link ModelSource} (the ingest service over the uplink, or launcher.hq on the
+ * farm). Only runs while Car-tuned is the chosen model, so a car on Standard spends no data.
  */
 public final class ModelUpdater extends JobService {
-
-    /** The estate's model endpoint (Plane RAV4-264), served by launcher.hq's Caddy. */
-    static final String MANIFEST_URL = "https://launcher.hq.ripostelabs.xyz/ns-model/manifest.json";
 
     private static final String TAG = "Projection";
     private static final String DIR = "ns-model";
@@ -42,6 +44,7 @@ public final class ModelUpdater extends JobService {
     private static final int TIMEOUT_MS = 20_000;
     private static final int MAX_MANIFEST = 64 * 1024;
     private static final int COPY_BUFFER = 16 * 1024;
+    private static final int MAX_ENDPOINT = 512;
 
     private static ModelStore store;
 
@@ -94,26 +97,46 @@ public final class ModelUpdater extends JobService {
 
     /** One manifest check and, when it names a newer model, its download. */
     static String check(Context context) throws IOException {
-        Manifest m = Manifest.parse(new String(get(MANIFEST_URL, MAX_MANIFEST), StandardCharsets.UTF_8));
+        ModelSource src = ModelSource.from(endpoint());
+        byte[] body = get(src, src.manifestUrl(), MAX_MANIFEST);
+        Manifest m = Manifest.parse(new String(body, StandardCharsets.UTF_8));
         if (m == null) {
-            return "manifest unreadable";
+            return "manifest unreadable at " + src.manifestUrl();
         }
         ModelStore s = store(context);
         if (!s.wants(m)) {
-            return "up to date (v" + s.activeVersion() + ")";
+            return "up to date (" + Manifest.label(s.activeVersion()) + ")";
         }
 
-        String base = MANIFEST_URL.substring(0, MANIFEST_URL.lastIndexOf('/') + 1);
-        byte[] blob = get(base + m.file, (int) m.size);
+        byte[] blob = get(src, src.blobUrl(m), (int) m.size);
         if (!s.stage(m, blob)) {
-            return "v" + m.version + " failed sha256/size, not kept";
+            return Manifest.label(m.version) + " failed sha256/size, not kept";
         }
-        return "v" + m.version + " downloaded, in use from the next call";
+        return Manifest.label(m.version) + " downloaded, in use from the next call";
+    }
+
+    /** The uplink's ingest URL, or null when this unit is not enrolled (the farm). */
+    private static String endpoint() {
+        File f = new File(ModelSource.ENDPOINT_FILE);
+        if (!f.canRead() || f.length() > MAX_ENDPOINT) {
+            return null;
+        }
+        try (InputStream in = new FileInputStream(f)) {
+            byte[] b = new byte[(int) f.length()];
+            int n = in.read(b);
+            return n <= 0 ? null : new String(b, 0, n, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     /** GET a body of at most limit bytes; more is an error, not a truncation. */
-    private static byte[] get(String url, int limit) throws IOException {
-        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+    private static byte[] get(ModelSource src, String url, int limit) throws IOException {
+        // The tailnet is only reachable through the uplink's SOCKS5 port (userspace tailscaled).
+        Proxy proxy = src.viaUplink
+                ? new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(ModelSource.SOCKS_HOST, ModelSource.SOCKS_PORT))
+                : Proxy.NO_PROXY;
+        HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection(proxy);
         c.setConnectTimeout(TIMEOUT_MS);
         c.setReadTimeout(TIMEOUT_MS);
         try {
