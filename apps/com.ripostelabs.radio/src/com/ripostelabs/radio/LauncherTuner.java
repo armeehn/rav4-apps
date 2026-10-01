@@ -94,6 +94,11 @@ final class LauncherTuner extends Tuner {
     private IBinder service;
     private boolean bound;
     private State state = new State();
+    /** RAV4-275: a dead launcher is bound again, with backoff, until it answers. */
+    private final Rebind rebind = new Rebind((ms, task) -> main.postDelayed(task, ms), this::bindNow);
+
+    /** RAV4-275: the launcher's process died; the connection may not say so (force stop). */
+    private final IBinder.DeathRecipient death = () -> main.post(this::onLost);
 
     LauncherTuner(Context context, Listener listener) {
         super(context, listener);
@@ -142,17 +147,50 @@ final class LauncherTuner extends Tuner {
     private final ServiceConnection connection = new ServiceConnection() {
         @Override public void onServiceConnected(ComponentName name, IBinder binder) {
             service = binder;
+            try {
+                binder.linkToDeath(death, 0);
+            } catch (android.os.RemoteException e) {
+                onLost();                                  // died before we could watch it
+                return;
+            }
+            rebind.connected();
             transactVoid(TR_REGISTER_CALLBACK, p -> p.writeStrongBinder(callback));
             refreshState();
             listener.onConnected();
         }
         @Override public void onServiceDisconnected(ComponentName name) {
-            service = null;
-            listener.onDisconnected();
+            onLost();
+        }
+
+        /** A force stop or an update: Android never reconnects this binding by itself. */
+        @Override public void onBindingDied(ComponentName name) {
+            dropBinding();
+            onLost();
         }
     };
 
+    /** Say the gateway is gone once, then try to get it back (RAV4-275). */
+    private void onLost() {
+        if (service != null) {
+            service.unlinkToDeath(death, 0);
+            service = null;
+            listener.onDisconnected();
+        }
+        rebind.lost();
+    }
+
+    private void dropBinding() {
+        if (!bound) return;
+        try { context.unbindService(connection); } catch (Exception ignored) {}
+        bound = false;
+    }
+
     @Override boolean bind() {
+        rebind.start();
+        return bindNow();
+    }
+
+    private boolean bindNow() {
         if (bound) return true;
         String pkg = installedPackage(context);
         if (pkg == null) return false;
@@ -166,8 +204,10 @@ final class LauncherTuner extends Tuner {
     }
 
     @Override void unbind() {
+        rebind.stop();
         if (!bound) return;
         transactVoid(TR_UNREGISTER_CALLBACK, p -> p.writeStrongBinder(callback));
+        if (service != null) service.unlinkToDeath(death, 0);
         try { context.unbindService(connection); } catch (Exception ignored) {}
         bound = false;
         service = null;
