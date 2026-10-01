@@ -90,6 +90,8 @@ public class MainActivity extends Activity
         MEMO,
         /** One mic take saved twice: as captured, and through the CarPlay mic's RNNoise. */
         NOISE_TEST,
+        /** Unprocessed 48 kHz cabin noise with a tag and a sidecar, for tuning RNNoise. */
+        ROAD_NOISE,
     }
 
     /**
@@ -103,6 +105,9 @@ public class MainActivity extends Activity
     private static final String PREFS = "recorder";
     private static final String KEY_MODE = "mode";
     private static final String KEY_STRENGTH = "ns_strength";
+    private static final String KEY_TAG = "road_tag";
+    /** A road noise take shorter than this is a mis-tap, not data. */
+    private static final double MIN_ROAD_SECONDS = 1.0;
 
     private Mode mode = Mode.MEMO;
     private Strength strength = DEFAULT_STRENGTH;
@@ -113,6 +118,12 @@ public class MainActivity extends Activity
     private PcmCapture capture;
     private TwinTake twin;
     private String twinBase;
+
+    // road noise capture
+    private RoadNoise.Tag tag = RoadNoise.Tag.CITY;
+    private Wav.Sink roadSink;
+    private File roadWav;
+    private Date roadStart;
 
     private final ArrayList<Rec> recs = new ArrayList<>();
     private final ExecutorService io = Executors.newSingleThreadExecutor();
@@ -217,7 +228,8 @@ public class MainActivity extends Activity
 
         // Mode and strength survive a restart: a test session spans several takes.
         SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        mode = prefs.getString(KEY_MODE, "").equals(Mode.NOISE_TEST.name()) ? Mode.NOISE_TEST : Mode.MEMO;
+        mode = parseMode(prefs.getString(KEY_MODE, null));
+        tag = RoadNoise.Tag.parse(prefs.getString(KEY_TAG, null));
         strength = Strength.parse(prefs.getString(KEY_STRENGTH, null), DEFAULT_STRENGTH);
         modeRow = findViewById(R.id.modes);
         optionRow = findViewById(R.id.options);
@@ -274,7 +286,18 @@ public class MainActivity extends Activity
             return;
         }
         String stamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
-        boolean started = mode == Mode.NOISE_TEST ? startNoiseTest(dir, stamp) : startMemo(dir, stamp);
+        boolean started;
+        switch (mode) {
+            case NOISE_TEST:
+                started = startNoiseTest(dir, stamp);
+                break;
+            case ROAD_NOISE:
+                started = startRoadNoise();
+                break;
+            default:
+                started = startMemo(dir, stamp);
+                break;
+        }
         if (!started) {
             // Nothing is capturing, so hand the cabin back rather than hold it silent.
             citizen().releaseFocus();
@@ -334,6 +357,73 @@ public class MainActivity extends Activity
         return true;
     }
 
+    /** The road noise folder: app storage, readable by adb, which is how zero collects it. */
+    private File roadDir() {
+        File d = new File(getExternalFilesDir(null), RoadNoise.DIR);
+        if (!d.exists()) {
+            d.mkdirs();
+        }
+        return d;
+    }
+
+    private boolean startRoadNoise() {
+        roadStart = new Date();
+        String base = RoadNoise.baseName(roadStart, java.util.TimeZone.getDefault(), tag);
+        roadWav = new File(roadDir(), base + RoadNoise.WAV);
+        try {
+            roadSink = Wav.Sink.open(roadWav, RoadNoise.RATE);
+        } catch (java.io.IOException e) {
+            return false;
+        }
+
+        capture = PcmCapture.start(RoadNoise.RATE, roadSink::write);
+        if (capture != null) {
+            return true;
+        }
+        closeRoadSink();
+        roadWav.delete();
+        return false;
+    }
+
+    private void closeRoadSink() {
+        if (roadSink == null) {
+            return;
+        }
+        try {
+            roadSink.close();
+        } catch (java.io.IOException ignored) {
+            // The header keeps a zero length; the take is dropped as too short below.
+        }
+        roadSink = null;
+    }
+
+    /** Close the WAV, then write its sidecar: the sidecar is what marks a take finished. */
+    private void stopRoadNoise() {
+        capture.stop();
+        String error = capture.error();
+        capture = null;
+        closeRoadSink();
+
+        double seconds = Wav.seconds(roadWav);
+        if (seconds < MIN_ROAD_SECONDS) {
+            roadWav.delete();
+            toast(error != null ? error : "Recording too short");
+            return;
+        }
+
+        String base = Takes.stripExtension(roadWav.getName());
+        String json = RoadNoise.sidecar(roadWav.getName(), tag, roadStart, seconds, null);
+        try {
+            java.nio.file.Files.write(new File(roadDir(), base + RoadNoise.JSON).toPath(),
+                    json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        } catch (java.io.IOException e) {
+            toast("Could not save the sidecar");
+            return;
+        }
+        toast(getString(R.string.road_saved, fmt((long) (seconds * 1000)), tagLabel(tag)));
+        renderModes();
+    }
+
     private void closeTwin() {
         if (twin == null) {
             return;
@@ -379,6 +469,10 @@ public class MainActivity extends Activity
         recStyleOn(false);
         elapsed.setText("0:00");
 
+        if (capture != null && roadSink != null) {
+            stopRoadNoise();
+            return;
+        }
         if (capture != null) {
             stopNoiseTest();
             return;
@@ -509,15 +603,21 @@ public class MainActivity extends Activity
 
     /** Mode chips, then for the noise test the strength chips and a note on the capture. */
     private void renderModes() {
-        chips(modeRow, new String[]{getString(R.string.mode_memo), getString(R.string.mode_noise_test)},
+        chips(modeRow, new String[]{getString(R.string.mode_memo), getString(R.string.mode_noise_test),
+                        getString(R.string.mode_road_noise)},
                 mode.ordinal(), i -> setMode(Mode.values()[i]));
 
-        boolean test = mode == Mode.NOISE_TEST;
-        optionRow.setVisibility(test ? View.VISIBLE : View.GONE);
-        modeNote.setVisibility(test ? View.VISIBLE : View.GONE);
-        if (!test) {
+        boolean options = mode != Mode.MEMO;
+        optionRow.setVisibility(options ? View.VISIBLE : View.GONE);
+        modeNote.setVisibility(options ? View.VISIBLE : View.GONE);
+        if (mode == Mode.ROAD_NOISE) {
+            renderRoadNoise();
             return;
         }
+        if (!options) {
+            return;
+        }
+        modeNote.setText(R.string.noise_test_note);
 
         Strength[] all = Strength.values();
         String[] labels = new String[all.length];
@@ -525,6 +625,53 @@ public class MainActivity extends Activity
             labels[i] = strengthLabel(all[i]);
         }
         chips(optionRow, labels, strength.ordinal(), i -> setStrength(all[i]));
+    }
+
+    /** Tag chips, and a note with the minutes captured so far against the target. */
+    private void renderRoadNoise() {
+        RoadNoise.Tag[] all = RoadNoise.Tag.values();
+        String[] labels = new String[all.length];
+        for (int i = 0; i < all.length; i++) {
+            labels[i] = tagLabel(all[i]);
+        }
+        chips(optionRow, labels, tag.ordinal(), i -> setTag(all[i]));
+
+        double minutes = RoadNoise.minutes(RoadNoise.totalSeconds(roadDir()));
+        modeNote.setText(getString(R.string.road_note,
+                String.format(Locale.US, "%.1f", minutes), RoadNoise.TARGET_MINUTES));
+    }
+
+    private String tagLabel(RoadNoise.Tag t) {
+        switch (t) {
+            case HIGHWAY:
+                return getString(R.string.tag_highway);
+            case FAN_HIGH:
+                return getString(R.string.tag_fan_high);
+            case RAIN:
+                return getString(R.string.tag_rain);
+            case OTHER:
+                return getString(R.string.tag_other);
+            default:
+                return getString(R.string.tag_city);
+        }
+    }
+
+    private void setTag(RoadNoise.Tag t) {
+        if (recording) {
+            return;
+        }
+        tag = t;
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString(KEY_TAG, t.name()).apply();
+        renderModes();
+    }
+
+    private static Mode parseMode(String name) {
+        for (Mode m : Mode.values()) {
+            if (m.name().equals(name)) {
+                return m;
+            }
+        }
+        return Mode.MEMO;
     }
 
     /** The same three words as the CarPlay mic settings. */
@@ -994,6 +1141,7 @@ public class MainActivity extends Activity
             capture.stop();
             capture = null;
             closeTwin();
+            closeRoadSink();
         }
         stopPlayback();
         if (citizen != null) {
