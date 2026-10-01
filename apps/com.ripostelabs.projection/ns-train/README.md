@@ -74,9 +74,13 @@ systemctl daemon-reload && systemctl enable --now rav4-ns-train.timer
   to 48 kHz. All training and test audio goes through 16 kHz first.
 - **Car SNRs.** Upstream's `dump_features` draws noise from about -25 to +30 dB SNR; the
   copy here is patched (one line) to -5..20 dB.
-- **No voices in the noise.** DEMAND's SPSQUARE and TBUS scenes carry people talking. With
-  them in the mix the tuned model held back on speech-like sound (PESQ -0.067 vs stock);
-  without them, -0.015. They stay out (`NS_DEMAND_SCENES` puts them back).
+- **No voices in the noise.** DEMAND's SPSQUARE and TBUS scenes carry people talking, which
+  a noise suppressor should not learn to keep, so they stay out (`NS_DEMAND_SCENES` puts
+  them back). Their effect on the score is not resolved: two runs on the same data scored
+  PESQ -0.015 and -0.068 vs stock, which is wider than the -0.067 seen with them in.
+- **Run to run.** The mix is random each run, so a retrain moves PESQ by about 0.05 on the
+  public set. What held in all three runs on public noise: STOI up 0.009 to 0.010, PESQ up on
+  held-out in-car noise (TCAR, +0.02 to +0.06), down on the truck and gravel recordings.
 - **Fair test.** Owner noise is split by drive: the latest drives, at least a fifth of the
   minutes, are held out. Speech in the test is LibriSpeech test-clean, readers never heard
   in training. With one drive or none, the gate uses public held-out noise.
