@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "ns_engine.h"
 #include "rnnoise.h"
@@ -24,8 +25,14 @@ __asm__(
 extern const unsigned char ns_weights[];
 extern const unsigned char ns_weights_end[];
 
+/* The parser maps int8 arrays in place, so a loaded blob needs the .incbin's alignment. */
+#define BLOB_ALIGN 64
+
 struct NsEngine {
     DenoiseState *state;
+    /* A loaded model's weights (ns_open_blob); the state's layers point into it. NULL for the
+     * embedded model. */
+    void *blob;
 };
 
 /*
@@ -64,10 +71,45 @@ float ns_frame(NsEngine *ns, float *frame) {
     return rnnoise_process_frame(ns->state, frame, frame);
 }
 
+NsEngine *ns_open_blob(const void *blob, int len) {
+    if (blob == NULL || len <= 0) {
+        return NULL;
+    }
+
+    NsEngine *ns = calloc(1, sizeof(*ns));
+    if (ns == NULL) {
+        return NULL;
+    }
+    // posix_memalign, not aligned_alloc: bionic has the latter only from API 28.
+    if (posix_memalign(&ns->blob, BLOB_ALIGN, (size_t) len) != 0) {
+        free(ns);
+        return NULL;
+    }
+    memcpy(ns->blob, blob, (size_t) len);
+
+    // The handle is only needed while the layers are mapped. Freed with free(), not
+    // rnnoise_model_free(), which fcloses a FILE pointer this constructor never sets.
+    RNNModel *model = rnnoise_model_from_buffer(ns->blob, len);
+    if (model == NULL) {
+        ns_close(ns);
+        return NULL;
+    }
+    ns->state = rnnoise_create(model);
+    free(model);
+    if (ns->state == NULL) {
+        ns_close(ns);
+        return NULL;
+    }
+    return ns;
+}
+
 void ns_close(NsEngine *ns) {
     if (ns == NULL) {
         return;
     }
-    rnnoise_destroy(ns->state);
+    if (ns->state != NULL) {
+        rnnoise_destroy(ns->state);
+    }
+    free(ns->blob);
     free(ns);
 }

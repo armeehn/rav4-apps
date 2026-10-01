@@ -3,6 +3,7 @@ package com.ripostelabs.projection;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import com.ripostelabs.projection.ns.Model;
 import com.ripostelabs.projection.ns.Strength;
 
 /**
@@ -19,8 +20,12 @@ final class MicPrefs {
     /** Best PESQ-WB of the three on speech in car-interior noise at 0, 5 and 10 dB SNR. */
     static final Strength DEFAULT_STRENGTH = Strength.MEDIUM;
 
+    /** The shipped model until a person picks Car-tuned. */
+    static final Model DEFAULT_MODEL = Model.STANDARD;
+
     private static final String FILE = "mic";
     private static final String KEY_STRENGTH = "ns_strength";
+    private static final String KEY_MODEL = "ns_model";
 
     private MicPrefs() {
     }
@@ -39,6 +44,14 @@ final class MicPrefs {
 
     static void setStrength(Context context, Strength strength) {
         prefs(context).edit().putString(KEY_STRENGTH, strength.name()).apply();
+    }
+
+    static Model model(Context context) {
+        return Model.parse(prefs(context).getString(KEY_MODEL, null), DEFAULT_MODEL);
+    }
+
+    static void setModel(Context context, Model model) {
+        prefs(context).edit().putString(KEY_MODEL, model.name()).apply();
     }
 
     private static String enabledKey(Path path) {

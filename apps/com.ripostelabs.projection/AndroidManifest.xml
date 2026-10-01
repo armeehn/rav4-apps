@@ -108,6 +108,16 @@
             android:name="com.ripostelabs.projection.ZlinkService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback|microphone" />
+        <!-- Fetches newer car-tuned noise models (ns-train/) while Car-tuned is chosen. -->
+        <service
+            android:name="com.ripostelabs.projection.ModelUpdater"
+            android:exported="false"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <!-- The mic's model choice, read-only, for Voice Recorder's A/B test mode. -->
+        <provider
+            android:name="com.ripostelabs.projection.NsModelProvider"
+            android:authorities="com.ripostelabs.projection.nsmodel"
+            android:exported="true" />
         <receiver
             android:name="com.ripostelabs.projection.BootReceiver"
             android:exported="true">

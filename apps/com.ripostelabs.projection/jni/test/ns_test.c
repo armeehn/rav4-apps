@@ -31,7 +31,11 @@
 
 static int failures;
 
-static unsigned int seed = 12345;
+static void check(int ok, const char *what, double value);
+static void dirty_heap(void);
+
+#define NOISE_SEED 12345u
+static unsigned int seed = NOISE_SEED;
 
 /* Uniform in [-1, 1) from a fixed LCG, so every host makes the same noise. */
 static double noise_sample(void) {
@@ -69,11 +73,21 @@ static double tone_source(long n) {
     return tone_sample(n) * TONE_PEAK / 2.0;
 }
 
+/* A downloaded model's bytes: the shipped blob read from disk (argv[1]). */
+static unsigned char *blob;
+static long blob_len;
+
+typedef NsEngine *(*Opener)(void);
+
+static NsEngine *open_blob(void) {
+    return ns_open_blob(blob, (int) blob_len);
+}
+
 /* Energy ratio out/in over the judged tail, in dB. */
-static double pass_db(Source source) {
-    NsEngine *ns = ns_open();
+static double pass_db_with(Source source, Opener opener) {
+    NsEngine *ns = opener();
     if (ns == NULL) {
-        printf("FAIL ns_open returned NULL\n");
+        printf("FAIL the engine did not open\n");
         exit(1);
     }
 
@@ -98,6 +112,58 @@ static double pass_db(Source source) {
     }
     ns_close(ns);
     return 10.0 * log10((out_energy + 1e-9) / (in_energy + 1e-9));
+}
+
+static double pass_db(Source source) {
+    return pass_db_with(source, ns_open);
+}
+
+static void read_blob(const char *path) {
+    FILE *f = fopen(path, "rb");
+    if (f == NULL) {
+        printf("FAIL cannot read %s\n", path);
+        exit(1);
+    }
+    fseek(f, 0, SEEK_END);
+    blob_len = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    blob = malloc((size_t) blob_len);
+    if (blob == NULL || fread(blob, 1, (size_t) blob_len, f) != (size_t) blob_len) {
+        printf("FAIL short read of %s\n", path);
+        exit(1);
+    }
+    fclose(f);
+}
+
+/*
+ * A model from bytes (the car-tuned download) must run like the embedded one when it is the
+ * same model, and must be refused, not crash, when it is not a model of this shape.
+ */
+#define GARBAGE_LEN 65536
+static void blob_checks(void) {
+    // The same noise for both: the generator restarts from its seed.
+    seed = NOISE_SEED;
+    double embedded = pass_db(noise_source);
+    seed = NOISE_SEED;
+    double loaded = pass_db_with(noise_source, open_blob);
+    check(fabs(embedded - loaded) < 0.01, "blob copy of the shipped model matches it (dB apart)", embedded - loaded);
+
+    unsigned char *junk = malloc(GARBAGE_LEN);
+    for (int i = 0; i < GARBAGE_LEN; i++) {
+        junk[i] = (unsigned char) (noise_sample() * 127.0);
+    }
+    check(ns_open_blob(junk, GARBAGE_LEN) == NULL, "random bytes are refused", 0);
+    free(junk);
+
+    check(ns_open_blob(blob, (int) (blob_len / 2)) == NULL, "a truncated blob is refused", blob_len / 2);
+    check(ns_open_blob(blob, 0) == NULL, "an empty blob is refused", 0);
+    check(ns_open_blob(NULL, 16) == NULL, "no blob is refused", 0);
+
+    for (int i = 0; i < OPEN_CLOSE_CYCLES; i++) {
+        dirty_heap();
+        ns_close(open_blob());
+    }
+    check(1, "blob open/close cycles on a dirty heap", OPEN_CLOSE_CYCLES);
 }
 
 /*
@@ -163,7 +229,12 @@ static void check(int ok, const char *what, double value) {
     }
 }
 
-int main(void) {
+int main(int argc, char **argv) {
+    if (argc != 2) {
+        printf("usage: %s weights/rnnoise_little.bin\n", argv[0]);
+        return 2;
+    }
+    read_blob(argv[1]);
     double noise = pass_db(noise_source);
     check(noise <= -MIN_NOISE_DROP_DB, "noise only is attenuated (dB)", noise);
 
@@ -179,6 +250,8 @@ int main(void) {
         ns_close(ns_open());
     }
     check(1, "open/close cycles on a dirty heap", OPEN_CLOSE_CYCLES);
+
+    blob_checks();
 
     return failures == 0 ? 0 : 1;
 }
