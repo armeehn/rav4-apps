@@ -25,6 +25,7 @@ public final class MicLinkTest {
         framesAfterStopAreDropped();
         oldCaptureFramesAreDroppedAfterRestart();
         failedOpenStaysClosed();
+        aReadErrorEndsTheCapture();
         System.out.println(Check.count + " assertions passed");
     }
 
@@ -201,5 +202,18 @@ public final class MicLinkTest {
         final FakeRecorder recorder = new FakeRecorder();
         final List<byte[]> sent = new ArrayList<>();
         final MicLink link = new MicLink(recorder, sent::add);
+    }
+
+    /**
+     * AudioRecord.read returns a negative code at once, without blocking, once the recorder is
+     * dead (audioserver restart, the mic taken by another app). Retrying it spun the
+     * URGENT_AUDIO pump at full CPU (RAV4-243). An error ends the capture; zero waits a frame.
+     */
+    private static void aReadErrorEndsTheCapture() {
+        Check.that(MicLink.read(640) == MicLink.Read.PCM, "bytes are PCM");
+        Check.that(MicLink.read(0) == MicLink.Read.IDLE, "zero waits");
+        Check.that(MicLink.read(-3) == MicLink.Read.LOST, "ERROR_INVALID_OPERATION ends it");
+        Check.that(MicLink.read(-6) == MicLink.Read.LOST, "ERROR_DEAD_OBJECT ends it");
+        Check.that(MicLink.read(-1) == MicLink.Read.LOST, "ERROR ends it");
     }
 }
