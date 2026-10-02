@@ -23,6 +23,10 @@
     <string name="mic_busy">Microphone in use by a call or CarPlay</string>
     <string name="audio_busy">Audio in use by a call</string>
     <string name="mic_unavailable">Could not start the microphone</string>
+    <string name="mic_call">Microphone silenced by a phone call</string>
+    <string name="mic_silenced">The system silenced the microphone</string>
+    <string name="mic_silent">Microphone gives no sound</string>
+    <string name="take_dropped">%1$s. Nothing saved.</string>
     <string name="mode_memo">Voice memo</string>
     <string name="mode_noise_test">Noise reduction test</string>
     <string name="strength_light">Light</string>

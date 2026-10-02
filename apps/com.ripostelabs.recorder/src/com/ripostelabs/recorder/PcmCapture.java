@@ -2,7 +2,9 @@ package com.ripostelabs.recorder;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;
+import android.media.AudioRecordingConfiguration;
 import android.media.MediaRecorder;
+import android.os.Build;
 import android.os.Process;
 import android.util.Log;
 
@@ -101,7 +103,16 @@ final class PcmCapture {
         return p;
     }
 
-    /** Why the capture ended early, or null. */
+    /** Whether the platform mutes this capture for a higher-priority one (API 29+). */
+    boolean silenced() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return false;
+        }
+        AudioRecordingConfiguration c = record.getActiveRecordingConfiguration();
+        return c != null && c.isClientSilenced();
+    }
+
+        /** Why the capture ended early, or null. */
     String error() {
         return error;
     }
