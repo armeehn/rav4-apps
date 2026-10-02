@@ -2,6 +2,9 @@ package com.ripostelabs.projection;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -21,6 +24,19 @@ import com.ripostelabs.projection.ns.Strength;
  * switch is heard at once.
  */
 public final class MicSettingsActivity extends Activity {
+
+    /** How often the call audio check's line refreshes while the screen is open. */
+    private static final long CHECK_TICK_MS = 500;
+
+    private final Handler ui = new Handler(Looper.getMainLooper());
+    private TextView checkState;
+    private final Runnable checkTick = new Runnable() {
+        @Override
+        public void run() {
+            showCheck();
+            ui.postDelayed(this, CHECK_TICK_MS);
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +86,52 @@ public final class MicSettingsActivity extends Activity {
         // A missing library is not an error the driver can fix, but it explains a mic that
         // sounds unchanged with the switch on.
         engine.setText(RnNoise.available() ? R.string.mic_engine_ready : R.string.mic_engine_missing);
+
+        // The call audio check: owner-initiated only, and loud about it while it records.
+        checkState = findViewById(R.id.callcheck_state);
+        Button check = findViewById(R.id.callcheck);
+        check.setOnClickListener(v -> startCheck());
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        ui.post(checkTick);
+    }
+
+    @Override
+    protected void onPause() {
+        ui.removeCallbacks(checkTick);
+        super.onPause();
+    }
+
+    private void startCheck() {
+        switch (CallCheckRecorder.get().start(this)) {
+            case NO_CALL:
+                checkState.setText(R.string.callcheck_no_call);
+                return;
+            case BUSY:
+                checkState.setText(R.string.callcheck_busy);
+                return;
+            default:
+                showCheck();
+        }
+    }
+
+    /** Red while recording, the folder once saved; a refusal's text stays until the next tick changes state. */
+    private void showCheck() {
+        CallCheckRecorder r = CallCheckRecorder.get();
+        if (r.recording()) {
+            checkState.setText(getString(R.string.callcheck_left, r.secondsLeft()));
+            checkState.setTextColor(Palette.color(this, R.color.error));
+            return;
+        }
+
+        checkState.setTextColor(Palette.color(this, R.color.text2));
+        String folder = r.lastFolder();
+        if (folder != null) {
+            checkState.setText(getString(R.string.callcheck_saved, folder));
+        }
     }
 
     /** The radio for a person's pick; no pick is Automatic. */
