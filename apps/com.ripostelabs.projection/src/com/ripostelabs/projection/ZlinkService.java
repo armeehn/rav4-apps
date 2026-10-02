@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Binder;
 import android.os.Build;
@@ -125,6 +126,8 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     private CarPlayWireless wireless;
     private MediaCitizen citizen;
     private MicLink mic;
+    /** Held here: the preferences keep their listeners weakly. */
+    private SharedPreferences.OnSharedPreferenceChangeListener micWatch;
     private boolean hasFocus;
     private final LauncherStatus launcher = new LauncherStatus();
     private Messages.DayNight night = Messages.DayNight.DAY;
@@ -193,6 +196,8 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         videoSink.setOnStarved(bridge::requestKeyFrame);
         citizen = MediaCitizen.attach(this, CITIZEN_TAG, transport);
         mic = new MicLink(new MicSource(this), bridge::mic);
+        // A change on the Mic screen is heard at once, mid-call: the owner's one-call A/B.
+        micWatch = MicPrefs.watch(this, () -> mic.restart());
         registerReceiver(requests, new IntentFilter(STATUS_ACTION), Context.RECEIVER_EXPORTED);
         if (SystemProps.bench()) {
             registerReceiver(debugSend, new IntentFilter(DEBUG_ACTION), Context.RECEIVER_EXPORTED);
@@ -220,6 +225,9 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     @Override
     public void onDestroy() {
         unregisterReceiver(requests);
+        if (micWatch != null) {
+            MicPrefs.unwatch(this, micWatch);
+        }
         if (SystemProps.bench()) {
             unregisterReceiver(debugSend);
         }

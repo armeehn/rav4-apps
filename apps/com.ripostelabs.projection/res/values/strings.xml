@@ -26,6 +26,9 @@
     <string name="mic_button">Mic</string>
     <string name="mic_title">Microphone</string>
     <string name="mic_intro">Road, wind and engine noise is taken out of the cabin microphone before your voice goes to the phone.</string>
+    <string name="mic_pickup">Microphone path</string>
+    <string name="mic_pickup_direct">Direct: the plain cabin mic (default)</string>
+    <string name="mic_pickup_platform">Vendor voice processing: the head unit\'s echo and noise filter (the old path)</string>
     <string name="mic_ns_carplay">Noise suppression for CarPlay (Siri and calls)</string>
     <string name="mic_strength">Strength</string>
     <string name="mic_strength_light">Light</string>
@@ -43,5 +46,5 @@
     <string name="mic_model_car_none">No car-tuned model downloaded yet: the standard model runs until one arrives</string>
     <string name="mic_engine_ready">Noise suppressor ready (RNNoise)</string>
     <string name="mic_engine_missing">Noise suppressor unavailable on this device: the mic goes out unprocessed</string>
-    <string name="mic_applies">Changes apply from the next Siri request or call. Light keeps more of the cabin, Strong removes the most.</string>
+    <string name="mic_applies">Changes apply at once, even during a call: ask the person you are talking to which sounds clearer. Light keeps more of the cabin, Strong removes the most.</string>
 </resources>

@@ -5,11 +5,16 @@ import android.content.SharedPreferences;
 
 import com.ripostelabs.projection.ns.Model;
 import com.ripostelabs.projection.ns.ModelChoice;
+import com.ripostelabs.projection.ns.Pickup;
 import com.ripostelabs.projection.ns.Strength;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 /**
- * The microphone settings this app owns, one switch per mic path. Read at every MicStart, so a
- * change applies from the next Siri request or call.
+ * The microphone settings this app owns, one switch per mic path. Read at every MicStart; a
+ * person's change also reopens a running capture ({@link #watch}), so it is heard mid-call.
  */
 final class MicPrefs {
 
@@ -28,6 +33,13 @@ final class MicPrefs {
     private static final String KEY_MODEL = "ns_model";
     /** The estate's default from the last manifest (ModelUpdater). */
     private static final String KEY_ESTATE = "ns_model_estate";
+    private static final String KEY_PICKUP = "pickup";
+    /**
+     * What a person sets on the Mic screen. Only these reopen a running capture: the estate's
+     * model default arrives in the background and must wait for the next call, never cut one.
+     */
+    private static final Set<String> LIVE_KEYS = new HashSet<>(Arrays.asList(
+            KEY_PICKUP, KEY_STRENGTH, KEY_MODEL, enabledKey(Path.CARPLAY)));
 
     private MicPrefs() {
     }
@@ -38,6 +50,32 @@ final class MicPrefs {
 
     static void setSuppress(Context context, Path path, boolean on) {
         prefs(context).edit().putBoolean(enabledKey(path), on).apply();
+    }
+
+    static Pickup pickup(Context context) {
+        return Pickup.parse(prefs(context).getString(KEY_PICKUP, null));
+    }
+
+    static void setPickup(Context context, Pickup pickup) {
+        prefs(context).edit().putString(KEY_PICKUP, pickup.name()).apply();
+    }
+
+    /**
+     * Calls {@code onChange} on the main thread whenever a person changes a mic setting. Keep
+     * the returned listener: the preferences hold it weakly.
+     */
+    static SharedPreferences.OnSharedPreferenceChangeListener watch(Context context, Runnable onChange) {
+        SharedPreferences.OnSharedPreferenceChangeListener l = (p, key) -> {
+            if (LIVE_KEYS.contains(key)) {
+                onChange.run();
+            }
+        };
+        prefs(context).registerOnSharedPreferenceChangeListener(l);
+        return l;
+    }
+
+    static void unwatch(Context context, SharedPreferences.OnSharedPreferenceChangeListener l) {
+        prefs(context).unregisterOnSharedPreferenceChangeListener(l);
     }
 
     static Strength strength(Context context) {

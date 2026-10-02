@@ -11,12 +11,14 @@ import com.ripostelabs.projection.ns.Manifest;
 import com.ripostelabs.projection.ns.Model;
 import com.ripostelabs.projection.ns.ModelChoice;
 import com.ripostelabs.projection.ns.ModelStore;
+import com.ripostelabs.projection.ns.Pickup;
 import com.ripostelabs.projection.ns.RnNoise;
 import com.ripostelabs.projection.ns.Strength;
 
 /**
- * Noise suppression for the CarPlay mic: on or off, how deep, and which model. The capture reads these at
- * every MicStart, so nothing here talks to a running capture.
+ * The CarPlay mic: which pickup, noise suppression on or off, how deep, and which model. A
+ * running capture reopens on any change here (ZlinkService watches MicPrefs), so a mid-call
+ * switch is heard at once.
  */
 public final class MicSettingsActivity extends Activity {
 
@@ -26,11 +28,16 @@ public final class MicSettingsActivity extends Activity {
         setContentView(R.layout.activity_mic);
         Palette.apply(this);
 
+        RadioGroup pickup = findViewById(R.id.pickup);
         Switch carplay = findViewById(R.id.ns_carplay);
         RadioGroup strength = findViewById(R.id.strength);
         RadioGroup model = findViewById(R.id.model);
         TextView modelState = findViewById(R.id.model_state);
         TextView engine = findViewById(R.id.engine_state);
+
+        pickup.check(MicPrefs.pickup(this) == Pickup.PLATFORM ? R.id.pickup_platform : R.id.pickup_direct);
+        pickup.setOnCheckedChangeListener((group, id) -> MicPrefs.setPickup(this,
+                id == R.id.pickup_platform ? Pickup.PLATFORM : Pickup.DIRECT));
 
         carplay.setChecked(MicPrefs.suppress(this, MicPrefs.Path.CARPLAY));
         carplay.setOnCheckedChangeListener((button, on) -> {

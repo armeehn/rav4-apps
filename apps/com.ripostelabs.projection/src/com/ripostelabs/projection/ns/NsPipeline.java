@@ -9,9 +9,9 @@ package com.ripostelabs.projection.ns;
  * </pre>
  *
  * The recorder hands over 20 ms buffers; each is cut into 10 ms chunks, one engine frame each.
- * The engine runs after the platform's echo canceller (the recorder uses the
- * VOICE_COMMUNICATION source) and the daemon's own AEC is off, so suppression never sits in
- * front of echo cancellation. Added delay: RNNoise's own 20 ms (two engine frames, its
+ * The engine runs after the platform's echo canceller when one runs ({@link Pickup#PLATFORM})
+ * and the daemon's own AEC is off, so suppression never sits in front of a head-unit echo
+ * canceller. Added delay: RNNoise's own 20 ms (two engine frames, its
  * look-ahead) plus the resampler's 2 ms. Nothing else is buffered: each MIC_DATA frame goes
  * out in the same call that brought it in.
  *

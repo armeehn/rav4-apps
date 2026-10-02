@@ -13,14 +13,15 @@ import com.ripostelabs.projection.ns.Engine;
 import com.ripostelabs.projection.ns.Model;
 import com.ripostelabs.projection.ns.ModelStore;
 import com.ripostelabs.projection.ns.NsPipeline;
+import com.ripostelabs.projection.ns.Pickup;
 import com.ripostelabs.projection.ns.RnNoise;
 import com.ripostelabs.projection.zlink.MicLink;
 
 /**
  * The cabin microphone for Siri and calls: PCM from {@link AudioRecord} in the format the
- * daemon asked for, handed to a sink in frames of {@link #FRAME_MS}. Voice-communication
- * source, so the platform's own echo cancellation and noise suppression apply where the
- * HAL has them. Then RNNoise ({@link NsPipeline}), after the echo canceller as it must be,
+ * daemon asked for, handed to a sink in frames of {@link #FRAME_MS}. The plain mic by default;
+ * the voice-communication source (the HAL's echo canceller and suppressor) only when picked
+ * ({@link Pickup}). Then RNNoise ({@link NsPipeline}), after any echo canceller as it must be,
  * unless switched off in {@link MicSettingsActivity}.
  */
 final class MicSource implements MicLink.Recorder {
@@ -86,8 +87,9 @@ final class MicSource implements MicLink.Recorder {
             Log.w(TAG, "mic: unsupported " + sampleRate + "/" + channels);
             return false;
         }
+        Pickup pickup = MicPrefs.pickup(context);
         try {
-            record = new AudioRecord(MediaRecorder.AudioSource.VOICE_COMMUNICATION, sampleRate, channelMask,
+            record = new AudioRecord(source(pickup), sampleRate, channelMask,
                     AudioFormat.ENCODING_PCM_16BIT, Math.max(min, frame * BUFFER_FRAMES));
             record.startRecording();
         } catch (IllegalArgumentException | IllegalStateException | SecurityException e) {
@@ -143,8 +145,14 @@ final class MicSource implements MicLink.Recorder {
             }
         }, "carplay-mic");
         pump.start();
-        Log.i(TAG, "mic: recording " + sampleRate + " Hz x" + channels + ", noise suppression " + ns.mode());
+        Log.i(TAG, "mic: recording " + sampleRate + " Hz x" + channels + ", pickup " + pickup
+                + ", noise suppression " + ns.mode());
         return true;
+    }
+
+    private static int source(Pickup pickup) {
+        return pickup.vendorProcessing() ? MediaRecorder.AudioSource.VOICE_COMMUNICATION
+                : MediaRecorder.AudioSource.MIC;
     }
 
     /** Nothing read: wait one frame instead of asking again at once; false when interrupted. */

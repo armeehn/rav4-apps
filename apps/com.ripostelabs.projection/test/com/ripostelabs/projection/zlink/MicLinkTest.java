@@ -25,6 +25,9 @@ public final class MicLinkTest {
         framesAfterStopAreDropped();
         oldCaptureFramesAreDroppedAfterRestart();
         failedOpenStaysClosed();
+        restartReopensInTheAskedFormat();
+        restartWhenClosedIsQuiet();
+        framesFromBeforeARestartAreDropped();
         aReadErrorEndsTheCapture();
         System.out.println(Check.count + " assertions passed");
     }
@@ -148,6 +151,45 @@ public final class MicLinkTest {
         Check.that(r.link.state() == MicLink.State.CLOSED, "closed when open fails");
         r.link.stop();
         Check.eq(0, r.recorder.closes, "no close for a capture that never opened");
+    }
+
+    /**
+     * A settings change mid-call (the owner's A/B) reopens the capture in the format the phone
+     * asked for, without a new MicStart.
+     */
+    private static void restartReopensInTheAskedFormat() {
+        Rig r = new Rig();
+        r.link.start(ask(24000, 1));
+        r.link.restart();
+        Check.that(r.link.state() == MicLink.State.OPEN, "open after restart");
+        Check.eq(1, r.recorder.closes, "old capture closed");
+        Check.eq(2, r.recorder.opens, "capture reopened");
+        Check.eq(0, r.recorder.maxOpen - 1, "never two open at once");
+        Check.eq(24000, r.recorder.rate, "same rate");
+        Check.eq(1, r.recorder.channels, "same channels");
+    }
+
+    /** Settings change with no call or Siri running: the mic stays shut. */
+    private static void restartWhenClosedIsQuiet() {
+        Rig r = new Rig();
+        r.link.restart();
+        Check.eq(0, r.recorder.opens, "nothing opened before any MicStart");
+        r.link.start(ask(16000, 1));
+        r.link.stop();
+        r.link.restart();
+        Check.eq(1, r.recorder.opens, "nothing reopened after MicStop");
+        Check.that(r.link.state() == MicLink.State.CLOSED, "still closed");
+    }
+
+    private static void framesFromBeforeARestartAreDropped() {
+        Rig r = new Rig();
+        r.link.start(ask(16000, 1));
+        MicLink.Pcm old = r.recorder.sink;
+        r.link.restart();
+        old.onPcm(Check.hex("01 02"), 2);
+        Check.eq(0, r.sent.size(), "old capture's frame dropped");
+        r.recorder.sink.onPcm(Check.hex("03 04"), 2);
+        Check.eq(1, r.sent.size(), "new capture's frame sent");
     }
 
     // ---- rig ---------------------------------------------------------------------------------

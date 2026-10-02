@@ -7,6 +7,7 @@ package com.ripostelabs.projection.zlink;
  *   0x402 MicStart ──▶ close any capture, open one in the asked format
  *                      recorder PCM ──▶ 0x404 MIC_DATA ──▶ daemon (audio channel)
  *   0x403 MicStop, session down, service end ──▶ close; frames still in flight are dropped
+ *   settings change while open ──▶ close, reopen in the format last asked (the owner's A/B)
  * </pre>
  *
  * Each capture carries a generation number. The recorder thread can hand over one more buffer
@@ -59,6 +60,8 @@ public final class MicLink {
     private final Uplink uplink;
     private State state = State.CLOSED;
     private int generation;
+    /** The last MicStart, so a restart reopens in the phone's format. */
+    private Messages.MicStart asked;
 
     public MicLink(Recorder recorder, Uplink uplink) {
         this.recorder = recorder;
@@ -68,6 +71,7 @@ public final class MicLink {
     /** MicStart: a second one (Siri, then a call) replaces the first capture, never adds one. */
     public synchronized void start(Messages.MicStart asked) {
         close();
+        this.asked = asked;
 
         int rate = asked.sampleRate > 0 ? asked.sampleRate : DEFAULT_RATE;
         int channels = asked.channels > 0 ? asked.channels : DEFAULT_CHANNELS;
@@ -76,6 +80,18 @@ public final class MicLink {
             return;
         }
         state = State.OPEN;
+    }
+
+    /**
+     * The mic settings changed: reopen a running capture so the change is heard at once, even
+     * mid-call. A shut mic stays shut; the next MicStart reads the new settings anyway.
+     */
+    public synchronized void restart() {
+        if (state != State.OPEN) {
+            return;
+        }
+
+        start(asked);
     }
 
     /** MicStop, the session going down, or the service ending: all close the same way. */
