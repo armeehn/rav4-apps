@@ -180,5 +180,29 @@
             android:text="@string/mic_applies"
             android:textColor="@color/text3"
             android:textSize="14sp" />
+        <TextView
+            style="@style/H2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="@string/callcheck_title" />
+
+        <Button
+            android:id="@+id/callcheck"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="56dp"
+            android:text="@string/callcheck_button" />
+
+        <TextView
+            android:id="@+id/callcheck_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:fontFamily="@font/jetbrains_mono"
+            android:text="@string/callcheck_idle"
+            android:textColor="@color/text2"
+            android:textSize="14sp" />
     </LinearLayout>
 </ScrollView>

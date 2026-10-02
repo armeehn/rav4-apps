@@ -227,6 +227,16 @@ on that port, only a file-transfer id for it, so the card shows no cover.
 | Mic for Siri and calls: `0x402` MicStart opens `AudioRecord` (the plain mic by default, `ns/Pickup`; 16-bit, the asked rate and channels, 16 kHz mono when unset) and streams `0x404` MIC_DATA in 20 ms frames; closed on `0x403`, session drop and service end (`zlink/MicLink`) | lifecycle and frames unit-tested; no Siri press yet |
 | Mic noise suppression: RNNoise (little model) between the recorder and MIC_DATA, after the platform AEC; Settings switch and strength in `MicSettingsActivity` (`ns/`, `jni/`) | emulator: MicStart/MicStop cycles through a fake daemon, library loads, bypass when off; offline: +8 dB SNR, PESQ-WB 1.40 → 2.19 at 5 dB cabin noise; not yet in the car |
 
+## Call audio check
+
+Mic screen > Call audio check: during a call, one tap records 20 s of the mic before RNNoise
+(`-raw.wav`), after it (`-processed.wav`) and the phone's sound (`-downlink.wav`, the echo's
+source). Only the tap starts it. A notification and a red countdown show while it records. Files
+go to `/sdcard/Riposte/CallCheck/` once Projection has All files access
+(`adb shell appops set com.ripostelabs.projection MANAGE_EXTERNAL_STORAGE allow`), else to
+`/sdcard/Android/data/com.ripostelabs.projection/files/CallCheck/`. An A/B switch mid-take does
+not end it. Code: `ns/CallCheck` (unit-tested), `CallCheckRecorder`.
+
 ## Mic noise suppression
 
 The cabin mic goes through RNNoise (Xiph, BSD-3-Clause, `jni/rnnoise/COPYING`) on its way to

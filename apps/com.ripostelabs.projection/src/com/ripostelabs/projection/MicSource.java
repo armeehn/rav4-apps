@@ -9,6 +9,7 @@ import android.media.MediaRecorder;
 import android.os.Process;
 import android.util.Log;
 
+import com.ripostelabs.projection.ns.CallCheck;
 import com.ripostelabs.projection.ns.Engine;
 import com.ripostelabs.projection.ns.Model;
 import com.ripostelabs.projection.ns.ModelStore;
@@ -103,6 +104,8 @@ final class MicSource implements MicLink.Recorder {
         // The pump thread owns the pipeline and frees it on its way out: close() only stops
         // the loop, so the native state is never freed under a frame in flight.
         final NsPipeline ns = pipeline(sampleRate, channels);
+        final CallCheckRecorder check = CallCheckRecorder.get();
+        check.micOpened(sampleRate);
         pump = new Thread(() -> {
             Process.setThreadPriority(Process.THREAD_PRIORITY_URGENT_AUDIO);
             byte[] buf = new byte[frameLen];
@@ -128,7 +131,10 @@ final class MicSource implements MicLink.Recorder {
 
                     // Peak before suppression: it is the recorder's health, not the output's.
                     peak = Math.max(peak, peak(buf, n));
+                    // The owner's call audio check, when armed: the mic before and after RNNoise.
+                    check.feed(CallCheck.Tap.RAW, buf, 0, n);
                     ns.process(buf, n);
+                    check.feed(CallCheck.Tap.PROCESSED, buf, 0, n);
                     sink.onPcm(buf, n);
                     // One line a second with the loudest sample: a recorder the policy silences
                     // (a foreground service started from the background) reads all zeros. The

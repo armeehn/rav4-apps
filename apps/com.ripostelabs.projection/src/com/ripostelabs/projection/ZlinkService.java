@@ -21,6 +21,7 @@ import android.view.Surface;
 
 import com.ripostelabs.design.MediaCitizen;
 import com.ripostelabs.projection.aa.Messages.AudioConfig;
+import com.ripostelabs.projection.ns.CallCheck;
 import com.ripostelabs.projection.zlink.Bridge;
 import com.ripostelabs.projection.zlink.LauncherStatus;
 import com.ripostelabs.projection.zlink.Messages;
@@ -242,6 +243,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         audioSink.stop();
         if (mic != null) {
             mic.stop();
+            CallCheckRecorder.get().callEnded();
         }
         if (citizen != null) {
             citizen.releaseFocus();
@@ -286,6 +288,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         }
         if (!up) {
             mic.stop();
+            CallCheckRecorder.get().callEnded();
         }
     }
 
@@ -320,6 +323,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     @Override
     public void onMicStop() {
         mic.stop();
+        CallCheckRecorder.get().callEnded();
     }
 
     /** CarPlay follows the unit's day and night, the launcher's theme included. */
@@ -367,6 +371,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     @Override
     public void onAudioFormat(int sampleRate, int channels) {
         audioSink.start(new AudioConfig(sampleRate, PCM_BITS, channels));
+        CallCheckRecorder.get().downlinkFormat(sampleRate, channels);
         // Focus on the first audio of a session: the radio ducks, the launcher's card sees us.
         // hasFocus lives on the main thread with the rest of the session state.
         main.post(() -> {
@@ -381,6 +386,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     @Override
     public void onAudio(byte[] data, int off, int len) {
         audioSink.write(data, off, len);
+        CallCheckRecorder.get().feed(CallCheck.Tap.DOWNLINK, data, off, len);
     }
 
     private Notification notification() {
