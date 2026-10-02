@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Microphone settings: the CarPlay mic's pickup, the noise suppressor's switch, strength and model.
+<!-- Microphone settings: the CarPlay mic's pickup, the echo canceller's and the noise suppressor's switches, strength and model.
      Opened from the Projection screen's Mic button and from the launcher's phone settings. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/root"
@@ -60,6 +60,16 @@
                 android:text="@string/mic_pickup_platform"
                 android:textColor="@color/text" />
         </RadioGroup>
+
+        <Switch
+            android:id="@+id/aec_carplay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:minHeight="56dp"
+            android:text="@string/mic_aec_carplay"
+            android:textColor="@color/text"
+            android:textSize="17sp" />
 
         <Switch
             android:id="@+id/ns_carplay"

@@ -86,13 +86,15 @@ jobs:
           export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$ANDROID_HOME}"
           scope/run-tests.sh
 
-      # The Projection app's mic noise suppressor (RNNoise) is C, prebuilt into jniLibs/ with the
-      # NDK because no runner has one. Two things CI can still prove: the committed libraries
-      # were built from the committed sources, and those sources, built for the runner with cc,
-      # attenuate noise and keep a voice.
+      # The Projection app's mic noise suppressor (RNNoise) and echo canceller (AEC3) are
+      # prebuilt into jniLibs/ with the NDK because no runner has one. Two things CI can still
+      # prove: the committed libraries were built from the committed sources and pins, and the
+      # RNNoise sources, built for the runner with cc, attenuate noise and keep a voice. AEC3
+      # is measured offline (share/carlauncher/mic-ns/aec); its wiring is in the unit tests.
       - name: Native noise suppressor
         run: |
           apps/com.ripostelabs.projection/jni/check-libs.sh
           command -v cc >/dev/null || { apt-get update -qq && apt-get install -y -qq gcc libc6-dev; }
           apps/com.ripostelabs.projection/jni/test.sh
           python3 -B apps/com.ripostelabs.projection/ns-train/test_ns_report.py
+          python3 -B apps/com.ripostelabs.projection/ns-train/test_echo_report.py

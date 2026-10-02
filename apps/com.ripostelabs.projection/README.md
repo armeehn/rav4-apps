@@ -229,9 +229,10 @@ on that port, only a file-transfer id for it, so the card shows no cover.
 
 ## Call audio check
 
-Mic screen > Call audio check: during a call, one tap records 20 s of the mic before RNNoise
-(`-raw.wav`), after it (`-processed.wav`) and the phone's sound (`-downlink.wav`, the echo's
-source). Only the tap starts it. A notification and a red countdown show while it records. Files
+Mic screen > Call audio check: during a call, one tap records 20 s of the mic before AEC3
+(`-raw.wav`), after AEC3 (`-echo_cancelled.wav`), after RNNoise (`-processed.wav`) and the
+phone's sound (`-downlink.wav`, the echo's source), plus AEC3's own figures (`-echo.txt`).
+`ns-train/echo_report.py <folder>/<stamp>` prints the echo delay, echo return and ERLE. Only the tap starts it. A notification and a red countdown show while it records. Files
 go to `/sdcard/Riposte/CallCheck/` once Projection has All files access
 (`adb shell appops set com.ripostelabs.projection MANAGE_EXTERNAL_STORAGE allow`), else to
 `/sdcard/Android/data/com.ripostelabs.projection/files/CallCheck/`. An A/B switch mid-take does
@@ -261,3 +262,24 @@ AudioRecord 16 kHz ─▶ ns/NsPipeline: up ×3 ─▶ RNNoise 480-sample frames
 - The level line in logcat carries the cost: `mic: peak … ns ACTIVE <n> us/10ms`.
 - Bluetooth hands-free calls without CarPlay never pass through this app: the audio HAL runs
   them as a DSP loopback.
+
+## Echo cancellation
+
+The Direct pickup has no echo canceller, so the far end could hear itself. WebRTC AEC3
+(BSD-3-Clause, webrtc-audio-processing 2.1) runs before RNNoise, with the downlink this app
+plays as its reference. On by default; a switch on the Mic screen turns it off.
+
+```
+ZlinkService.onAudio ─▶ AudioTrack (bytes it took) ─▶ ns/EchoReference: 10 ms frames, arrival time
+MicSource read at t ─▶ ns/EchoPipeline: render every frame that arrived by t ─▶ AEC3 capture ─▶ NsPipeline
+```
+
+- A downlink frame is rendered only after it arrived, so the reference is never behind its
+  echo. AEC3's delay estimator finds the rest (track buffer, HAL, cabin; up to about 500 ms).
+- `jni/aec_engine.cc` tunes AEC3 for the car: ERLE caps 16/6, near-end detection at 10 dB SNR.
+- `jniLibs/*/libaec3_jni.so` is built by `jni/aec-build.sh` (NDK r27, meson, network), and
+  `jni/check-libs.sh` holds it to the sources and the pinned tarball.
+- Offline eval, samples and CPU: `share/carlauncher/mic-ns/aec/README.md`. 31-40 dB of echo
+  removed with RNNoise; no change on a call without echo; the owner dips about 4.5 dB more
+  than today while both talk at equal level.
+- logcat: `mic: … aec ACTIVE <n> us/10ms erle … dB, erl … dB, delay … ms`.

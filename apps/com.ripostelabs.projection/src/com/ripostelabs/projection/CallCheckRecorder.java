@@ -13,6 +13,7 @@ import com.ripostelabs.projection.ns.CallCheck;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -24,13 +25,15 @@ import java.util.Locale;
  *
  * <pre>
  *   MicSettingsActivity ─ tap ─▶ start() ─▶ CallCheck.arm
- *   MicSource pump      ─ RAW / PROCESSED ─▶ feed ─┐
- *   ZlinkService.onAudio ─ DOWNLINK ───────▶ feed ─┴▶ take full or call over ─▶ files
+ *   MicSource pump      ─ RAW / ECHO_CANCELLED / PROCESSED ─▶ feed ─┐
+ *   ZlinkService.onAudio ─ DOWNLINK ──────────────────────────▶ feed ─┴▶ take full or call over ─▶ files
  * </pre>
  *
  * Files go to /sdcard/Riposte/CallCheck when the app holds All files access, else to the app's
  * own folder on shared storage (/sdcard/Android/data/&lt;pkg&gt;/files/CallCheck). Nothing ever
- * starts a take but the button.
+ * starts a take but the button. Beside the WAVs, STAMP-echo.txt holds what AEC3 measured at the
+ * end of the take (ERLE, echo return, delay): the echo answer from one real call, without a
+ * second one. ns-train/echo_report.py measures the same from the WAVs, offline.
  */
 final class CallCheckRecorder {
 
@@ -55,6 +58,8 @@ final class CallCheckRecorder {
     private int downChannels;
     private boolean writing;
     private String lastFolder;
+    /** The echo canceller's last once-a-second report; written with the take. */
+    private String echoStats = "";
 
     static CallCheckRecorder get() {
         return INSTANCE;
@@ -92,6 +97,11 @@ final class CallCheckRecorder {
         }
         take.finish();
         flushIfDone();
+    }
+
+    /** The capture's echo canceller report, once a second while the mic runs. */
+    synchronized void echoStats(String line) {
+        echoStats = line;
     }
 
     synchronized void downlinkFormat(int rate, int channels) {
@@ -149,7 +159,14 @@ final class CallCheckRecorder {
                     out.write(wav);
                 }
             }
-            Log.i(TAG, "callcheck: saved " + stamp + "-*.wav in " + dir);
+            String echo;
+            synchronized (this) {
+                echo = echoStats;
+            }
+            try (FileOutputStream out = new FileOutputStream(new File(dir, stamp + "-echo.txt"))) {
+                out.write(("aec " + echo + "\n").getBytes(StandardCharsets.UTF_8));
+            }
+            Log.i(TAG, "callcheck: saved " + stamp + "-*.wav in " + dir + ", aec " + echo);
         } catch (IOException e) {
             Log.w(TAG, "callcheck: not saved: " + e.getMessage());
         }

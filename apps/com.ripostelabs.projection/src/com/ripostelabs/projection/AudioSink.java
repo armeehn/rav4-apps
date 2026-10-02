@@ -61,9 +61,10 @@ final class AudioSink {
         Log.i(TAG, "audio " + channel + ": playing " + config.sampleRate + " Hz x" + config.channels);
     }
 
-    synchronized void write(byte[] data, int off, int len) {
+    /** Bytes the track took: what will reach the speakers. */
+    synchronized int write(byte[] data, int off, int len) {
         if (track == null) {
-            return;
+            return 0;
         }
         int n = track.write(data, off, len, AudioTrack.WRITE_NON_BLOCKING);
         if (n < len) {
@@ -73,6 +74,7 @@ final class AudioSink {
         if (++written % REPORT_EVERY == 0) {
             Log.i(TAG, "audio " + channel + ": written " + written + " dropped " + dropped + " bytes");
         }
+        return Math.max(n, 0);
     }
 
     synchronized void setVolume(float v) {

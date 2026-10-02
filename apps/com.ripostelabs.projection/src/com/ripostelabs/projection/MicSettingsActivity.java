@@ -10,6 +10,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.ripostelabs.design.Palette;
+import com.ripostelabs.projection.ns.Aec3;
 import com.ripostelabs.projection.ns.Manifest;
 import com.ripostelabs.projection.ns.Model;
 import com.ripostelabs.projection.ns.ModelChoice;
@@ -19,9 +20,9 @@ import com.ripostelabs.projection.ns.RnNoise;
 import com.ripostelabs.projection.ns.Strength;
 
 /**
- * The CarPlay mic: which pickup, noise suppression on or off, how deep, and which model. A
- * running capture reopens on any change here (ZlinkService watches MicPrefs), so a mid-call
- * switch is heard at once.
+ * The CarPlay mic: which pickup, echo cancellation and noise suppression on or off, how deep,
+ * and which model. A running capture reopens on any change here (ZlinkService watches
+ * MicPrefs), so a mid-call switch is heard at once.
  */
 public final class MicSettingsActivity extends Activity {
 
@@ -45,6 +46,7 @@ public final class MicSettingsActivity extends Activity {
         Palette.apply(this);
 
         RadioGroup pickup = findViewById(R.id.pickup);
+        Switch echo = findViewById(R.id.aec_carplay);
         Switch carplay = findViewById(R.id.ns_carplay);
         RadioGroup strength = findViewById(R.id.strength);
         RadioGroup model = findViewById(R.id.model);
@@ -54,6 +56,9 @@ public final class MicSettingsActivity extends Activity {
         pickup.check(MicPrefs.pickup(this) == Pickup.PLATFORM ? R.id.pickup_platform : R.id.pickup_direct);
         pickup.setOnCheckedChangeListener((group, id) -> MicPrefs.setPickup(this,
                 id == R.id.pickup_platform ? Pickup.PLATFORM : Pickup.DIRECT));
+
+        echo.setChecked(MicPrefs.echoCancel(this));
+        echo.setOnCheckedChangeListener((button, on) -> MicPrefs.setEchoCancel(this, on));
 
         carplay.setChecked(MicPrefs.suppress(this, MicPrefs.Path.CARPLAY));
         carplay.setOnCheckedChangeListener((button, on) -> {
@@ -85,7 +90,8 @@ public final class MicSettingsActivity extends Activity {
 
         // A missing library is not an error the driver can fix, but it explains a mic that
         // sounds unchanged with the switch on.
-        engine.setText(RnNoise.available() ? R.string.mic_engine_ready : R.string.mic_engine_missing);
+        engine.setText(getString(RnNoise.available() ? R.string.mic_engine_ready : R.string.mic_engine_missing)
+                + "\n" + getString(Aec3.available() ? R.string.mic_aec_ready : R.string.mic_aec_missing));
 
         // The call audio check: owner-initiated only, and loud about it while it records.
         checkState = findViewById(R.id.callcheck_state);

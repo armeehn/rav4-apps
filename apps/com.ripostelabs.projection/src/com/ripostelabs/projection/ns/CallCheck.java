@@ -2,10 +2,11 @@ package com.ripostelabs.projection.ns;
 
 /**
  * The owner's call audio check: a fixed-length take of one call's mic path, before and after
- * the suppressor, with the phone's downlink beside it, for tuning on real data.
+ * the echo canceller and the suppressor, with the phone's downlink beside it, for tuning on
+ * real data.
  *
  * <pre>
- *   recorder PCM ──▶ RAW ──▶ NsPipeline ──▶ PROCESSED ──▶ MIC_DATA
+ *   recorder PCM ──▶ RAW ──▶ EchoPipeline ──▶ ECHO_CANCELLED ──▶ NsPipeline ──▶ PROCESSED ──▶ MIC_DATA
  *   phone's audio ──▶ DOWNLINK ──▶ speakers         (the echo's source, for AEC work)
  * </pre>
  *
@@ -16,7 +17,7 @@ package com.ripostelabs.projection.ns;
 public final class CallCheck {
 
     /** Where in the path a buffer was taken. */
-    public enum Tap { RAW, PROCESSED, DOWNLINK }
+    public enum Tap { RAW, ECHO_CANCELLED, PROCESSED, DOWNLINK }
 
     public enum State { IDLE, RECORDING, DONE }
 
@@ -45,6 +46,7 @@ public final class CallCheck {
         }
 
         size(Tap.RAW, micRate, 1);
+        size(Tap.ECHO_CANCELLED, micRate, 1);
         size(Tap.PROCESSED, micRate, 1);
         size(Tap.DOWNLINK, Math.max(downRate, 0), Math.max(downChannels, 1));
         state = State.RECORDING;
