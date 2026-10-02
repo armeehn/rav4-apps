@@ -224,14 +224,18 @@ on that port, only a file-transfer id for it, so the card shows no cover.
 | Now playing: title, artist, album, duration, play state and position from port 1555 (`zlink/Metadata`, `MetadataLink`) | decoder unit-tested with hand-built iAP2 vectors; no phone has sent one yet |
 | Call state to the launcher: `0x710` edges become `PHONE_CALL_ON/OFF` and `MAIN_AUDIO_START/STOP`, closed on session drop (`zlink/LauncherStatus`) | unit-tested; no call placed yet |
 | Night: the launcher's `cmd uimode night` reaches the service's configuration, sent as `0x705`/`0x706` at session start and on change | unit-tested; not seen on the phone yet |
-| Mic for Siri and calls: `0x402` MicStart opens `AudioRecord` (VOICE_COMMUNICATION, 16-bit, the asked rate and channels, 16 kHz mono when unset) and streams `0x404` MIC_DATA in 20 ms frames; closed on `0x403`, session drop and service end (`zlink/MicLink`) | lifecycle and frames unit-tested; no Siri press yet |
+| Mic for Siri and calls: `0x402` MicStart opens `AudioRecord` (the plain mic by default, `ns/Pickup`; 16-bit, the asked rate and channels, 16 kHz mono when unset) and streams `0x404` MIC_DATA in 20 ms frames; closed on `0x403`, session drop and service end (`zlink/MicLink`) | lifecycle and frames unit-tested; no Siri press yet |
 | Mic noise suppression: RNNoise (little model) between the recorder and MIC_DATA, after the platform AEC; Settings switch and strength in `MicSettingsActivity` (`ns/`, `jni/`) | emulator: MicStart/MicStop cycles through a fake daemon, library loads, bypass when off; offline: +8 dB SNR, PESQ-WB 1.40 → 2.19 at 5 dB cabin noise; not yet in the car |
 
 ## Mic noise suppression
 
 The cabin mic goes through RNNoise (Xiph, BSD-3-Clause, `jni/rnnoise/COPYING`) on its way to
-the daemon. The capture uses the VOICE_COMMUNICATION source, so the platform's echo
-canceller has already run, and the daemon's AEC is off (`aec_enable` false in MIC_DATA).
+the daemon. The capture is the plain mic (`Pickup.DIRECT`, the default since 2026-10-01): the
+VOICE_COMMUNICATION source runs the vendor HAL's ECNS, whose echo reference is a capture port
+the speaker-mic route never feeds, and calls through it sounded "underwater" on stock firmware
+too. That path stays as `Pickup.PLATFORM` for an A/B. The daemon's AEC is off (`aec_enable`
+false in MIC_DATA). A change on the Mic screen reopens a running capture, so it is heard
+mid-call.
 
 ```
 AudioRecord 16 kHz ─▶ ns/NsPipeline: up ×3 ─▶ RNNoise 480-sample frames ─▶ dry mix ─▶ down ×3 ─▶ MIC_DATA
