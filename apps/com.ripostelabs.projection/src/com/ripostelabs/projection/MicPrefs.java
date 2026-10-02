@@ -27,6 +27,12 @@ final class MicPrefs {
     static final Strength DEFAULT_STRENGTH = Strength.MEDIUM;
 
 
+    /**
+     * AEC3 on the downlink: on, because the Direct pickup has no other echo canceller and the
+     * offline eval (share/carlauncher/mic-ns/aec) found it harmless on a call without echo.
+     */
+    static final boolean DEFAULT_ECHO_CANCEL = true;
+
     private static final String FILE = "mic";
     private static final String KEY_STRENGTH = "ns_strength";
     /** A person's pick; absent means automatic. */
@@ -34,12 +40,13 @@ final class MicPrefs {
     /** The estate's default from the last manifest (ModelUpdater). */
     private static final String KEY_ESTATE = "ns_model_estate";
     private static final String KEY_PICKUP = "pickup";
+    private static final String KEY_ECHO_CANCEL = "aec";
     /**
      * What a person sets on the Mic screen. Only these reopen a running capture: the estate's
      * model default arrives in the background and must wait for the next call, never cut one.
      */
     private static final Set<String> LIVE_KEYS = new HashSet<>(Arrays.asList(
-            KEY_PICKUP, KEY_STRENGTH, KEY_MODEL, enabledKey(Path.CARPLAY)));
+            KEY_PICKUP, KEY_ECHO_CANCEL, KEY_STRENGTH, KEY_MODEL, enabledKey(Path.CARPLAY)));
 
     private MicPrefs() {
     }
@@ -50,6 +57,14 @@ final class MicPrefs {
 
     static void setSuppress(Context context, Path path, boolean on) {
         prefs(context).edit().putBoolean(enabledKey(path), on).apply();
+    }
+
+    static boolean echoCancel(Context context) {
+        return prefs(context).getBoolean(KEY_ECHO_CANCEL, DEFAULT_ECHO_CANCEL);
+    }
+
+    static void setEchoCancel(Context context, boolean on) {
+        prefs(context).edit().putBoolean(KEY_ECHO_CANCEL, on).apply();
     }
 
     static Pickup pickup(Context context) {

@@ -11,6 +11,7 @@ public final class CallCheckTest {
     public static void main(String[] args) {
         nothingRecordsUntilArmed();
         aTakeEndsOnTheRawMic();
+        echoCancelledTapIsTheMicsTwin();
         secondsLeftCountsDown();
         aShortCallKeepsWhatItHas();
         wavHeaderIsCanonical();
@@ -43,6 +44,20 @@ public final class CallCheckTest {
         Check.that(c.wav(CallCheck.Tap.DOWNLINK) == null, "no downlink, no file");
         c.feed(CallCheck.Tap.RAW, frame, 0, frame.length);
         Check.eq(44 + RATE * 2, c.wav(CallCheck.Tap.RAW).length, "nothing appended after the end");
+    }
+
+    /** Between RAW and PROCESSED: what the echo canceller left, at the mic's rate. */
+    private static void echoCancelledTapIsTheMicsTwin() {
+        CallCheck c = new CallCheck(1);
+        Check.that(c.arm(RATE, 48000, 2), "armed");
+        byte[] frame = new byte[640];
+        for (int i = 0; i < 50; i++) {
+            c.feed(CallCheck.Tap.RAW, frame, 0, frame.length);
+            c.feed(CallCheck.Tap.ECHO_CANCELLED, frame, 0, frame.length);
+            c.feed(CallCheck.Tap.PROCESSED, frame, 0, frame.length);
+        }
+        Check.that(c.state() == CallCheck.State.DONE, "done");
+        Check.eq(44 + RATE * 2, c.wav(CallCheck.Tap.ECHO_CANCELLED).length, "echo-cancelled file is one second");
     }
 
     private static void secondsLeftCountsDown() {

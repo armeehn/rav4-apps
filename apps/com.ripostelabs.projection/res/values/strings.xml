@@ -28,7 +28,7 @@
     <string name="mic_intro">Road, wind and engine noise is taken out of the cabin microphone before your voice goes to the phone.</string>
     <string name="callcheck_title">Call audio check</string>
     <string name="callcheck_button">Record 20 s of this call\'s mic</string>
-    <string name="callcheck_idle">For tuning: during a call, tap to record the mic before and after noise suppression, and the phone\'s sound, for 20 s. Nothing records unless you tap.</string>
+    <string name="callcheck_idle">For tuning: during a call, tap to record the mic before and after echo cancellation and noise suppression, and the phone\'s sound, for 20 s. Nothing records unless you tap.</string>
     <string name="callcheck_no_call">No call or Siri running: start a CarPlay call first, then tap.</string>
     <string name="callcheck_busy">A check is already running or being saved.</string>
     <string name="callcheck_left">● RECORDING the call mic: %1$d s left</string>
@@ -39,6 +39,9 @@
     <string name="mic_pickup">Microphone path</string>
     <string name="mic_pickup_direct">Direct: the plain cabin mic (default)</string>
     <string name="mic_pickup_platform">Vendor voice processing: the head unit\'s echo and noise filter (the old path)</string>
+    <string name="mic_aec_carplay">Echo cancellation: keeps the phone\'s sound out of your mic, so the other person does not hear themselves</string>
+    <string name="mic_aec_ready">Echo canceller ready (WebRTC AEC3)</string>
+    <string name="mic_aec_missing">Echo canceller unavailable on this device: the mic goes out without it</string>
     <string name="mic_ns_carplay">Noise suppression for CarPlay (Siri and calls)</string>
     <string name="mic_strength">Strength</string>
     <string name="mic_strength_light">Light</string>

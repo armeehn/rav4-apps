@@ -22,6 +22,7 @@ import android.view.Surface;
 import com.ripostelabs.design.MediaCitizen;
 import com.ripostelabs.projection.aa.Messages.AudioConfig;
 import com.ripostelabs.projection.ns.CallCheck;
+import com.ripostelabs.projection.ns.EchoReference;
 import com.ripostelabs.projection.zlink.Bridge;
 import com.ripostelabs.projection.zlink.LauncherStatus;
 import com.ripostelabs.projection.zlink.Messages;
@@ -127,6 +128,8 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     private CarPlayWireless wireless;
     private MediaCitizen citizen;
     private MicLink mic;
+    /** The downlink as played, for the mic's echo canceller. */
+    private final EchoReference downlink = new EchoReference();
     /** Held here: the preferences keep their listeners weakly. */
     private SharedPreferences.OnSharedPreferenceChangeListener micWatch;
     private boolean hasFocus;
@@ -196,7 +199,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
         bridge.setSession(this);
         videoSink.setOnStarved(bridge::requestKeyFrame);
         citizen = MediaCitizen.attach(this, CITIZEN_TAG, transport);
-        mic = new MicLink(new MicSource(this), bridge::mic);
+        mic = new MicLink(new MicSource(this, downlink), bridge::mic);
         // A change on the Mic screen is heard at once, mid-call: the owner's one-call A/B.
         micWatch = MicPrefs.watch(this, () -> mic.restart());
         registerReceiver(requests, new IntentFilter(STATUS_ACTION), Context.RECEIVER_EXPORTED);
@@ -372,6 +375,7 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
     public void onAudioFormat(int sampleRate, int channels) {
         audioSink.start(new AudioConfig(sampleRate, PCM_BITS, channels));
         CallCheckRecorder.get().downlinkFormat(sampleRate, channels);
+        downlink.format(sampleRate, channels);
         // Focus on the first audio of a session: the radio ducks, the launcher's card sees us.
         // hasFocus lives on the main thread with the rest of the session state.
         main.post(() -> {
@@ -385,7 +389,9 @@ public final class ZlinkService extends Service implements Bridge.Media, Bridge.
 
     @Override
     public void onAudio(byte[] data, int off, int len) {
-        audioSink.write(data, off, len);
+        // Only what the track took is played, so only that can echo.
+        int played = audioSink.write(data, off, len);
+        downlink.push(data, off, played, System.nanoTime());
         CallCheckRecorder.get().feed(CallCheck.Tap.DOWNLINK, data, off, len);
     }
 

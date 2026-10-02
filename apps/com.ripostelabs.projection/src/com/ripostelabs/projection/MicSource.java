@@ -14,7 +14,10 @@ import android.util.Log;
 
 import java.util.List;
 
+import com.ripostelabs.projection.ns.Aec3;
 import com.ripostelabs.projection.ns.CallCheck;
+import com.ripostelabs.projection.ns.EchoPipeline;
+import com.ripostelabs.projection.ns.EchoReference;
 import com.ripostelabs.projection.ns.Engine;
 import com.ripostelabs.projection.ns.Model;
 import com.ripostelabs.projection.ns.ModelStore;
@@ -28,8 +31,8 @@ import com.ripostelabs.projection.zlink.MicWatch;
  * The cabin microphone for Siri and calls: PCM from {@link AudioRecord} in the format the
  * daemon asked for, handed to a sink in frames of {@link #FRAME_MS}. The plain mic by default;
  * the voice-communication source (the HAL's echo canceller and suppressor) only when picked
- * ({@link Pickup}). Then RNNoise ({@link NsPipeline}), after any echo canceller as it must be,
- * unless switched off in {@link MicSettingsActivity}.
+ * ({@link Pickup}). Then AEC3 against the phone's downlink ({@link EchoPipeline}) and RNNoise
+ * ({@link NsPipeline}), in that order, each unless switched off in {@link MicSettingsActivity}.
  */
 final class MicSource implements MicLink.Recorder {
 
@@ -42,6 +45,8 @@ final class MicSource implements MicLink.Recorder {
     private static final String[] MODES = {"NORMAL", "RINGTONE", "IN_CALL", "IN_COMMUNICATION", "CALL_SCREENING"};
 
     private final Context context;
+    /** The phone's downlink as ZlinkService plays it: the echo canceller's reference. */
+    private final EchoReference downlink;
     private AudioRecord record;
     private Thread pump;
     private volatile boolean running;
@@ -49,12 +54,21 @@ final class MicSource implements MicLink.Recorder {
     private volatile boolean silencedByPlatform;
     private AudioManager.AudioRecordingCallback silencing;
 
-    MicSource(Context context) {
+    MicSource(Context context, EchoReference downlink) {
         this.context = context;
+        this.downlink = downlink;
     }
 
     static boolean permitted(Context context) {
         return context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    /** This capture's echo canceller, per the settings; bypass when off or unavailable. */
+    private EchoPipeline echo(int sampleRate, int channels) {
+        if (!MicPrefs.echoCancel(context)) {
+            return EchoPipeline.off();
+        }
+        return EchoPipeline.create(sampleRate, channels, Aec3.open(sampleRate), downlink);
     }
 
     /** This capture's suppressor, per the settings; bypass when off or unavailable. */
@@ -120,6 +134,7 @@ final class MicSource implements MicLink.Recorder {
         final int frameLen = frame;
         // The pump thread owns the pipeline and frees it on its way out: close() only stops
         // the loop, so the native state is never freed under a frame in flight.
+        final EchoPipeline aec = echo(sampleRate, channels);
         final NsPipeline ns = pipeline(sampleRate, channels);
         final CallCheckRecorder check = CallCheckRecorder.get();
         check.micOpened(sampleRate);
@@ -131,6 +146,7 @@ final class MicSource implements MicLink.Recorder {
             try {
                 while (running) {
                     int n = r.read(buf, 0, frameLen);
+                    long readAt = System.nanoTime();
                     MicLink.Read got = MicLink.read(n);
                     // A dead recorder answers at once, so a retry spins this thread. The next
                     // MicStart opens a fresh one.
@@ -159,8 +175,10 @@ final class MicSource implements MicLink.Recorder {
                         break;
                     }
                     report(health);
-                    // The owner's call audio check, when armed: the mic before and after RNNoise.
+                    // The call audio check, when armed: the mic raw, after AEC3, after RNNoise.
                     check.feed(CallCheck.Tap.RAW, buf, 0, n);
+                    aec.process(buf, n, readAt);
+                    check.feed(CallCheck.Tap.ECHO_CANCELLED, buf, 0, n);
                     ns.process(buf, n);
                     check.feed(CallCheck.Tap.PROCESSED, buf, 0, n);
                     sink.onPcm(buf, n);
@@ -168,19 +186,23 @@ final class MicSource implements MicLink.Recorder {
                     // (a foreground service started from the background) reads all zeros. The
                     // suppressor's cost per 10 ms rides along, the CPU figure for the car.
                     if (++frames * FRAME_MS >= LEVEL_EVERY_MS) {
+                        String echoStats = aec.stats();
+                        check.echoStats(aec.mode() + " " + echoStats);
                         Log.i(TAG, "mic: peak " + peak + " / 32767, ns " + ns.mode()
-                                + " " + ns.takeMicrosPerChunk() + " us/10ms");
+                                + " " + ns.takeMicrosPerChunk() + " us/10ms, aec " + aec.mode()
+                                + " " + aec.takeMicrosPerChunk() + " us/10ms " + echoStats);
                         peak = 0;
                         frames = 0;
                     }
                 }
             } finally {
+                aec.close();
                 ns.close();
             }
         }, "carplay-mic");
         pump.start();
         Log.i(TAG, "mic: recording " + sampleRate + " Hz x" + channels + ", pickup " + pickup
-                + ", noise suppression " + ns.mode());
+                + ", echo cancellation " + aec.mode() + ", noise suppression " + ns.mode());
         return true;
     }
 
