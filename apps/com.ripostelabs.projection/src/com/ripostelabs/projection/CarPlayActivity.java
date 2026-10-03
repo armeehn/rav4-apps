@@ -15,6 +15,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.util.Log;
 import android.provider.Settings;
 import android.graphics.SurfaceTexture;
 import android.view.MotionEvent;
@@ -41,6 +42,7 @@ import com.ripostelabs.projection.zlink.Waiting;
  */
 public final class CarPlayActivity extends Activity implements Bridge.Screen {
 
+    private static final String TAG = "Projection";
     private static final int STATUS_LINES = 6;
 
     /** How often the panel re-reads the radios and the connect timeout while in front. */
@@ -53,6 +55,8 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
     private TextureView video;
     /** The one surface the decoder draws into for this screen's whole life. */
     private Surface videoSurface;
+    /** The texture behind [videoSurface], handed back to the view after every stop. */
+    private final KeptTexture<SurfaceTexture> texture = new KeptTexture<>();
     private TextView status;
     private View waitPanel;
     private TextView waitTitle;
@@ -116,8 +120,15 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
 
         video.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
             @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture texture, int width, int height) {
-                videoSurface = new Surface(texture);
+            public void onSurfaceTextureAvailable(SurfaceTexture fresh, int width, int height) {
+                KeptTexture.Use use = texture.onAvailable(fresh);
+                if (use == KeptTexture.Use.RESTORE) {
+                    restoreTexture();
+                }
+                if (use != KeptTexture.Use.ADOPT) {
+                    return;
+                }
+                videoSurface = new Surface(fresh);
                 if (service != null) {
                     service.setSurface(videoSurface);
                 }
@@ -148,6 +159,25 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
             render();
+        }
+    }
+
+    /** Back in front: the latest picture is on screen at once, no key frame waited for. */
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (texture.onStart(video.getSurfaceTexture()) == KeptTexture.Use.RESTORE) {
+            restoreTexture();
+        }
+    }
+
+    /** The stop took the view's texture; give it back the one the decoder still draws into. */
+    private void restoreTexture() {
+        try {
+            video.setSurfaceTexture(texture.texture());
+            Log.i(TAG, "screen: picture kept");
+        } catch (IllegalArgumentException e) {
+            Log.w(TAG, "screen: kept texture refused: " + e.getMessage());
         }
     }
 
@@ -186,13 +216,13 @@ public final class CarPlayActivity extends Activity implements Bridge.Screen {
             service.setSurface(null);
         }
         unbindService(connection);
-        SurfaceTexture texture = video.getSurfaceTexture();
+        SurfaceTexture shown = texture.texture();
         if (videoSurface != null) {
             videoSurface.release();
             videoSurface = null;
         }
-        if (texture != null) {
-            texture.release();
+        if (shown != null) {
+            shown.release();
         }
         super.onDestroy();
     }
