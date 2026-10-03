@@ -263,8 +263,7 @@ final class MicSource implements MicLink.Recorder {
     }
 
     private static int source(Pickup pickup) {
-        return pickup.vendorProcessing() ? MediaRecorder.AudioSource.VOICE_COMMUNICATION
-                : MediaRecorder.AudioSource.MIC;
+        return MicSources.audioSource(pickup);
     }
 
     /** Nothing read: wait one frame instead of asking again at once; false when interrupted. */

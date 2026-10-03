@@ -53,9 +53,13 @@ public final class MicSettingsActivity extends Activity {
         TextView modelState = findViewById(R.id.model_state);
         TextView engine = findViewById(R.id.engine_state);
 
-        pickup.check(MicPrefs.pickup(this) == Pickup.PLATFORM ? R.id.pickup_platform : R.id.pickup_direct);
-        pickup.setOnCheckedChangeListener((group, id) -> MicPrefs.setPickup(this,
-                id == R.id.pickup_platform ? Pickup.PLATFORM : Pickup.DIRECT));
+        pickup.check(idFor(MicPrefs.pickup(this)));
+        pickup.setOnCheckedChangeListener((group, id) -> MicPrefs.setPickup(this, pickupFor(id)));
+
+        // The mic source test: which capture carries the cabin mic, measured while the owner talks.
+        TextView probeState = findViewById(R.id.probe_state);
+        Button probe = findViewById(R.id.probe);
+        probe.setOnClickListener(v -> startProbe(probe, probeState));
 
         echo.setChecked(MicPrefs.echoCancel(this));
         echo.setOnCheckedChangeListener((button, on) -> MicPrefs.setEchoCancel(this, on));
@@ -109,6 +113,67 @@ public final class MicSettingsActivity extends Activity {
     protected void onPause() {
         ui.removeCallbacks(checkTick);
         super.onPause();
+    }
+
+    private void startProbe(Button probe, TextView state) {
+        if (MicProbe.busy(this)) {
+            state.setText(R.string.probe_busy);
+            return;
+        }
+
+        probe.setEnabled(false);
+        MicProbe.run(this, new MicProbe.Listener() {
+            @Override
+            public void onSource(Pickup pickup, int left) {
+                state.setText(getString(R.string.probe_running, getString(labelFor(pickup)),
+                        (left + 1) * MicProbe.SECONDS_EACH));
+            }
+
+            @Override
+            public void onDone(String report) {
+                state.setText(report);
+                probe.setEnabled(true);
+            }
+        });
+    }
+
+    private static int idFor(Pickup pickup) {
+        switch (pickup) {
+            case RECOGNITION:
+                return R.id.pickup_recognition;
+            case UNPROCESSED:
+                return R.id.pickup_unprocessed;
+            case PLATFORM:
+                return R.id.pickup_platform;
+            default:
+                return R.id.pickup_direct;
+        }
+    }
+
+    private static Pickup pickupFor(int id) {
+        if (id == R.id.pickup_recognition) {
+            return Pickup.RECOGNITION;
+        }
+        if (id == R.id.pickup_unprocessed) {
+            return Pickup.UNPROCESSED;
+        }
+        if (id == R.id.pickup_platform) {
+            return Pickup.PLATFORM;
+        }
+        return Pickup.DIRECT;
+    }
+
+    private static int labelFor(Pickup pickup) {
+        switch (pickup) {
+            case RECOGNITION:
+                return R.string.mic_pickup_recognition;
+            case UNPROCESSED:
+                return R.string.mic_pickup_unprocessed;
+            case PLATFORM:
+                return R.string.mic_pickup_platform;
+            default:
+                return R.string.mic_pickup_direct;
+        }
     }
 
     private void startCheck() {

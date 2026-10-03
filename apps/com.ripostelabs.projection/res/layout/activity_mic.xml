@@ -53,6 +53,22 @@
                 android:textColor="@color/text" />
 
             <RadioButton
+                android:id="@+id/pickup_recognition"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/mic_pickup_recognition"
+                android:textColor="@color/text" />
+
+            <RadioButton
+                android:id="@+id/pickup_unprocessed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="@string/mic_pickup_unprocessed"
+                android:textColor="@color/text" />
+
+            <RadioButton
                 android:id="@+id/pickup_platform"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -60,6 +76,23 @@
                 android:text="@string/mic_pickup_platform"
                 android:textColor="@color/text" />
         </RadioGroup>
+
+        <Button
+            android:id="@+id/probe"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="56dp"
+            android:text="@string/probe_button" />
+
+        <TextView
+            android:id="@+id/probe_state"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/probe_idle"
+            android:textColor="@color/text2"
+            android:textSize="15sp" />
 
         <Switch
             android:id="@+id/aec_carplay"

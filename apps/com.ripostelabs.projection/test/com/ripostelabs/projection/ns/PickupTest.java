@@ -10,6 +10,7 @@ public final class PickupTest {
         defaultIsThePlainMic();
         storedNamesComeBack();
         onlyPlatformAsksForVendorProcessing();
+        theTestCoversEveryRoute();
         System.out.println("ok   PickupTest " + Check.count + " checks");
     }
 
@@ -27,5 +28,14 @@ public final class PickupTest {
     private static void onlyPlatformAsksForVendorProcessing() {
         Check.that(Pickup.PLATFORM.vendorProcessing(), "platform runs the HAL's AEC and NS");
         Check.that(!Pickup.DIRECT.vendorProcessing(), "direct is the plain mic");
+        Check.that(!Pickup.RECOGNITION.vendorProcessing(), "recognition has no HAL ECNS");
+        Check.that(!Pickup.UNPROCESSED.vendorProcessing(), "unprocessed has no HAL ECNS");
+    }
+
+    // The mic source test walks values() in order: the plain mic first, the vendor path last.
+    private static void theTestCoversEveryRoute() {
+        Check.eq(4, Pickup.values().length, "routes");
+        Check.that(Pickup.values()[0] == Pickup.DIRECT, "plain mic first");
+        Check.that(Pickup.values()[Pickup.values().length - 1] == Pickup.PLATFORM, "vendor path last");
     }
 }
