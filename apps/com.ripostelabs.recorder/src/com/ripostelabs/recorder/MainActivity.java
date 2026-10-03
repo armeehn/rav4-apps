@@ -5,6 +5,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.graphics.drawable.GradientDrawable;
+import android.media.AudioManager;
+import android.media.AudioRecordingConfiguration;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
@@ -143,6 +145,10 @@ public class MainActivity extends Activity
 
     // recording state
     private MediaRecorder recorder;
+    /** Watches the running take for a mic that hears nothing ([MicSilence]). */
+    private MicSilence silence;
+    /** Set while a silenced take is stopped: its files are deleted, not offered for a name. */
+    private boolean discard;
     private boolean recording = false;
 
     /** v0.6.1 — exclusive audio focus while recording, so nothing else is captured through the cabin mic. */
@@ -166,18 +172,27 @@ public class MainActivity extends Activity
             if (!recording) return;
             long ms = SystemClock.elapsedRealtime() - recStartMs;
             elapsed.setText(fmt(ms));
-            float level = 0f;
+            int peak = 0;
             if (recorder != null) {
-                try { level = Math.min(1f, recorder.getMaxAmplitude() / 20000f); }
+                try { peak = recorder.getMaxAmplitude(); }
                 catch (Exception ignored) {}
             }
             if (capture != null) {
-                level = Math.min(1f, capture.takePeak() / 20000f);
+                peak = capture.takePeak();
             }
+            float level = Math.min(1f, peak / 20000f);
             float scale = 1f + level * 0.7f;
             pulse.setScaleX(scale);
             pulse.setScaleY(scale);
             pulse.setAlpha(0.20f + level * 0.55f);
+
+            // A silenced mic records zeros without an error: stop and say why, never save them.
+            MicSilence.Why why = silence.check(new MicSilence.Reading(peak, clientSilenced(),
+                    audioMode(), othersCapturing()), SystemClock.elapsedRealtime());
+            if (why != MicSilence.Why.NONE) {
+                abandon(why);
+                return;
+            }
             ui.postDelayed(this, 90);
         }
     };
@@ -275,6 +290,13 @@ public class MainActivity extends Activity
         File dir = recordDir();
         if (dir == null) { toast("Storage unavailable"); return; }
 
+        // A call mutes every other capture: refuse rather than record its silence.
+        MicSilence.Why early = MicSilence.before(audioMode());
+        if (early != MicSilence.Why.NONE) {
+            toastLong(whyText(early));
+            return;
+        }
+
         // Playback holds media focus; let it go before asking for the capture's.
         stopPlayback();
 
@@ -307,6 +329,7 @@ public class MainActivity extends Activity
 
         recording = true;
         recStartMs = SystemClock.elapsedRealtime();
+        silence = new MicSilence(recStartMs);
         recStyleOn(true);
         elapsed.setText(fmt(0));
         ui.postDelayed(recTick, 90);
@@ -403,6 +426,10 @@ public class MainActivity extends Activity
         String error = capture.error();
         capture = null;
         closeRoadSink();
+        if (discard) {
+            roadWav.delete();
+            return;
+        }
 
         double seconds = Wav.seconds(roadWav);
         if (seconds < MIN_ROAD_SECONDS) {
@@ -447,6 +474,10 @@ public class MainActivity extends Activity
         String error = capture.error();
         capture = null;
         closeTwin();
+        if (discard) {
+            deleteTwin(recordDir());
+            return;
+        }
 
         File dir = recordDir();
         File raw = new File(dir, Takes.rawName(twinBase));
@@ -485,6 +516,10 @@ public class MainActivity extends Activity
             ok = false; // too short / no data
         }
         releaseRecorder();
+        if (discard) {
+            if (recordingFile != null) recordingFile.delete();
+            return;
+        }
 
         if (!ok || recordingFile == null || !recordingFile.exists()
                 || recordingFile.length() == 0) {
@@ -495,6 +530,60 @@ public class MainActivity extends Activity
         }
         elapsed.setText("0:00");
         promptName(recordingFile);
+    }
+
+    /** Stop the take, drop its files and say why the mic heard nothing. */
+    private void abandon(MicSilence.Why why) {
+        discard = true;
+        stopRecording();
+        discard = false;
+        toastLong(getString(R.string.take_dropped, whyText(why)));
+    }
+
+    private String whyText(MicSilence.Why why) {
+        switch (why) {
+            case CALL:
+                return getString(R.string.mic_call);
+            case BUSY:
+                return getString(R.string.mic_busy);
+            case SILENCED:
+                return getString(R.string.mic_silenced);
+            default:
+                return getString(R.string.mic_silent);
+        }
+    }
+
+    /** Any call mode, cellular or VoIP: each mutes the captures that are not the call's. */
+    private MicSilence.Mode audioMode() {
+        int m = ((AudioManager) getSystemService(AUDIO_SERVICE)).getMode();
+        boolean call = m == AudioManager.MODE_IN_CALL || m == AudioManager.MODE_IN_COMMUNICATION
+                || m == AudioManager.MODE_CALL_SCREENING || m == AudioManager.MODE_CALL_REDIRECT
+                || m == AudioManager.MODE_COMMUNICATION_REDIRECT;
+        return call ? MicSilence.Mode.CALL : MicSilence.Mode.NORMAL;
+    }
+
+    /** The platform's own verdict on this take (API 29+): muted for a higher-priority capture. */
+    private boolean clientSilenced() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return false;
+        }
+        if (capture != null) {
+            return capture.silenced();
+        }
+        if (recorder == null) {
+            return false;
+        }
+        AudioRecordingConfiguration c = recorder.getActiveRecordingConfiguration();
+        return c != null && c.isClientSilenced();
+    }
+
+    /** Someone else (CarPlay's mic, a call) is capturing beside this take. */
+    private boolean othersCapturing() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            return false;
+        }
+        AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+        return am.getActiveRecordingConfigurations().size() > 1;
     }
 
     private void releaseRecorder() {
@@ -1111,6 +1200,8 @@ public class MainActivity extends Activity
     // ---------------- misc ----------------
 
     private void toast(String s) { Toast.makeText(this, s, Toast.LENGTH_SHORT).show(); }
+
+    private void toastLong(String s) { Toast.makeText(this, s, Toast.LENGTH_LONG).show(); }
 
     private static String fmt(long ms) {
         if (ms < 0) ms = 0;
