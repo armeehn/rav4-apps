@@ -41,7 +41,7 @@
     <string name="mic_pickup_recognition">Voice recognition: the cabin mic on the speech-recognition route</string>
     <string name="mic_pickup_unprocessed">Unprocessed: the cabin mic with no head unit effects (default)</string>
     <string name="probe_button">Test each mic source</string>
-    <string name="probe_idle">Tap, then talk normally for 12 s. Each mic source records 3 s in turn and shows its level. The one that reads loudest carries the cabin mic.</string>
+    <string name="probe_idle">Tap, then talk normally for 12 s. Each mic source records 3 s in turn and shows its level. Each recording is saved in Riposte/MicProbe.</string>
     <string name="probe_running">Keep talking. Recording %1$s, %2$d s left.</string>
     <string name="probe_busy">A call or Siri is using the mic. End it, then tap again.</string>
     <string name="mic_pickup_platform">Vendor voice processing: the head unit\'s echo and noise filter (the old path)</string>
