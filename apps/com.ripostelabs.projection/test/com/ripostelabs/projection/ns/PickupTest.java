@@ -7,16 +7,18 @@ package com.ripostelabs.projection.ns;
 public final class PickupTest {
 
     public static void main(String[] args) {
-        defaultIsThePlainMic();
+        defaultIsTheUnprocessedMic();
         storedNamesComeBack();
         onlyPlatformAsksForVendorProcessing();
         theTestCoversEveryRoute();
         System.out.println("ok   PickupTest " + Check.count + " checks");
     }
 
-    private static void defaultIsThePlainMic() {
-        Check.that(Pickup.parse(null) == Pickup.DIRECT, "nothing stored");
-        Check.that(Pickup.parse("SOMETHING_OLD") == Pickup.DIRECT, "unknown name");
+    // Bench, 2026-10-07, room noise alone: DIRECT -63 dBFS RMS, UNPROCESSED -47. The plain
+    // route's calls were the quiet, underwater ones; the default is the unprocessed route.
+    private static void defaultIsTheUnprocessedMic() {
+        Check.that(Pickup.parse(null) == Pickup.UNPROCESSED, "nothing stored");
+        Check.that(Pickup.parse("SOMETHING_OLD") == Pickup.UNPROCESSED, "unknown name");
     }
 
     private static void storedNamesComeBack() {

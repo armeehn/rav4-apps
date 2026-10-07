@@ -15,7 +15,9 @@ package com.ripostelabs.projection.ns;
  * stock firmware too. DIRECT replaced it, but its HAL device is handset-mic, not the speaker-mic
  * route the vendor path used, and calls on it peaked 20 to 30 dB lower and still sounded
  * underwater (car, 2026-10-02 19:06). RECOGNITION and UNPROCESSED are the other two routes to
- * the cabin mic, for the owner's mic source test ({@code MicProbe}) and A/B.
+ * the cabin mic. The mic source test ({@code MicProbe}) on the bench (2026-10-07, room noise)
+ * read DIRECT -63, RECOGNITION -49, UNPROCESSED -47 and PLATFORM -30 dBFS RMS, so UNPROCESSED,
+ * the loudest route with no HAL effects, is the default.
  */
 public enum Pickup {
     DIRECT,
@@ -31,13 +33,13 @@ public enum Pickup {
     /** A stored name back to a pickup; anything unknown is the default. */
     public static Pickup parse(String name) {
         if (name == null) {
-            return DIRECT;
+            return UNPROCESSED;
         }
         for (Pickup p : values()) {
             if (p.name().equals(name)) {
                 return p;
             }
         }
-        return DIRECT;
+        return UNPROCESSED;
     }
 }

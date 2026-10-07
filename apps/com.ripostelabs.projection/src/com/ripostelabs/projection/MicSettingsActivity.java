@@ -160,7 +160,10 @@ public final class MicSettingsActivity extends Activity {
         if (id == R.id.pickup_platform) {
             return Pickup.PLATFORM;
         }
-        return Pickup.DIRECT;
+        if (id == R.id.pickup_direct) {
+            return Pickup.DIRECT;
+        }
+        return Pickup.UNPROCESSED;
     }
 
     private static int labelFor(Pickup pickup) {
