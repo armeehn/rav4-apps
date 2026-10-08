@@ -24,6 +24,7 @@ import com.ripostelabs.projection.ns.ModelStore;
 import com.ripostelabs.projection.ns.NsPipeline;
 import com.ripostelabs.projection.ns.Pickup;
 import com.ripostelabs.projection.ns.RnNoise;
+import com.ripostelabs.projection.ns.VoiceClarity;
 import com.ripostelabs.projection.zlink.MicLink;
 import com.ripostelabs.projection.zlink.MicWatch;
 
@@ -136,6 +137,8 @@ final class MicSource implements MicLink.Recorder {
         // the loop, so the native state is never freed under a frame in flight.
         final EchoPipeline aec = echo(sampleRate, channels);
         final NsPipeline ns = pipeline(sampleRate, channels);
+        // The mic records speech dark; the shelf lifts it before RNNoise (VoiceClarity). Mono only.
+        final VoiceClarity clarity = MicPrefs.clarity(context) && channels == 1 ? new VoiceClarity(sampleRate) : null;
         final CallCheckRecorder check = CallCheckRecorder.get();
         check.micOpened(sampleRate);
         pump = new Thread(() -> {
@@ -179,6 +182,9 @@ final class MicSource implements MicLink.Recorder {
                     check.feed(CallCheck.Tap.RAW, buf, 0, n);
                     aec.process(buf, n, readAt);
                     check.feed(CallCheck.Tap.ECHO_CANCELLED, buf, 0, n);
+                    if (clarity != null) {
+                        clarity.process(buf, n);
+                    }
                     ns.process(buf, n);
                     check.feed(CallCheck.Tap.PROCESSED, buf, 0, n);
                     sink.onPcm(buf, n);
@@ -202,7 +208,7 @@ final class MicSource implements MicLink.Recorder {
         }, "carplay-mic");
         pump.start();
         Log.i(TAG, "mic: recording " + sampleRate + " Hz x" + channels + ", pickup " + pickup
-                + ", echo cancellation " + aec.mode() + ", noise suppression " + ns.mode());
+                + ", voice clarity " + (clarity != null) + ", echo cancellation " + aec.mode() + ", noise suppression " + ns.mode());
         return true;
     }
 

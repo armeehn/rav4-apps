@@ -41,12 +41,14 @@ final class MicPrefs {
     private static final String KEY_ESTATE = "ns_model_estate";
     private static final String KEY_PICKUP = "pickup";
     private static final String KEY_ECHO_CANCEL = "aec";
+    /** The treble shelf before RNNoise ({@code VoiceClarity}); on unless turned off. */
+    private static final String KEY_CLARITY = "voice_clarity";
     /**
      * What a person sets on the Mic screen. Only these reopen a running capture: the estate's
      * model default arrives in the background and must wait for the next call, never cut one.
      */
     private static final Set<String> LIVE_KEYS = new HashSet<>(Arrays.asList(
-            KEY_PICKUP, KEY_ECHO_CANCEL, KEY_STRENGTH, KEY_MODEL, enabledKey(Path.CARPLAY)));
+            KEY_PICKUP, KEY_ECHO_CANCEL, KEY_CLARITY, KEY_STRENGTH, KEY_MODEL, enabledKey(Path.CARPLAY)));
 
     private MicPrefs() {
     }
@@ -65,6 +67,14 @@ final class MicPrefs {
 
     static void setEchoCancel(Context context, boolean on) {
         prefs(context).edit().putBoolean(KEY_ECHO_CANCEL, on).apply();
+    }
+
+    static boolean clarity(Context context) {
+        return prefs(context).getBoolean(KEY_CLARITY, true);
+    }
+
+    static void setClarity(Context context, boolean on) {
+        prefs(context).edit().putBoolean(KEY_CLARITY, on).apply();
     }
 
     static Pickup pickup(Context context) {

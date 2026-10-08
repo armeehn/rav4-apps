@@ -61,6 +61,10 @@ public final class MicSettingsActivity extends Activity {
         Button probe = findViewById(R.id.probe);
         probe.setOnClickListener(v -> startProbe(probe, probeState));
 
+        Switch clarity = findViewById(R.id.voice_clarity);
+        clarity.setChecked(MicPrefs.clarity(this));
+        clarity.setOnCheckedChangeListener((button, on) -> MicPrefs.setClarity(this, on));
+
         echo.setChecked(MicPrefs.echoCancel(this));
         echo.setOnCheckedChangeListener((button, on) -> MicPrefs.setEchoCancel(this, on));
 

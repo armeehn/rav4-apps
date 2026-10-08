@@ -95,6 +95,16 @@
             android:textSize="15sp" />
 
         <Switch
+            android:id="@+id/voice_clarity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:minHeight="56dp"
+            android:text="@string/mic_voice_clarity"
+            android:textColor="@color/text"
+            android:textSize="17sp" />
+
+        <Switch
             android:id="@+id/aec_carplay"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
