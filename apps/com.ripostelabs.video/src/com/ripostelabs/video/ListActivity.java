@@ -205,7 +205,8 @@ public class ListActivity extends Activity {
     /** "12 videos", "3 folders", or "Trips · USB · 2 videos" inside a folder. */
     private void showCount() {
         if (browse == Browse.FOLDERS) {
-            count.setText(getString(R.string.folders_count, folderList.size()));
+            count.setText(folderList.size() == 1 ? getString(R.string.folders_count_one)
+                    : getString(R.string.folders_count, folderList.size()));
             return;
         }
         if (browse == Browse.FOLDER && openFolder != null) {

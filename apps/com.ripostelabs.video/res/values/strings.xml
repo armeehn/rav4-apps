@@ -9,6 +9,7 @@
     <string name="grant">Grant access</string>
     <string name="browse_folders">Folders</string>
     <string name="browse_videos">All videos</string>
+    <string name="folders_count_one">1 folder</string>
     <string name="folders_count">%1$d folders</string>
     <string name="where_usb">USB</string>
     <string name="where_internal">Internal</string>
